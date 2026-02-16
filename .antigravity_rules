@@ -1,0 +1,8 @@
+# Language Settings
+- Use Traditional Chinese (zh-TW) for all responses.
+- Always explain code logic and architecture in Traditional Chinese.
+- Technical terms should remain in English or have English in brackets (e.g., 異步處理 (Asynchronous)).
+
+# Financial Industry Coding Standard
+- Prioritize code stability and readability.
+- When reviewing SQL/C#, focus on performance and security.
