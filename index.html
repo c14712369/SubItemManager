@@ -69,8 +69,17 @@
         <div id="tab-analysis" class="tab-content">
             <div class="dashboard">
                 <div class="stat-card">
-                    <div class="stat-title">每月預估總支出 (TWD)</div>
+                    <div class="stat-title">每月預估收入 (TWD)</div>
+                    <input type="number" id="monthlyIncomeInput" class="stat-input" placeholder="0"
+                        oninput="updateBudgetCalc()">
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">每月固定支出 (TWD)</div>
                     <div class="stat-value stat-monthly" id="totalMonthly">NT$ 0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">每月剩餘預算 (TWD)</div>
+                    <div class="stat-value" id="remainingBudget">NT$ 0</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-title">年度預估總支出 (TWD)</div>
@@ -210,11 +219,14 @@
                 <span class="close-modal" onclick="closeCategoryModal()">&times;</span>
             </div>
             <div class="form-row" style="margin-bottom: 20px;">
-                <input type="text" id="newCatName" class="form-input" placeholder="新分類名稱" style="flex:2">
+                <input type="hidden" id="editCatId">
+                <input type="text" id="newCatName" class="form-input" placeholder="分類名稱" style="flex:2">
                 <input type="color" id="newCatColor" class="form-input" style="flex:1; padding: 2px; height: 42px;"
                     value="#4f46e5">
-                <button class="btn btn-primary" onclick="addCategory()" style="flex:0"><i
-                        class="fa-solid fa-plus"></i></button>
+                <button class="btn btn-primary" id="saveCatBtn" onclick="saveCategory()" style="flex:0" title="儲存"><i
+                        class="fa-solid fa-check"></i></button>
+                <button class="btn btn-secondary" id="cancelCatBtn" onclick="cancelCatEdit()"
+                    style="flex:0; display:none;" title="取消編輯"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="categoryList" class="category-list">
                 <!-- JS Populated -->

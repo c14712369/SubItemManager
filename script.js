@@ -2,6 +2,7 @@
 const STORAGE_KEY = 'subscription_manager_data';
 const THEME_KEY = 'subscription_manager_theme';
 const CAT_KEY = 'subscription_manager_categories';
+const INCOME_KEY = 'subscription_manager_income';
 
 let items = [];
 let categories = [];
@@ -33,6 +34,12 @@ function init() {
     initChartYearSelect();
 
     switchTab('manage'); // Default Tab
+
+    // Restore Income
+    const savedIncome = localStorage.getItem(INCOME_KEY);
+    if (savedIncome) {
+        document.getElementById('monthlyIncomeInput').value = savedIncome;
+    }
 
     render();
 }
@@ -170,34 +177,94 @@ function closeCategoryModal() {
 
 function renderCategoryList() {
     const list = document.getElementById('categoryList');
-    list.innerHTML = categories.map(cat => `
-        <div class="category-item">
-            <div style="display:flex; align-items:center;">
+    list.innerHTML = '';
+
+    categories.forEach((cat, index) => {
+        const item = document.createElement('div');
+        item.className = 'category-item';
+        item.draggable = true;
+        item.dataset.index = index;
+
+        // Set content
+        item.innerHTML = `
+            <div style="display:flex; align-items:center; pointer-events: none;">
+                <i class="fa-solid fa-grip-lines handle" style="color:var(--text-muted); margin-right:10px; cursor:grab; pointer-events: auto;"></i>
                 <div class="color-dot" style="background:${cat.color}"></div>
                 <span>${cat.name}</span>
             </div>
-            ${DEFAULT_CATS.find(d => d.id === cat.id) ? '' :
-            `<button class="icon-btn delete" onclick="deleteCategory('${cat.id}')"><i class="fa-solid fa-trash"></i></button>`
-        }
-        </div>
-    `).join('');
+            <div style="gap:5px; display:flex;">
+                <button class="icon-btn" onclick="editCategory('${cat.id}')"><i class="fa-solid fa-pen"></i></button>
+                ${DEFAULT_CATS.find(d => d.id === cat.id) ? '' :
+                `<button class="icon-btn delete" onclick="deleteCategory('${cat.id}')"><i class="fa-solid fa-trash"></i></button>`
+            }
+            </div>
+        `;
+
+        // Add Drag Event Listeners
+        item.addEventListener('dragstart', handleCatDragStart);
+        item.addEventListener('dragover', handleCatDragOver);
+        item.addEventListener('drop', handleCatDrop);
+        item.addEventListener('dragenter', handleCatDragEnter);
+        item.addEventListener('dragleave', handleCatDragLeave);
+        item.addEventListener('dragend', handleCatDragEnd);
+
+        list.appendChild(item);
+    });
 }
 
-function addCategory() {
+function saveCategory() {
+    const idInput = document.getElementById('editCatId');
     const nameInput = document.getElementById('newCatName');
     const colorInput = document.getElementById('newCatColor');
+
     const name = nameInput.value.trim();
     if (!name) return;
 
-    categories.push({
-        id: 'cat_' + Date.now(),
-        name: name,
-        color: colorInput.value
-    });
-    nameInput.value = '';
+    const id = idInput.value;
 
-    saveData(); // Save categories
+    if (id) {
+        // Edit Mode
+        const cat = categories.find(c => c.id === id);
+        if (cat) {
+            cat.name = name;
+            cat.color = colorInput.value;
+            showToast('分類已更新');
+        }
+    } else {
+        // Add Mode
+        categories.push({
+            id: 'cat_' + Date.now(),
+            name: name,
+            color: colorInput.value
+        });
+        showToast('分類已新增');
+    }
+
+    saveData();
     renderCategoryList();
+    cancelCatEdit(); // Reset form
+}
+
+function editCategory(id) {
+    const cat = categories.find(c => c.id === id);
+    if (!cat) return;
+
+    document.getElementById('editCatId').value = cat.id;
+    document.getElementById('newCatName').value = cat.name;
+    document.getElementById('newCatColor').value = cat.color;
+
+    document.getElementById('saveCatBtn').innerHTML = '<i class="fa-solid fa-check"></i>';
+    document.getElementById('cancelCatBtn').style.display = 'inline-block';
+    document.getElementById('newCatName').focus();
+}
+
+function cancelCatEdit() {
+    document.getElementById('editCatId').value = '';
+    document.getElementById('newCatName').value = '';
+    document.getElementById('newCatColor').value = '#4f46e5';
+
+    document.getElementById('saveCatBtn').innerHTML = '<i class="fa-solid fa-plus"></i>';
+    document.getElementById('cancelCatBtn').style.display = 'none';
 }
 
 function deleteCategory(id) {
@@ -209,7 +276,76 @@ function deleteCategory(id) {
         });
         saveData();
         renderCategoryList();
+        if (document.getElementById('editCatId').value === id) cancelCatEdit();
     }
+}
+
+// --- Category Drag & Drop ---
+function handleCatDragStart(e) {
+    const item = e.target.closest('.category-item');
+    if (!item) return;
+
+    const index = item.dataset.index;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index); // Store index safely
+    e.dataTransfer.setDragImage(item, 10, 10); // Optional: better drag image
+
+    setTimeout(() => item.classList.add('dragging'), 0);
+}
+
+function handleCatDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleCatDragEnter(e) {
+    const item = e.target.closest('.category-item');
+    if (item) item.classList.add('over');
+}
+
+function handleCatDragLeave(e) {
+    const item = e.target.closest('.category-item');
+    // Only remove if leaving the item itself, not entering a child
+    if (item && !item.contains(e.relatedTarget)) {
+        item.classList.remove('over');
+    }
+}
+
+function handleCatDrop(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const targetItem = e.target.closest('.category-item');
+    const srcIndexStr = e.dataTransfer.getData('text/plain');
+
+    if (srcIndexStr !== '' && targetItem) {
+        const srcIndex = parseInt(srcIndexStr, 10);
+        const targetIndex = parseInt(targetItem.dataset.index, 10);
+
+        if (!isNaN(srcIndex) && !isNaN(targetIndex) && srcIndex !== targetIndex) {
+            // Swap in array
+            const item = categories.splice(srcIndex, 1)[0];
+            categories.splice(targetIndex, 0, item);
+
+            saveData();
+            renderCategoryList();
+        }
+    }
+
+    // Cleanup classes
+    document.querySelectorAll('.category-item').forEach(el => {
+        el.classList.remove('over');
+        el.classList.remove('dragging');
+    });
+
+    return false;
+}
+
+function handleCatDragEnd(e) {
+    const el = e.target.closest('.category-item');
+    if (el) el.classList.remove('dragging');
+    document.querySelectorAll('.category-item').forEach(el => el.classList.remove('over'));
 }
 
 function populateCategorySelect() {
@@ -326,6 +462,8 @@ function render() {
     document.getElementById('totalMonthly').textContent = `NT$ ${Math.round(stats.monthly).toLocaleString()}`;
     document.getElementById('totalYearly').textContent = `NT$ ${Math.round(stats.yearly).toLocaleString()}`;
 
+    updateBudgetCalc();
+
     // Filter Items
     const search = document.getElementById('searchInput').value.toLowerCase();
     const status = document.getElementById('statusFilter').value;
@@ -354,6 +492,16 @@ function render() {
         list.innerHTML = `<div class="empty-state"><h3>沒有相符項目</h3></div>`;
         return;
     }
+
+    // Sort by Category Order
+    filtered.sort((a, b) => {
+        const catIndexA = categories.findIndex(c => c.id === a.categoryId);
+        const catIndexB = categories.findIndex(c => c.id === b.categoryId);
+        // Fallback to end if not found
+        const idxA = catIndexA === -1 ? 999 : catIndexA;
+        const idxB = catIndexB === -1 ? 999 : catIndexB;
+        return idxA - idxB;
+    });
 
     filtered.forEach((item, index) => {
         const el = document.createElement('div');
@@ -449,6 +597,24 @@ function calculateStats() {
         yearly += getYearlyRate(item);
     });
     return { monthly, yearly };
+}
+
+function updateBudgetCalc() {
+    const incomeInput = document.getElementById('monthlyIncomeInput');
+    const income = parseFloat(incomeInput.value) || 0;
+    localStorage.setItem(INCOME_KEY, income);
+
+    const stats = calculateStats();
+    const remaining = income - stats.monthly;
+
+    const remainingEl = document.getElementById('remainingBudget');
+    remainingEl.textContent = `NT$ ${Math.round(remaining).toLocaleString()}`;
+
+    if (remaining >= 0) {
+        remainingEl.className = 'stat-value stat-positive';
+    } else {
+        remainingEl.className = 'stat-value stat-negative';
+    }
 }
 
 function calculateExpenseForYear(item, year) {
