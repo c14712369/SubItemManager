@@ -1,0 +1,1662 @@
+// --- Data Management ---
+const STORAGE_KEY = 'subscription_manager_data';
+const THEME_KEY = 'subscription_manager_theme';
+const CAT_KEY = 'subscription_manager_categories';
+const INCOME_KEY = 'subscription_manager_income';
+const LIFE_EXP_KEY = 'sub_mgr_life_expenses';
+const LIFE_CAT_KEY = 'sub_mgr_life_categories';
+const LIFE_INC_CAT_KEY = 'sub_mgr_life_inc_categories';
+const LIFE_BDG_KEY = 'sub_mgr_life_budgets';
+
+let items = [];
+let categories = [];
+let lifeExpenses = [];
+let lifeCategories = [];
+let lifeIncomeCategories = [];
+let lifeBudgets = {};
+let lifeCurrentMonth = '';
+let chartInstance = null;
+let lifeCatChartInstance = null;
+let trendChartInstance = null;
+let currentChartYear = new Date().getFullYear();
+
+// Default Categories
+const DEFAULT_CATS = [
+    { id: 'cat_ent', name: '娛樂', color: '#8b5cf6' }, // Violet
+    { id: 'cat_work', name: '工作', color: '#3b82f6' }, // Blue
+    { id: 'cat_life', name: '生活', color: '#10b981' }, // Emerald
+    { id: 'cat_ins', name: '保險', color: '#f59e0b' }, // Amber
+    { id: 'cat_other', name: '其他', color: '#94a3b8' } // Slate
+];
+
+// Initialize
+function init() {
+    initTheme();
+    loadData();
+    loadLifeData();
+
+    // Set Default Dates
+    const today = new Date().toISOString().split('T')[0];
+    const startDateInput = document.getElementById('itemStartDate');
+    if (startDateInput) startDateInput.value = today;
+
+    const timelinePicker = document.getElementById('timelineMonth');
+    if (timelinePicker) timelinePicker.value = today.slice(0, 7);
+
+    const lifeChartMonthInput = document.getElementById('lifeChartMonth');
+    if (lifeChartMonthInput) lifeChartMonthInput.value = today.slice(0, 7);
+
+    // Set current life month
+    lifeCurrentMonth = today.slice(0, 7); // YYYY-MM
+
+    initChartYearSelect();
+    switchTab('manage');
+
+    // Restore Income
+    const savedIncome = localStorage.getItem(INCOME_KEY);
+    if (savedIncome) {
+        document.getElementById('monthlyIncomeInput').value = savedIncome;
+    }
+
+    render();
+}
+
+// --- Theme ---
+function initTheme() {
+    const savedTheme = localStorage.getItem(THEME_KEY);
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        updateThemeIcon(true);
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+        updateThemeIcon(false);
+    }
+}
+
+function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem(THEME_KEY, 'light');
+        updateThemeIcon(false);
+    } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        localStorage.setItem(THEME_KEY, 'dark');
+        updateThemeIcon(true);
+    }
+    renderChart();
+}
+
+function updateThemeIcon(isDark) {
+    const icon = document.getElementById('themeIcon');
+    if (icon) icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+}
+
+// --- Tabs ---
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabId));
+    });
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+
+    if (tabId === 'analysis') {
+        requestAnimationFrame(() => {
+            renderChart();
+            renderTimeline();
+            renderLifeCategoryChart();
+            renderTrendChart();
+            updateBudgetCalc();
+        });
+    }
+    if (tabId === 'life') {
+        requestAnimationFrame(() => renderLifeTab());
+    }
+}
+
+// --- Data CRUD ---
+function loadData() {
+    // Items
+    const stored = localStorage.getItem(STORAGE_KEY);
+    items = stored ? JSON.parse(stored) : [];
+
+    // Categories
+    const storedCats = localStorage.getItem(CAT_KEY);
+    categories = storedCats ? JSON.parse(storedCats) : DEFAULT_CATS;
+
+    // Migrate old items (if they have 'type' but no 'categoryId')
+    let migrated = false;
+    items.forEach(item => {
+        if (!item.categoryId && item.type) {
+            // Map old types to new categories
+            if (item.type === 'subscription') item.categoryId = 'cat_ent';
+            else if (item.type === 'insurance') item.categoryId = 'cat_ins';
+            else item.categoryId = 'cat_other';
+            migrated = true;
+        }
+        // Migrate Currency
+        if (!item.currency) {
+            item.currency = 'TWD';
+            item.originalAmount = item.amount;
+            item.exchangeRate = 1;
+        }
+    });
+    if (migrated) saveData();
+}
+
+function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    localStorage.setItem(CAT_KEY, JSON.stringify(categories));
+    render();
+}
+
+function addItem(item) {
+    items.push({ ...item, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
+    saveData();
+    showToast('新增成功');
+}
+
+function updateItem(id, data) {
+    const index = items.findIndex(i => i.id === id);
+    if (index !== -1) {
+        items[index] = { ...items[index], ...data };
+        saveData();
+        showToast('更新成功');
+    }
+}
+
+function deleteItem(id) {
+    if (confirm('確定刪除？')) {
+        items = items.filter(i => i.id !== id);
+        saveData();
+        showToast('刪除成功');
+    }
+}
+
+function clearAllData() {
+    if (confirm('清除所有資料？')) {
+        items = [];
+        saveData();
+        showToast('已清空');
+    }
+}
+
+// --- Categories Management ---
+const catModalOverlay = document.getElementById('categoryModalOverlay');
+
+function openCategoryModal() {
+    catModalOverlay.classList.add('active');
+    renderCategoryList();
+}
+
+function closeCategoryModal() {
+    catModalOverlay.classList.remove('active');
+    // Refresh main modal category select
+    populateCategorySelect();
+}
+
+function renderCategoryList() {
+    const list = document.getElementById('categoryList');
+    list.innerHTML = '';
+
+    categories.forEach((cat, index) => {
+        const item = document.createElement('div');
+        item.className = 'category-item';
+        item.draggable = true;
+        item.dataset.index = index;
+
+        // Set content
+        item.innerHTML = `
+            <div style="display:flex; align-items:center; pointer-events: none;">
+                <i class="fa-solid fa-grip-lines handle" style="color:var(--text-muted); margin-right:10px; cursor:grab; pointer-events: auto;"></i>
+                <div class="color-dot" style="background:${cat.color}"></div>
+                <span>${cat.name}</span>
+            </div>
+            <div style="gap:5px; display:flex;">
+                <button class="icon-btn" onclick="editCategory('${cat.id}')"><i class="fa-solid fa-pen"></i></button>
+                ${DEFAULT_CATS.find(d => d.id === cat.id) ? '' :
+                `<button class="icon-btn delete" onclick="deleteCategory('${cat.id}')"><i class="fa-solid fa-trash"></i></button>`
+            }
+            </div>
+        `;
+
+        // Add Drag Event Listeners
+        item.addEventListener('dragstart', handleCatDragStart);
+        item.addEventListener('dragover', handleCatDragOver);
+        item.addEventListener('drop', handleCatDrop);
+        item.addEventListener('dragenter', handleCatDragEnter);
+        item.addEventListener('dragleave', handleCatDragLeave);
+        item.addEventListener('dragend', handleCatDragEnd);
+
+        list.appendChild(item);
+    });
+}
+
+function saveCategory() {
+    const idInput = document.getElementById('editCatId');
+    const nameInput = document.getElementById('newCatName');
+    const colorInput = document.getElementById('newCatColor');
+
+    const name = nameInput.value.trim();
+    if (!name) return;
+
+    const id = idInput.value;
+
+    if (id) {
+        // Edit Mode
+        const cat = categories.find(c => c.id === id);
+        if (cat) {
+            cat.name = name;
+            cat.color = colorInput.value;
+            showToast('分類已更新');
+        }
+    } else {
+        // Add Mode
+        categories.push({
+            id: 'cat_' + Date.now(),
+            name: name,
+            color: colorInput.value
+        });
+        showToast('分類已新增');
+    }
+
+    saveData();
+    renderCategoryList();
+    cancelCatEdit(); // Reset form
+}
+
+function editCategory(id) {
+    const cat = categories.find(c => c.id === id);
+    if (!cat) return;
+
+    document.getElementById('editCatId').value = cat.id;
+    document.getElementById('newCatName').value = cat.name;
+    document.getElementById('newCatColor').value = cat.color;
+
+    document.getElementById('saveCatBtn').innerHTML = '<i class="fa-solid fa-check"></i>';
+    document.getElementById('cancelCatBtn').style.display = 'inline-block';
+    document.getElementById('newCatName').focus();
+}
+
+function cancelCatEdit() {
+    document.getElementById('editCatId').value = '';
+    document.getElementById('newCatName').value = '';
+    document.getElementById('newCatColor').value = '#4f46e5';
+
+    document.getElementById('saveCatBtn').innerHTML = '<i class="fa-solid fa-plus"></i>';
+    document.getElementById('cancelCatBtn').style.display = 'none';
+}
+
+function deleteCategory(id) {
+    if (confirm('刪除此分類？關聯的項目將變為「其他」。')) {
+        categories = categories.filter(c => c.id !== id);
+        // Reset items
+        items.forEach(i => {
+            if (i.categoryId === id) i.categoryId = 'cat_other';
+        });
+        saveData();
+        renderCategoryList();
+        if (document.getElementById('editCatId').value === id) cancelCatEdit();
+    }
+}
+
+// --- Category Drag & Drop ---
+function handleCatDragStart(e) {
+    const item = e.target.closest('.category-item');
+    if (!item) return;
+
+    const index = item.dataset.index;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index); // Store index safely
+    e.dataTransfer.setDragImage(item, 10, 10); // Optional: better drag image
+
+    setTimeout(() => item.classList.add('dragging'), 0);
+}
+
+function handleCatDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleCatDragEnter(e) {
+    const item = e.target.closest('.category-item');
+    if (item) item.classList.add('over');
+}
+
+function handleCatDragLeave(e) {
+    const item = e.target.closest('.category-item');
+    // Only remove if leaving the item itself, not entering a child
+    if (item && !item.contains(e.relatedTarget)) {
+        item.classList.remove('over');
+    }
+}
+
+function handleCatDrop(e) {
+    e.stopPropagation();
+    e.preventDefault();
+
+    const targetItem = e.target.closest('.category-item');
+    const srcIndexStr = e.dataTransfer.getData('text/plain');
+
+    if (srcIndexStr !== '' && targetItem) {
+        const srcIndex = parseInt(srcIndexStr, 10);
+        const targetIndex = parseInt(targetItem.dataset.index, 10);
+
+        if (!isNaN(srcIndex) && !isNaN(targetIndex) && srcIndex !== targetIndex) {
+            // Swap in array
+            const item = categories.splice(srcIndex, 1)[0];
+            categories.splice(targetIndex, 0, item);
+
+            saveData();
+            renderCategoryList();
+        }
+    }
+
+    // Cleanup classes
+    document.querySelectorAll('.category-item').forEach(el => {
+        el.classList.remove('over');
+        el.classList.remove('dragging');
+    });
+
+    return false;
+}
+
+function handleCatDragEnd(e) {
+    const el = e.target.closest('.category-item');
+    if (el) el.classList.remove('dragging');
+    document.querySelectorAll('.category-item').forEach(el => el.classList.remove('over'));
+}
+
+function populateCategorySelect() {
+    const select = document.getElementById('itemCategory');
+    if (!select) return;
+    const currentVal = select.value;
+    select.innerHTML = categories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    if (currentVal && categories.find(c => c.id === currentVal)) {
+        select.value = currentVal;
+    }
+}
+
+// --- Main Modal & Multi-currency ---
+const modalOverlay = document.getElementById('modalOverlay');
+const form = document.getElementById('itemForm');
+const itemIdInput = document.getElementById('itemId');
+
+function openModal(editMode = false) {
+    populateCategorySelect();
+    modalOverlay.classList.add('active');
+
+    if (!editMode) {
+        form.reset();
+        itemIdInput.value = '';
+        document.getElementById('modalTitle').textContent = '新增項目';
+        document.getElementById('itemStartDate').value = new Date().toISOString().split('T')[0];
+        // Defaults
+        document.getElementById('itemCurrency').value = 'TWD';
+        document.getElementById('itemExchangeRate').value = 1;
+        handleCurrencyChange();
+    }
+}
+
+function closeModal() {
+    modalOverlay.classList.remove('active');
+}
+
+function handleCurrencyChange() {
+    const curr = document.getElementById('itemCurrency').value;
+    const rateRow = document.getElementById('exchangeRateRow');
+    const rateInput = document.getElementById('itemExchangeRate');
+
+    if (curr === 'TWD') {
+        rateRow.style.display = 'none';
+        rateInput.value = 1;
+    } else {
+        rateRow.style.display = 'flex';
+    }
+    calculateTWD();
+}
+
+function calculateTWD() {
+    const original = parseFloat(document.getElementById('itemOriginalAmount').value) || 0;
+    const rate = parseFloat(document.getElementById('itemExchangeRate').value) || 1;
+    const total = Math.round(original * rate);
+
+    document.getElementById('itemAmountTWD').value = `NT$ ${total.toLocaleString()}`;
+    document.getElementById('itemAmount').value = total; // Store TWD int
+}
+
+function editItem(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
+    populateCategorySelect();
+    itemIdInput.value = item.id;
+    document.getElementById('itemName').value = item.name;
+    document.getElementById('itemCategory').value = item.categoryId;
+
+    document.getElementById('itemCurrency').value = item.currency || 'TWD';
+    document.getElementById('itemOriginalAmount').value = item.originalAmount || item.amount;
+    document.getElementById('itemExchangeRate').value = item.exchangeRate || 1;
+    handleCurrencyChange(); // Show/Hide rate
+
+    document.getElementById('itemCycle').value = item.cycle;
+    document.getElementById('itemStartDate').value = item.startDate;
+    document.getElementById('itemEndDate').value = item.endDate || '';
+    document.getElementById('itemNote').value = item.note || '';
+
+    document.getElementById('modalTitle').textContent = '編輯項目';
+    openModal(true);
+}
+
+function handleFormSubmit(e) {
+    e.preventDefault();
+
+    // Ensure TWD calc is fresh
+    calculateTWD();
+
+    const data = {
+        name: document.getElementById('itemName').value,
+        categoryId: document.getElementById('itemCategory').value,
+        currency: document.getElementById('itemCurrency').value,
+        originalAmount: parseFloat(document.getElementById('itemOriginalAmount').value),
+        exchangeRate: parseFloat(document.getElementById('itemExchangeRate').value),
+        amount: parseInt(document.getElementById('itemAmount').value), // TWD
+        cycle: document.getElementById('itemCycle').value,
+        startDate: document.getElementById('itemStartDate').value,
+        endDate: document.getElementById('itemEndDate').value,
+        note: document.getElementById('itemNote').value
+    };
+
+    const id = itemIdInput.value;
+    if (id) updateItem(id, data);
+    else addItem(data);
+
+    closeModal();
+}
+
+// --- Render Logic (Search & Filter) ---
+function render() {
+    // Stats
+    const stats = calculateStats();
+    document.getElementById('totalMonthly').textContent = `NT$ ${Math.round(stats.monthly).toLocaleString()}`;
+    document.getElementById('totalYearly').textContent = `NT$ ${Math.round(stats.yearly).toLocaleString()}`;
+
+    updateBudgetCalc();
+
+    // Filter Items
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+    const list = document.getElementById('itemsList');
+    list.innerHTML = '';
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    const filtered = items.filter(item => {
+        // Search
+        const matchText = item.name.toLowerCase().includes(search) || (item.note && item.note.toLowerCase().includes(search));
+        if (!matchText) return false;
+
+        // Status
+        const endDate = item.endDate ? new Date(item.endDate) : null;
+        const isEnded = endDate && endDate < now;
+
+        if (status === 'active' && isEnded) return false;
+        if (status === 'ended' && !isEnded) return false;
+
+        return true;
+    });
+
+    if (filtered.length === 0) {
+        list.innerHTML = `<div class="empty-state"><h3>沒有相符項目</h3></div>`;
+        return;
+    }
+
+    // Sort by Category Order
+    filtered.sort((a, b) => {
+        const catIndexA = categories.findIndex(c => c.id === a.categoryId);
+        const catIndexB = categories.findIndex(c => c.id === b.categoryId);
+        // Fallback to end if not found
+        const idxA = catIndexA === -1 ? 999 : catIndexA;
+        const idxB = catIndexB === -1 ? 999 : catIndexB;
+        return idxA - idxB;
+    });
+
+    filtered.forEach((item, index) => {
+        const el = document.createElement('div');
+        el.className = 'item-card';
+        el.setAttribute('draggable', 'true');
+        el.dataset.id = item.id; // Use ID for drag
+        el.dataset.index = items.indexOf(item); // Needs actual index for swap
+
+        // Events
+        el.addEventListener('dragstart', handleDragStart);
+        el.addEventListener('dragover', handleDragOver);
+        el.addEventListener('drop', handleDrop);
+        el.addEventListener('dragenter', handleDragEnter);
+        el.addEventListener('dragleave', handleDragLeave);
+        el.addEventListener('dragend', handleDragEnd);
+
+        // Display Logic
+        const category = categories.find(c => c.id === item.categoryId) || categories[categories.length - 1]; // fallback
+        const cycleLabel = getCycleLabel(item.cycle);
+
+        // Status Check
+        let statusHtml = '';
+        const endDate = item.endDate ? new Date(item.endDate) : null;
+        if (endDate && endDate < now) {
+            statusHtml = '<span style="font-size:0.8rem; background:#fee2e2; color:#ef4444; padding:2px 6px; border-radius:4px; margin-left:8px;">已結束</span>';
+            el.style.opacity = '0.7';
+        }
+
+        // Currency Display
+        let amountDisplay = `NT$ ${item.amount.toLocaleString()}`;
+        if (item.currency !== 'TWD') {
+            amountDisplay = `${item.currency} ${item.originalAmount.toLocaleString()} <span style="font-size:0.8em; color:var(--text-muted);">(≈ NT$${item.amount.toLocaleString()})</span>`;
+        }
+
+        el.innerHTML = `
+            <div class="item-header">
+                <div class="item-name">${item.name} ${statusHtml}</div>
+                <div class="item-amount">${amountDisplay}</div>
+            </div>
+            <div style="display:flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                <span class="item-cycle" style="background:${category.color}20; color:${category.color}">${category.name}</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">${cycleLabel}</span>
+            </div>
+            <div class="item-meta">
+                <div><i class="fa-regular fa-calendar"></i> 開始：${item.startDate}</div>
+                ${item.endDate ? `<div><i class="fa-regular fa-calendar-xmark"></i> 結束：${item.endDate}</div>` : ''}
+                ${item.note ? `<div><i class="fa-regular fa-comment"></i> ${item.note}</div>` : ''}
+            </div>
+            <div class="item-actions">
+                <button class="icon-btn" onclick="editItem('${item.id}')"><i class="fa-solid fa-pen"></i></button>
+                <button class="icon-btn delete" onclick="deleteItem('${item.id}')"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        `;
+        list.appendChild(el);
+    });
+}
+
+function getCycleLabel(cycle) {
+    return {
+        'monthly': '每月', 'quarterly': '每季', 'half-yearly': '每半年', 'yearly': '每年', 'fixed': '單次'
+    }[cycle] || cycle;
+}
+
+// --- Calculation (Stats & Chart) ---
+function getMonthlyRate(item) {
+    const amt = item.amount;
+    switch (item.cycle) {
+        case 'monthly': return amt;
+        case 'yearly': return amt / 12;
+        case 'quarterly': return amt / 3;
+        case 'half-yearly': return amt / 6;
+        default: return 0;
+    }
+}
+function getYearlyRate(item) {
+    const amt = item.amount;
+    switch (item.cycle) {
+        case 'monthly': return amt * 12;
+        case 'yearly': return amt;
+        case 'quarterly': return amt * 4;
+        case 'half-yearly': return amt * 2;
+        default: return 0;
+    }
+}
+
+function calculateStats() {
+    let monthly = 0, yearly = 0;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    items.forEach(item => {
+        if (item.endDate && new Date(item.endDate) < now) return;
+        monthly += getMonthlyRate(item);
+        yearly += getYearlyRate(item);
+    });
+    return { monthly, yearly };
+}
+
+function updateBudgetCalc() {
+    const incomeInput = document.getElementById('monthlyIncomeInput');
+    const income = parseFloat(incomeInput.value) || 0;
+    localStorage.setItem(INCOME_KEY, income);
+
+    const stats = calculateStats();
+    const lifeSpent = getLifeTotalForMonth(lifeCurrentMonth);
+
+    // Update life monthly display in analysis
+    const lifeEl = document.getElementById('totalLifeMonthly');
+    if (lifeEl) lifeEl.textContent = `NT$ ${Math.round(lifeSpent).toLocaleString()}`;
+
+    const remaining = income - stats.monthly - lifeSpent;
+    const remainingEl = document.getElementById('remainingBudget');
+    remainingEl.textContent = `NT$ ${Math.round(remaining).toLocaleString()}`;
+
+    if (remaining >= 0) {
+        remainingEl.className = 'stat-value stat-positive';
+    } else {
+        remainingEl.className = 'stat-value stat-negative';
+    }
+}
+
+function calculateExpenseForYear(item, year) {
+    const start = new Date(item.startDate);
+    const end = item.endDate ? new Date(item.endDate) : new Date(9999, 11, 31);
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31);
+    const activeStart = start > yearStart ? start : yearStart;
+    const activeEnd = end < yearEnd ? end : yearEnd;
+
+    if (activeStart > activeEnd) return 0;
+
+    let total = 0;
+    let payDate = new Date(start);
+
+    // Simplification for all cycles
+    const increment = {
+        'monthly': (d) => d.setMonth(d.getMonth() + 1),
+        'quarterly': (d) => d.setMonth(d.getMonth() + 3),
+        'half-yearly': (d) => d.setMonth(d.getMonth() + 6),
+        'yearly': (d) => d.setFullYear(d.getFullYear() + 1),
+        'fixed': (d) => d.setFullYear(d.getFullYear() + 100) // One shot
+    }[item.cycle];
+
+    // Fast forward to near year
+    // Note: this brute force is fine for personal finance scales
+    while (payDate <= activeEnd) {
+        if (payDate >= activeStart && payDate <= activeEnd) {
+            total += item.amount;
+        }
+        increment(payDate);
+        if (item.cycle === 'fixed') break;
+    }
+    return total;
+}
+
+function initChartYearSelect() {
+    const select = document.getElementById('chartYearSelect');
+    if (!select) return;
+    let min = new Date().getFullYear(), max = min + 3;
+    items.forEach(i => {
+        const s = new Date(i.startDate).getFullYear();
+        if (s < min) min = s;
+        if (i.endDate && new Date(i.endDate).getFullYear() > max) max = new Date(i.endDate).getFullYear();
+    });
+
+    const curr = select.value || currentChartYear;
+    select.innerHTML = '';
+    for (let y = min; y <= max; y++) {
+        const opt = document.createElement('option');
+        opt.value = y; opt.innerText = `${y}年`;
+        if (y == curr) opt.selected = true;
+        select.appendChild(opt);
+    }
+    currentChartYear = parseInt(select.value);
+}
+
+function renderChart() {
+    const ctx = document.getElementById('expenseChart');
+    if (!ctx) return;
+    const select = document.getElementById('chartYearSelect');
+    if (select) currentChartYear = parseInt(select.value);
+
+    // Group by Category
+    const dataMap = {};
+    items.forEach(item => {
+        const cost = calculateExpenseForYear(item, currentChartYear);
+        if (cost > 0) {
+            const cat = categories.find(c => c.id === item.categoryId) || categories[categories.length - 1];
+            if (!dataMap[cat.id]) dataMap[cat.id] = { label: cat.name, amount: 0, color: cat.color };
+            dataMap[cat.id].amount += cost;
+        }
+    });
+
+    const labels = [], data = [], colors = [];
+    Object.values(dataMap).forEach(d => {
+        labels.push(d.label); data.push(d.amount); colors.push(d.color);
+    });
+
+    if (chartInstance) chartInstance.destroy();
+
+    if (data.length > 0) {
+        chartInstance = new Chart(ctx, {
+            type: 'pie',
+            data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    title: { display: true, text: `${currentChartYear} 年度支出 (${labels.length} 分類)`, font: { size: 16 } }
+                }
+            }
+        });
+    }
+}
+
+// --- Timeline Logic ---
+function renderTimeline() {
+    const container = document.getElementById('timelineContainer');
+    const picker = document.getElementById('timelineMonth');
+    if (!container || !picker || !picker.value) return;
+
+    const [year, month] = picker.value.split('-').map(Number); // 2026, 2 (1-based from input value usually? no input month is YYYY-MM)
+    // Actually month is 1-12 from picker
+
+    // Find all payments in this month
+    const payments = [];
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 0);
+
+    items.forEach(item => {
+        const start = new Date(item.startDate);
+        const end = item.endDate ? new Date(item.endDate) : new Date(9999, 11, 31);
+
+        let payDate = new Date(start);
+
+        // Advance logic similar to calc
+        const increment = {
+            'monthly': (d) => d.setMonth(d.getMonth() + 1),
+            'quarterly': (d) => d.setMonth(d.getMonth() + 3),
+            'half-yearly': (d) => d.setMonth(d.getMonth() + 6),
+            'yearly': (d) => d.setFullYear(d.getFullYear() + 1),
+            'fixed': (d) => d.setFullYear(d.getFullYear() + 100)
+        }[item.cycle];
+
+        while (payDate <= monthEnd) {
+            if (payDate >= monthStart && payDate <= monthEnd && payDate <= end) {
+                // Determine Category Color
+                const cat = categories.find(c => c.id === item.categoryId) || categories[categories.length - 1];
+                payments.push({
+                    day: payDate.getDate(),
+                    name: item.name,
+                    amount: item.amount,
+                    currency: item.currency,
+                    orig: item.originalAmount,
+                    color: cat.color
+                });
+            }
+            increment(payDate);
+            if (item.cycle === 'fixed') break;
+        }
+    });
+
+    payments.sort((a, b) => a.day - b.day);
+
+    container.innerHTML = '';
+    if (payments.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted);">本月無預定支出</div>';
+        return;
+    }
+
+    payments.forEach(p => {
+        let amtStr = `NT$ ${p.amount.toLocaleString()}`;
+        if (p.currency !== 'TWD') amtStr = `${p.currency} ${p.orig.toLocaleString()} (NT$${p.amount})`;
+
+        container.innerHTML += `
+            <div class="timeline-row" style="border-left-color: ${p.color}">
+                <div class="timeline-date" style="color:${p.color}">${p.day} <span style="font-size:0.6em">日</span></div>
+                <div class="timeline-content">
+                    <div style="font-weight:bold;">${p.name}</div>
+                    <div class="timeline-original">${amtStr}</div>
+                </div>
+            </div>
+        `;
+    });
+}
+
+// --- Drag & Drop (Global for scope) ---
+let dragSrcEl = null;
+
+function handleDragStart(e) {
+    dragSrcEl = this;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.innerHTML);
+    this.classList.add('dragging');
+}
+function handleDragOver(e) { if (e.preventDefault) e.preventDefault(); return false; }
+function handleDragEnter(e) { this.classList.add('over'); }
+function handleDragLeave(e) { this.classList.remove('over'); }
+function handleDrop(e) {
+    if (e.stopPropagation) e.stopPropagation();
+    if (dragSrcEl !== this) {
+        // Use Index 
+        const srcIndex = parseInt(dragSrcEl.dataset.index);
+        const targetIndex = parseInt(this.dataset.index);
+
+        // Swap
+        const item = items[srcIndex];
+        items.splice(srcIndex, 1);
+        items.splice(targetIndex, 0, item);
+        saveData(); // Re-renders
+    }
+    return false;
+}
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    document.querySelectorAll('.item-card').forEach(col => col.classList.remove('over'));
+}
+
+// --- Misc ---
+if (modalOverlay) modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+if (catModalOverlay) catModalOverlay.addEventListener('click', (e) => { if (e.target === catModalOverlay) closeCategoryModal(); });
+document.addEventListener('DOMContentLoaded', init); // Start
+function showToast(msg) { /* Reuse logic */
+    const t = document.getElementById('toast');
+    t.innerHTML = `<i class="fa-solid fa-check"></i> ${msg}`; t.className = 'toast show success';
+    setTimeout(() => t.className = 'toast', 3000);
+}
+function exportData() {
+    var storedIncome = localStorage.getItem(INCOME_KEY); // optionally export this
+    const dataStr = JSON.stringify({
+        items,
+        categories,
+        lifeExpenses,
+        lifeCategories,
+        lifeIncomeCategories,
+        lifeBudgets,
+        settings: {
+            estimatedIncome: storedIncome
+        }
+    }, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `backup_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+function importData(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.items && Array.isArray(data.items)) {
+                if (confirm('匯入備份（這將覆蓋現有資料）？')) {
+                    items = data.items;
+                    categories = data.categories || DEFAULT_CATS;
+                    lifeExpenses = data.lifeExpenses || [];
+                    lifeCategories = data.lifeCategories || DEFAULT_LIFE_CATS;
+                    lifeIncomeCategories = data.lifeIncomeCategories || DEFAULT_LIFE_INC_CATS;
+                    lifeBudgets = data.lifeBudgets || {};
+                    if (data.settings && data.settings.estimatedIncome !== undefined) {
+                        localStorage.setItem(INCOME_KEY, data.settings.estimatedIncome);
+                        var incInput = document.getElementById('monthlyIncomeInput');
+                        if (incInput) incInput.value = data.settings.estimatedIncome;
+                    }
+                    saveData();
+                    saveLifeData();
+                    showToast('匯入成功');
+                    init(); // Auto refresh UI
+                }
+            } else if (Array.isArray(data)) {
+                if (confirm('匯入舊版備份？')) {
+                    items = data;
+                    saveData();
+                    showToast('匯入成功');
+                    init();
+                }
+            }
+        } catch (err) { console.error(err); showToast('檔案格式錯誤'); }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════
+// 生活費記帳模組 — Life Expense Tracking
+// ═══════════════════════════════════════════════
+
+const DEFAULT_LIFE_CATS = [
+    { id: 'lc_food', name: '飲食', color: '#C17B2E' },
+    { id: 'lc_trans', name: '交通', color: '#2A6475' },
+    { id: 'lc_util', name: '水電費', color: '#5A9E7A' },
+    { id: 'lc_ent', name: '娛樂', color: '#8B5CF6' },
+    { id: 'lc_health', name: '醫療', color: '#D46060' },
+    { id: 'lc_other', name: '其他', color: '#8A8A8A' }
+];
+
+const DEFAULT_LIFE_INC_CATS = [
+    { id: 'lc_inc_salary', name: '薪資', color: '#5A9E7A' },
+    { id: 'lc_inc_bonus', name: '獎金', color: '#C17B2E' },
+    { id: 'lc_inc_invest', name: '投資', color: '#2A6475' },
+    { id: 'lc_inc_other', name: '其他', color: '#8A8A8A' }
+];
+
+function loadLifeData() {
+    var stored = localStorage.getItem(LIFE_EXP_KEY);
+    lifeExpenses = stored ? JSON.parse(stored) : [];
+
+    var storedCats = localStorage.getItem(LIFE_CAT_KEY);
+    lifeCategories = storedCats ? JSON.parse(storedCats) : DEFAULT_LIFE_CATS.map(function (c) { return Object.assign({}, c); });
+
+    var storedIncCats = localStorage.getItem(LIFE_INC_CAT_KEY);
+    lifeIncomeCategories = storedIncCats ? JSON.parse(storedIncCats) : DEFAULT_LIFE_INC_CATS.map(function (c) { return Object.assign({}, c); });
+
+    var storedBdg = localStorage.getItem(LIFE_BDG_KEY);
+    lifeBudgets = storedBdg ? JSON.parse(storedBdg) : {};
+}
+
+function saveLifeData() {
+    localStorage.setItem(LIFE_EXP_KEY, JSON.stringify(lifeExpenses));
+    localStorage.setItem(LIFE_CAT_KEY, JSON.stringify(lifeCategories));
+    localStorage.setItem(LIFE_INC_CAT_KEY, JSON.stringify(lifeIncomeCategories));
+    localStorage.setItem(LIFE_BDG_KEY, JSON.stringify(lifeBudgets));
+}
+
+function changeLifeMonth(delta) {
+    var parts = lifeCurrentMonth.split('-').map(Number);
+    var d = new Date(parts[0], parts[1] - 1 + delta, 1);
+    lifeCurrentMonth = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    renderLifeTab();
+}
+
+function lifeMonthLabel(ym) {
+    var p = ym.split('-').map(Number);
+    return p[0] + ' 年 ' + p[1] + ' 月';
+}
+
+function getLifeCat(id) {
+    return lifeCategories.find(function (c) { return c.id === id; }) || lifeCategories[lifeCategories.length - 1];
+}
+
+function getLifeTotalForMonth(ym) {
+    return lifeExpenses
+        .filter(function (e) { return e.date && e.date.startsWith(ym); })
+        .reduce(function (s, e) { return s + (e.amount || 0); }, 0);
+}
+
+function getLifeSpentByCat(catId, ym) {
+    return lifeExpenses
+        .filter(function (e) { return e.categoryId === catId && e.date && e.date.startsWith(ym); })
+        .reduce(function (s, e) { return s + (e.amount || 0); }, 0);
+}
+
+function getLifeBudget(catId, ym) {
+    return lifeBudgets[catId + '|' + ym] || 0;
+}
+
+function getTotalBudgetForMonth(ym) {
+    return lifeCategories.reduce(function (s, c) { return s + getLifeBudget(c.id, ym); }, 0);
+}
+
+function renderLifeTab() {
+    var label = document.getElementById('lifeMonthDisplay');
+    if (label) label.textContent = lifeMonthLabel(lifeCurrentMonth);
+
+    var totalBudget = getTotalBudgetForMonth(lifeCurrentMonth);
+    var totalSpent = getLifeTotalForMonth(lifeCurrentMonth);
+    var remain = totalBudget - totalSpent;
+    var isOver = totalBudget > 0 && totalSpent > totalBudget;
+    var pct = totalBudget > 0 ? Math.min(Math.round((totalSpent / totalBudget) * 100), 100) : 0;
+    var rawPct = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
+
+    var budgetEl = document.getElementById('lifeMonthBudget');
+    var spentEl = document.getElementById('lifeMonthSpent');
+    var remainEl = document.getElementById('lifeMonthRemain');
+    var barEl = document.getElementById('lifeOverallProgress');
+    var pctEl = document.getElementById('lifeOverallPct');
+
+    if (budgetEl) budgetEl.textContent = 'NT$ ' + totalBudget.toLocaleString();
+    if (spentEl) spentEl.textContent = 'NT$ ' + totalSpent.toLocaleString();
+    if (remainEl) {
+        remainEl.textContent = 'NT$ ' + Math.abs(remain).toLocaleString() + (remain < 0 ? ' (超出)' : '');
+        remainEl.className = 'stat-value ' + (remain < 0 ? 'stat-negative' : 'stat-positive');
+    }
+    if (barEl) {
+        barEl.style.width = pct + '%';
+        barEl.className = 'progress-fill' + (isOver ? ' over-budget' : '');
+    }
+    if (pctEl) {
+        pctEl.textContent = totalBudget > 0 ? rawPct + '%' : '—';
+        pctEl.className = 'progress-pct' + (isOver ? ' over-budget' : '');
+    }
+
+    renderBudgetCards();
+    renderLifeExpenseList();
+}
+
+function renderBudgetCards() {
+    var container = document.getElementById('budgetCards');
+    if (!container) return;
+    container.innerHTML = '';
+
+    lifeCategories.forEach(function (cat) {
+        var spent = getLifeSpentByCat(cat.id, lifeCurrentMonth);
+        var budget = getLifeBudget(cat.id, lifeCurrentMonth);
+        var isOver = budget > 0 && spent > budget;
+        var pct = budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0;
+        var rawPct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
+
+        var card = document.createElement('div');
+        card.className = 'budget-card';
+
+        var limitHtml = budget > 0
+            ? '<span class="budget-limit">/ NT$ ' + budget.toLocaleString() + '</span>'
+            : '<span class="budget-no-limit">未設預算</span>';
+
+        var fillClass = 'progress-fill' + (isOver ? ' over-budget' : '');
+        var pctClass = 'progress-pct' + (isOver ? ' over-budget' : '');
+        var barHtml = budget > 0
+            ? '<div class="progress-bar"><div class="' + fillClass + '" style="width:' + pct + '%"></div></div><span class="' + pctClass + '">' + rawPct + '%</span>'
+            : '<div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">—</span>';
+
+        var spentClass = 'budget-spent' + (isOver ? ' over-budget' : '');
+
+        card.innerHTML =
+            '<div class="budget-card-header">' +
+            '<div class="budget-cat-name">' +
+            '<span style="width:10px;height:10px;border-radius:50%;background:' + cat.color + ';display:inline-block;flex-shrink:0;"></span>' +
+            cat.name +
+            '</div>' +
+            '<div class="budget-card-actions">' +
+            '<button class="icon-btn" onclick="openLifeExpModalWithCat(\'' + cat.id + '\')" title="新增支出"><i class="fa-solid fa-plus"></i></button>' +
+            '<button class="icon-btn" onclick="openBudgetModal(\'' + cat.id + '\')" title="設定預算"><i class="fa-solid fa-sliders"></i></button>' +
+            '</div>' +
+            '</div>' +
+            '<div class="budget-amounts">' +
+            '<span class="' + spentClass + '">NT$ ' + spent.toLocaleString() + '</span>' +
+            limitHtml +
+            '</div>' +
+            '<div class="progress-bar-wrap">' + barHtml + '</div>';
+
+        container.appendChild(card);
+    });
+}
+
+function renderLifeExpenseList() {
+    var container = document.getElementById('lifeExpList');
+    if (!container) return;
+
+    var monthExps = lifeExpenses
+        .filter(function (e) { return e.date && e.date.startsWith(lifeCurrentMonth); })
+        .sort(function (a, b) { return b.date.localeCompare(a.date); });
+
+    if (monthExps.length === 0) {
+        container.innerHTML =
+            '<div class="empty-state">' +
+            '<span class="empty-icon"><i class="fa-regular fa-face-smile-beam"></i></span>' +
+            '<strong>本月尚無支出記錄</strong>' +
+            '<p>點擊右上角「新增支出」或分類卡的「+」開始記帳</p>' +
+            '</div>';
+        return;
+    }
+
+    container.innerHTML = monthExps.map(function (e) {
+        var cat = getLifeCat(e.categoryId);
+        var day = parseInt(e.date.split('-')[2]);
+        var note = e.note ? e.note : cat.name;
+        var ns = e.note ? '' : ' style="color:var(--text-muted);font-style:italic;"';
+        return '<div class="life-exp-row">' +
+            '<div class="life-exp-date">' + day + '</div>' +
+            '<div class="life-exp-dot" style="background:' + cat.color + '"></div>' +
+            '<div class="life-exp-info">' +
+            '<div class="life-exp-cat">' + cat.name + '</div>' +
+            '<div class="life-exp-note"' + ns + '>' + note + '</div>' +
+            '</div>' +
+            '<div class="life-exp-amount">NT$ ' + e.amount.toLocaleString() + '</div>' +
+            '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>' +
+            '</div>';
+    }).join('');
+}
+
+var _lifeExpModal = document.getElementById('lifeExpModalOverlay');
+function openLifeExpModal(presetCatId) {
+    var sel = document.getElementById('lifeExpCat');
+    if (!sel) return;
+    sel.innerHTML = lifeCategories.map(function (c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join('');
+    if (presetCatId) sel.value = presetCatId;
+    document.getElementById('lifeExpId').value = '';
+    document.getElementById('lifeExpAmount').value = '';
+    document.getElementById('lifeExpDate').value = lifeCurrentMonth + '-' + String(new Date().getDate()).padStart(2, '0');
+    document.getElementById('lifeExpNote').value = '';
+    document.getElementById('lifeExpModalTitle').textContent = '新增支出';
+    if (_lifeExpModal) _lifeExpModal.classList.add('active');
+}
+function openLifeExpModalWithCat(catId) { openLifeExpModal(catId); }
+function closeLifeExpModal() { if (_lifeExpModal) _lifeExpModal.classList.remove('active'); }
+function handleLifeExpSubmit(e) {
+    e.preventDefault();
+    var id = document.getElementById('lifeExpId').value;
+    var catId = document.getElementById('lifeExpCat').value;
+    var amount = parseInt(document.getElementById('lifeExpAmount').value);
+    var date = document.getElementById('lifeExpDate').value;
+    var note = document.getElementById('lifeExpNote').value.trim();
+    if (!amount || !date) return;
+    if (id) {
+        var idx = lifeExpenses.findIndex(function (ex) { return ex.id === id; });
+        if (idx !== -1) lifeExpenses[idx] = Object.assign({}, lifeExpenses[idx], { categoryId: catId, amount: amount, date: date, note: note });
+        showToast('支出已更新');
+    } else {
+        lifeExpenses.push({ id: crypto.randomUUID(), categoryId: catId, amount: amount, date: date, note: note });
+        showToast('支出已新增');
+    }
+    saveLifeData();
+    closeLifeExpModal();
+    renderLifeTab();
+}
+function deleteLifeExp(id) {
+    if (confirm('確定刪除這筆支出？')) {
+        lifeExpenses = lifeExpenses.filter(function (e) { return e.id !== id; });
+        saveLifeData();
+        showToast('已刪除');
+        renderLifeTab();
+    }
+}
+
+if (_lifeExpModal) _lifeExpModal.addEventListener('click', function (e) { if (e.target === _lifeExpModal) closeLifeExpModal(); });
+
+var _budgetModal = document.getElementById('budgetModalOverlay');
+function openBudgetModal(catId) {
+    var cat = getLifeCat(catId);
+    var lbl = document.getElementById('budgetModalCatLabel');
+    var cid = document.getElementById('budgetModalCatId');
+    var amt = document.getElementById('budgetAmtInput');
+    if (!lbl || !cid || !amt) return;
+    lbl.textContent = '「' + cat.name + '」' + lifeMonthLabel(lifeCurrentMonth) + ' 預算';
+    cid.value = catId;
+    var cur = getLifeBudget(catId, lifeCurrentMonth);
+    amt.value = cur > 0 ? cur : '';
+    if (_budgetModal) _budgetModal.classList.add('active');
+}
+function closeBudgetModal() { if (_budgetModal) _budgetModal.classList.remove('active'); }
+function saveBudget() {
+    var catId = document.getElementById('budgetModalCatId').value;
+    var amt = parseInt(document.getElementById('budgetAmtInput').value) || 0;
+    lifeBudgets[catId + '|' + lifeCurrentMonth] = amt;
+    saveLifeData();
+    closeBudgetModal();
+    renderLifeTab();
+    showToast('預算已設定');
+}
+if (_budgetModal) _budgetModal.addEventListener('click', function (e) { if (e.target === _budgetModal) closeBudgetModal(); });
+
+function renderLifeCategoryChart() {
+    var ctx = document.getElementById('lifeCategoryChart');
+    if (!ctx) return;
+    var mi = document.getElementById('lifeChartMonth');
+    var ym = (mi && mi.value) ? mi.value : lifeCurrentMonth;
+
+    var labels = [], data = [], colors = [];
+    lifeCategories.forEach(function (cat) {
+        var s = getLifeSpentByCat(cat.id, ym);
+        if (s > 0) { labels.push(cat.name); data.push(s); colors.push(cat.color); }
+    });
+
+    if (lifeCatChartInstance) { lifeCatChartInstance.destroy(); lifeCatChartInstance = null; }
+    if (data.length === 0) return;
+
+    var dk = document.documentElement.getAttribute('data-theme') === 'dark';
+    var tc = dk ? '#F0EDE8' : '#1A1A1A';
+    var gc = dk ? '#2D2B28' : '#E8E5E0';
+
+    lifeCatChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ data: data, backgroundColor: colors.map(function (c) { return c + 'CC'; }), borderColor: colors, borderWidth: 1, borderRadius: 4 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return 'NT$ ' + c.raw.toLocaleString(); } } } },
+            scales: { y: { ticks: { color: tc, callback: function (v) { return 'NT$' + v.toLocaleString(); } }, grid: { color: gc } }, x: { ticks: { color: tc }, grid: { display: false } } }
+        }
+    });
+}
+
+function renderTrendChart() {
+    var ctx = document.getElementById('trendChart');
+    if (!ctx) return;
+
+    var months = [], now = new Date();
+    for (var i = 5; i >= 0; i--) {
+        var t = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push(t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0'));
+    }
+
+    var labels = months.map(function (ym) { return ym.split('-')[1] + '月'; });
+    var sub = Math.round(calculateStats().monthly);
+    var subData = months.map(function () { return sub; });
+    var lifeData = months.map(function (ym) { return getLifeTotalForMonth(ym); });
+
+    if (trendChartInstance) { trendChartInstance.destroy(); trendChartInstance = null; }
+
+    var dk = document.documentElement.getAttribute('data-theme') === 'dark';
+    var tc = dk ? '#F0EDE8' : '#1A1A1A';
+    var gc = dk ? '#2D2B28' : '#E8E5E0';
+
+    trendChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels, datasets: [
+                { label: '固定支出', data: subData, borderColor: '#2A6475', backgroundColor: '#2A647518', borderWidth: 2, pointRadius: 4, tension: 0.3, fill: true },
+                { label: '生活費', data: lifeData, borderColor: '#C17B2E', backgroundColor: '#C17B2E18', borderWidth: 2, pointRadius: 4, tension: 0.3, fill: true }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { position: 'bottom', labels: { color: tc, boxWidth: 12, padding: 16 } },
+                tooltip: { callbacks: { label: function (c) { return c.dataset.label + ': NT$ ' + c.raw.toLocaleString(); } } }
+            },
+            scales: { y: { ticks: { color: tc, callback: function (v) { return 'NT$' + v.toLocaleString(); } }, grid: { color: gc } }, x: { ticks: { color: tc }, grid: { display: false } } }
+        }
+    });
+}
+
+// ═══════════════════════════════════════════════
+// 收入記帳 + 動態分類管理 擴充模組
+// ═══════════════════════════════════════════════
+
+// ── 收入/支出 Helper ──
+function getLifeIncomeForMonth(ym) {
+    return lifeExpenses
+        .filter(function (e) { return e.type === 'income' && e.date && e.date.startsWith(ym); })
+        .reduce(function (s, e) { return s + (e.amount || 0); }, 0);
+}
+
+function getLifeOnlyExpForMonth(ym) {
+    return lifeExpenses
+        .filter(function (e) { return e.type !== 'income' && e.date && e.date.startsWith(ym); })
+        .reduce(function (s, e) { return s + (e.amount || 0); }, 0);
+}
+
+// ── Override renderLifeTab to use income/expense model ──
+function renderLifeTab() {
+    var label = document.getElementById('lifeMonthDisplay');
+    if (label) label.textContent = lifeMonthLabel(lifeCurrentMonth);
+
+    var totalIncome = getLifeIncomeForMonth(lifeCurrentMonth);
+    var totalExpense = getLifeOnlyExpForMonth(lifeCurrentMonth);
+    var remain = totalIncome - totalExpense;
+    var isOver = totalExpense > totalIncome && totalIncome > 0;
+    var pct = totalIncome > 0 ? Math.min(Math.round((totalExpense / totalIncome) * 100), 100) : 0;
+    var rawPct = totalIncome > 0 ? Math.round((totalExpense / totalIncome) * 100) : 0;
+
+    var incomeEl = document.getElementById('lifeMonthBudget');
+    var spentEl = document.getElementById('lifeMonthSpent');
+    var remainEl = document.getElementById('lifeMonthRemain');
+    var barEl = document.getElementById('lifeOverallProgress');
+    var pctEl = document.getElementById('lifeOverallPct');
+    var actualEl = document.getElementById('lifeActualIncome');
+
+    if (incomeEl) incomeEl.textContent = 'NT$ ' + totalIncome.toLocaleString();
+    if (spentEl) spentEl.textContent = 'NT$ ' + totalExpense.toLocaleString();
+    if (remainEl) {
+        remainEl.textContent = 'NT$ ' + Math.abs(remain).toLocaleString() + (remain < 0 ? ' (超支)' : '');
+        remainEl.className = 'stat-value ' + (remain < 0 ? 'stat-negative' : 'stat-positive');
+    }
+    if (barEl) {
+        barEl.style.width = pct + '%';
+        barEl.className = 'progress-fill' + (isOver ? ' over-budget' : '');
+    }
+    if (pctEl) {
+        pctEl.textContent = totalIncome > 0 ? '支出 ' + rawPct + '%' : '—';
+        pctEl.className = 'progress-pct' + (isOver ? ' over-budget' : '');
+    }
+    // Sync to analysis tab actual income display
+    if (actualEl) actualEl.textContent = 'NT$ ' + totalIncome.toLocaleString();
+
+    renderBudgetCards();
+    renderLifeExpenseList();
+}
+
+// ── Override renderBudgetCards to use expense-only data ──
+function renderBudgetCards() {
+    var container = document.getElementById('budgetCards');
+    if (!container) return;
+    container.innerHTML = '';
+    lifeCategories.forEach(function (cat) {
+        var spent = getLifeSpentByCat(cat.id, lifeCurrentMonth);
+        var budget = getLifeBudget(cat.id, lifeCurrentMonth);
+        var isOver = budget > 0 && spent > budget;
+        var pct = budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0;
+        var rawPct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
+
+        var card = document.createElement('div');
+        card.className = 'budget-card';
+
+        var limitHtml = budget > 0
+            ? '<span class="budget-limit">/ NT$ ' + budget.toLocaleString() + '</span>'
+            : '<span class="budget-no-limit">未設預算</span>';
+
+        var fillClass = 'progress-fill' + (isOver ? ' over-budget' : '');
+        var pctClass = 'progress-pct' + (isOver ? ' over-budget' : '');
+        var barHtml = budget > 0
+            ? '<div class="progress-bar"><div class="' + fillClass + '" style="width:' + pct + '%"></div></div><span class="' + pctClass + '">' + rawPct + '%</span>'
+            : '<div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">—</span>';
+
+        var spentClass = 'budget-spent' + (isOver ? ' over-budget' : '');
+
+        card.innerHTML =
+            '<div class="budget-card-header">' +
+            '<div class="budget-cat-name">' +
+            '<span style="width:10px;height:10px;border-radius:50%;background:' + cat.color + ';display:inline-block;flex-shrink:0;"></span>' +
+            cat.name +
+            '</div>' +
+            '<div class="budget-card-actions">' +
+            '<button class="icon-btn" onclick="openLifeExpModalWithCat(\'' + cat.id + '\')" title="新增支出"><i class="fa-solid fa-plus"></i></button>' +
+            '<button class="icon-btn" onclick="openBudgetModal(\'' + cat.id + '\')" title="設定預算"><i class="fa-solid fa-sliders"></i></button>' +
+            '</div>' +
+            '</div>' +
+            '<div class="budget-amounts"><span class="' + spentClass + '">NT$ ' + spent.toLocaleString() + '</span>' + limitHtml + '</div>' +
+            '<div class="progress-bar-wrap">' + barHtml + '</div>';
+
+        container.appendChild(card);
+    });
+}
+
+function getLifeIncCat(id) {
+    var c = lifeIncomeCategories.find(function (x) { return x.id === id; });
+    return c || { id: 'other', name: '其他', color: '#8A8A8A' };
+}
+
+// ── Override renderLifeExpenseList to show income + expense ──
+function renderLifeExpenseList() {
+    var container = document.getElementById('lifeExpList');
+    if (!container) return;
+
+    var all = lifeExpenses
+        .filter(function (e) { return e.date && e.date.startsWith(lifeCurrentMonth); })
+        .sort(function (a, b) { return b.date.localeCompare(a.date); });
+
+    if (all.length === 0) {
+        container.innerHTML =
+            '<div class="empty-state">' +
+            '<span class="empty-icon"><i class="fa-regular fa-face-smile-beam"></i></span>' +
+            '<strong>本月尚無記錄</strong>' +
+            '<p>點擊「收入」或「支出」按鈕開始記帳</p>' +
+            '</div>';
+        return;
+    }
+
+    container.innerHTML = all.map(function (e) {
+        var day = parseInt(e.date.split('-')[2]);
+        if (e.type === 'income') {
+            var cat = getLifeIncCat(e.categoryId);
+            var note = e.note ? e.note : cat.name;
+            var ns = e.note ? '' : ' style="color:var(--text-muted);font-style:italic;"';
+            return '<div class="life-income-row">' +
+                '<div class="life-income-date" style="color:' + cat.color + ';">' + day + '</div>' +
+                '<div class="life-income-arrow" style="background:' + cat.color + ';"></div>' +
+                '<div class="life-income-info">' +
+                '<div class="life-income-src">' + cat.name + '</div>' +
+                '<div class="life-income-note"' + ns + '>' + note + '</div>' +
+                '</div>' +
+                '<div class="life-income-amount" style="color:' + cat.color + ';">+ NT$ ' + e.amount.toLocaleString() + '</div>' +
+                '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>' +
+                '</div>';
+        } else {
+            var cat = getLifeCat(e.categoryId);
+            var note = e.note ? e.note : cat.name;
+            var ns = e.note ? '' : ' style="color:var(--text-muted);font-style:italic;"';
+            return '<div class="life-exp-row">' +
+                '<div class="life-exp-date">' + day + '</div>' +
+                '<div class="life-exp-dot" style="background:' + cat.color + '"></div>' +
+                '<div class="life-exp-info">' +
+                '<div class="life-exp-cat">' + cat.name + '</div>' +
+                '<div class="life-exp-note"' + ns + '>' + note + '</div>' +
+                '</div>' +
+                '<div class="life-exp-amount">NT$ ' + e.amount.toLocaleString() + '</div>' +
+                '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>' +
+                '</div>';
+        }
+    }).join('');
+}
+
+// ── Type Toggle UI ──
+function setLifeExpType(type) {
+    document.getElementById('lifeExpType').value = type;
+    var expBtn = document.getElementById('typeExpBtn');
+    var incBtn = document.getElementById('typeIncBtn');
+    var catGroup = document.getElementById('lifeExpCatGroup');
+    var incCatGroup = document.getElementById('lifeExpIncCatGroup');
+    var submitBtn = document.getElementById('lifeExpSubmitBtn');
+
+    if (type === 'income') {
+        expBtn.className = 'type-btn';
+        incBtn.className = 'type-btn active income-mode';
+        if (catGroup) catGroup.style.display = 'none';
+        if (incCatGroup) incCatGroup.style.display = '';
+        if (submitBtn) submitBtn.textContent = '儲存收入';
+        document.getElementById('lifeExpModalTitle').textContent = '新增收入';
+    } else {
+        expBtn.className = 'type-btn active';
+        incBtn.className = 'type-btn';
+        if (catGroup) catGroup.style.display = '';
+        if (incCatGroup) incCatGroup.style.display = 'none';
+        if (submitBtn) submitBtn.textContent = '儲存支出';
+        document.getElementById('lifeExpModalTitle').textContent = '新增支出';
+    }
+}
+
+// ── Override openLifeExpModal to support type parameter ──
+var _lifeExpModal2 = document.getElementById('lifeExpModalOverlay');
+function openLifeExpModal(typeOrPreset) {
+    // typeOrPreset: 'income', 'expense', or a catId string
+    var type = 'expense';
+    var presetCatId = null;
+    if (typeOrPreset === 'income') { type = 'income'; }
+    else if (typeOrPreset && typeOrPreset !== 'expense') { presetCatId = typeOrPreset; }
+
+    var sel = document.getElementById('lifeExpCat');
+    if (sel) {
+        sel.innerHTML = lifeCategories.map(function (c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join('');
+        if (type === 'expense' && presetCatId) sel.value = presetCatId;
+    }
+
+    var incSel = document.getElementById('lifeExpIncCat');
+    if (incSel) {
+        incSel.innerHTML = lifeIncomeCategories.map(function (c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join('');
+        if (type === 'income' && presetCatId) incSel.value = presetCatId;
+    }
+
+    document.getElementById('lifeExpId').value = '';
+    document.getElementById('lifeExpAmount').value = '';
+    document.getElementById('lifeExpDate').value = lifeCurrentMonth + '-' + String(new Date().getDate()).padStart(2, '0');
+    document.getElementById('lifeExpNote').value = '';
+
+    setLifeExpType(type);
+    if (_lifeExpModal2) _lifeExpModal2.classList.add('active');
+}
+function openLifeExpModalWithCat(catId) { openLifeExpModal(catId); }
+
+// ── Override handleLifeExpSubmit to handle income ──
+function handleLifeExpSubmit(e) {
+    e.preventDefault();
+    var id = document.getElementById('lifeExpId').value;
+    var type = document.getElementById('lifeExpType').value || 'expense';
+    var amount = parseInt(document.getElementById('lifeExpAmount').value);
+    var date = document.getElementById('lifeExpDate').value;
+    var note = document.getElementById('lifeExpNote').value.trim();
+    if (!amount || !date) return;
+
+    var entry;
+    if (type === 'income') {
+        var incCatId = document.getElementById('lifeExpIncCat').value;
+        entry = { id: id || crypto.randomUUID(), type: 'income', categoryId: incCatId, amount: amount, date: date, note: note };
+    } else {
+        var catId = document.getElementById('lifeExpCat').value;
+        entry = { id: id || crypto.randomUUID(), type: 'expense', categoryId: catId, amount: amount, date: date, note: note };
+    }
+
+    if (id) {
+        var idx = lifeExpenses.findIndex(function (ex) { return ex.id === id; });
+        if (idx !== -1) lifeExpenses[idx] = entry;
+        showToast('已更新');
+    } else {
+        lifeExpenses.push(entry);
+        showToast(type === 'income' ? '收入已記錄' : '支出已新增');
+    }
+    saveLifeData();
+    closeLifeExpModal();
+    renderLifeTab();
+}
+
+// ── Override updateBudgetCalc to use actual recorded income ──
+function updateBudgetCalc() {
+    var incomeInput = document.getElementById('monthlyIncomeInput');
+    var estimated = parseFloat(incomeInput ? incomeInput.value : 0) || 0;
+    localStorage.setItem(INCOME_KEY, estimated);
+
+    var stats = calculateStats();
+    var actualIncome = getLifeIncomeForMonth(lifeCurrentMonth);
+    var lifeExpense = getLifeOnlyExpForMonth(lifeCurrentMonth);
+
+    // Use actual recorded income if any; else fallback to estimate
+    var income = actualIncome > 0 ? actualIncome : estimated;
+
+    // Update analysis displays
+    var lifeActualEl = document.getElementById('lifeActualIncome');
+    if (lifeActualEl) lifeActualEl.textContent = 'NT$ ' + actualIncome.toLocaleString();
+
+    var lifeEl = document.getElementById('totalLifeMonthly');
+    if (lifeEl) lifeEl.textContent = 'NT$ ' + Math.round(lifeExpense).toLocaleString();
+
+    var remaining = income - stats.monthly - lifeExpense;
+    var remainEl = document.getElementById('remainingBudget');
+    if (remainEl) {
+        remainEl.textContent = 'NT$ ' + Math.round(remaining).toLocaleString();
+        remainEl.className = 'stat-value ' + (remaining >= 0 ? 'stat-positive' : 'stat-negative');
+    }
+}
+
+// ══════════════════════════════════════════
+// 生活費分類動態管理
+// ══════════════════════════════════════════
+
+var _lifeCatModal = document.getElementById('lifeCatModalOverlay');
+if (_lifeCatModal) _lifeCatModal.addEventListener('click', function (e) { if (e.target === _lifeCatModal) closeLifeCatModal(); });
+
+var _currentCatManageType = 'expense';
+
+function setCatManageType(type) {
+    _currentCatManageType = type;
+    var expBtn = document.getElementById('catTypeExpBtn');
+    if (expBtn) expBtn.className = type === 'expense' ? 'type-btn active' : 'type-btn';
+    var incBtn = document.getElementById('catTypeIncBtn');
+    if (incBtn) incBtn.className = type === 'income' ? 'type-btn active income-mode' : 'type-btn';
+    renderLifeCatList();
+    // Reset form
+    document.getElementById('editLifeCatId').value = '';
+    document.getElementById('newLifeCatName').value = '';
+    document.getElementById('newLifeCatColor').value = type === 'expense' ? '#C17B2E' : '#5A9E7A';
+    var cancelBtn = document.getElementById('cancelLifeCatBtn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+}
+
+function openLifeCatModal(type) {
+    setCatManageType(type || 'expense');
+    if (_lifeCatModal) _lifeCatModal.classList.add('active');
+}
+
+function closeLifeCatModal() {
+    if (_lifeCatModal) _lifeCatModal.classList.remove('active');
+    // Refresh options in modals
+    var sel = document.getElementById('lifeExpCat');
+    if (sel) {
+        var pre = sel.value;
+        sel.innerHTML = lifeCategories.map(function (c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join('');
+        if (pre) sel.value = pre;
+    }
+
+    var incSel = document.getElementById('lifeExpIncCat');
+    if (incSel) {
+        var preInc = incSel.value;
+        incSel.innerHTML = lifeIncomeCategories.map(function (c) { return '<option value="' + c.id + '">' + c.name + '</option>'; }).join('');
+        if (preInc) incSel.value = preInc;
+    }
+
+    renderLifeTab();
+}
+
+function renderLifeCatList() {
+    var container = document.getElementById('lifeCategoryList');
+    if (!container) return;
+
+    var targetCats = _currentCatManageType === 'income' ? lifeIncomeCategories : lifeCategories;
+
+    if (targetCats.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>尚無分類，請新增</p></div>';
+        return;
+    }
+
+    container.innerHTML = targetCats.map(function (cat) {
+        return '<div class="category-item" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+            '<span style="width:14px;height:14px;border-radius:50%;background:' + cat.color + ';flex-shrink:0;display:inline-block;"></span>' +
+            '<span style="flex:1;font-weight:500;">' + cat.name + '</span>' +
+            '<button class="icon-btn" onclick="editLifeCategory(\'' + cat.id + '\')" title="編輯"><i class="fa-solid fa-pen"></i></button>' +
+            '<button class="icon-btn delete" onclick="deleteLifeCategory(\'' + cat.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>' +
+            '</div>';
+    }).join('');
+}
+
+function saveLifeCategory() {
+    var id = document.getElementById('editLifeCatId').value;
+    var name = document.getElementById('newLifeCatName').value.trim();
+    var color = document.getElementById('newLifeCatColor').value;
+
+    if (!name) { showToast('請輸入分類名稱'); return; }
+
+    var targetCats = _currentCatManageType === 'income' ? lifeIncomeCategories : lifeCategories;
+
+    if (id) {
+        var idx = targetCats.findIndex(function (c) { return c.id === id; });
+        if (idx !== -1) { targetCats[idx].name = name; targetCats[idx].color = color; }
+    } else {
+        var prefix = _currentCatManageType === 'income' ? 'lc_inc_' : 'lc_';
+        targetCats.push({ id: prefix + Date.now(), name: name, color: color });
+    }
+
+    saveLifeData();
+    document.getElementById('editLifeCatId').value = '';
+    document.getElementById('newLifeCatName').value = '';
+    document.getElementById('newLifeCatColor').value = _currentCatManageType === 'expense' ? '#C17B2E' : '#5A9E7A';
+    var cancelBtn = document.getElementById('cancelLifeCatBtn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+    renderLifeCatList();
+    showToast(id ? '分類已更新' : '分類已新增');
+}
+
+function editLifeCategory(id) {
+    var targetCats = _currentCatManageType === 'income' ? lifeIncomeCategories : lifeCategories;
+    var cat = targetCats.find(function (c) { return c.id === id; });
+    if (!cat) return;
+    document.getElementById('editLifeCatId').value = id;
+    document.getElementById('newLifeCatName').value = cat.name;
+    document.getElementById('newLifeCatColor').value = cat.color;
+    var cancelBtn = document.getElementById('cancelLifeCatBtn');
+    if (cancelBtn) cancelBtn.style.display = '';
+    document.getElementById('newLifeCatName').focus();
+}
+
+function cancelLifeCatEdit() {
+    document.getElementById('editLifeCatId').value = '';
+    document.getElementById('newLifeCatName').value = '';
+    document.getElementById('newLifeCatColor').value = _currentCatManageType === 'expense' ? '#C17B2E' : '#5A9E7A';
+    var cancelBtn = document.getElementById('cancelLifeCatBtn');
+    if (cancelBtn) cancelBtn.style.display = 'none';
+}
+
+function deleteLifeCategory(id) {
+    var targetCats = _currentCatManageType === 'income' ? lifeIncomeCategories : lifeCategories;
+    var cat = targetCats.find(function (c) { return c.id === id; });
+    if (!cat) return;
+    var hasExpenses = lifeExpenses.some(function (e) { return e.categoryId === id; });
+    var msg = hasExpenses
+        ? '「' + cat.name + '」底下有記錄，刪除分類後記錄仍保留但不會顯示正確名稱，確定刪除？'
+        : '刪除分類「' + cat.name + '」？';
+    if (confirm(msg)) {
+        if (_currentCatManageType === 'income') {
+            lifeIncomeCategories = lifeIncomeCategories.filter(function (c) { return c.id !== id; });
+        } else {
+            lifeCategories = lifeCategories.filter(function (c) { return c.id !== id; });
+        }
+        saveLifeData();
+        renderLifeCatList();
+        showToast('分類已刪除');
+    }
+}

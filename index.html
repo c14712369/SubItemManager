@@ -4,8 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>訂閱與固定支出管理</title>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <title>固定支出與生活費管理</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;500;700&display=swap"
+        rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
@@ -15,19 +17,28 @@
 
     <div class="container">
         <header>
-            <h1><i class="fa-solid fa-wallet"></i> 訂閱管理</h1>
+            <div class="header-title">
+                <h1><i class="fa-regular fa-credit-card title-icon"></i> 收支管理系統</h1>
+                <span class="subtitle">記錄每一筆固定支出與日常生活費</span>
+            </div>
             <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="切換深色/淺色模式">
-                <i class="fa-solid fa-moon" id="themeIcon"></i>
+                <i class="fa-regular fa-moon" id="themeIcon"></i>
             </button>
         </header>
 
         <!-- Tabs Navigation -->
         <div class="tabs-nav">
             <button class="tab-btn active" onclick="switchTab('manage')">
-                <i class="fa-solid fa-list-check"></i> 管理訂閱項目
+                <i class="fa-solid fa-list-check"></i> 固定支出
+            </button>
+            <button class="tab-btn" onclick="switchTab('life')">
+                <i class="fa-solid fa-wallet"></i> 生活費記帳
             </button>
             <button class="tab-btn" onclick="switchTab('analysis')">
-                <i class="fa-solid fa-chart-pie"></i> 支出分析
+                <i class="fa-solid fa-chart-pie"></i> 收支分析
+            </button>
+            <button class="tab-btn" onclick="switchTab('wealth')">
+                <i class="fa-solid fa-seedling"></i> 資產試算
             </button>
         </div>
 
@@ -52,7 +63,7 @@
                         清除所有</button>
                     <div class="divider-vertical"></div>
                     <button class="btn btn-secondary btn-sm" onclick="exportData()"><i
-                            class="fa-solid fa-file-export"></i> 匯出備份 (JSON)</button>
+                            class="fa-solid fa-file-export"></i> 匯出全站備份 (JSON)</button>
                     <input type="file" id="importInput" style="display: none" accept=".json"
                         onchange="importData(this)">
                     <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importInput').click()"><i
@@ -65,41 +76,127 @@
             </div>
         </div>
 
+        <!-- Tab: Life Expenses -->
+        <div id="tab-life" class="tab-content">
+            <!-- Month Navigator -->
+            <div class="month-nav">
+                <button class="icon-btn" onclick="changeLifeMonth(-1)" title="上個月"><i
+                        class="fa-solid fa-chevron-left"></i></button>
+                <span id="lifeMonthDisplay" class="month-nav-label">載入中...</span>
+                <button class="icon-btn" onclick="changeLifeMonth(1)" title="下個月"><i
+                        class="fa-solid fa-chevron-right"></i></button>
+                <button class="icon-btn" onclick="openLifeCatModal()" title="管理分類" style="margin-left:8px;"><i
+                        class="fa-solid fa-sliders"></i></button>
+            </div>
+
+            <div class="toolbar-row secondary" style="justify-content: flex-end; margin-bottom: 16px;">
+                <button class="btn btn-secondary btn-sm" onclick="exportData()"><i class="fa-solid fa-file-export"></i>
+                    匯出全站備份 (JSON)</button>
+                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importInput').click()"><i
+                        class="fa-solid fa-file-import"></i> 匯入備份</button>
+            </div>
+
+            <!-- Overview Banner -->
+            <div class="overview-banner">
+                <div class="overview-stats">
+                    <div class="overview-stat">
+                        <div class="stat-title">本月實際收入</div>
+                        <div class="stat-value stat-positive" id="lifeMonthBudget">NT$ 0</div>
+                    </div>
+                    <div class="overview-stat">
+                        <div class="stat-title">本月支出</div>
+                        <div class="stat-value stat-monthly" id="lifeMonthSpent">NT$ 0</div>
+                    </div>
+                    <div class="overview-stat">
+                        <div class="stat-title">本月結餘</div>
+                        <div class="stat-value" id="lifeMonthRemain">NT$ 0</div>
+                    </div>
+                </div>
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="lifeOverallProgress" style="width:0%"></div>
+                    </div>
+                    <span class="progress-pct" id="lifeOverallPct">支出 0%</span>
+                </div>
+            </div>
+
+            <!-- Category Budget Cards -->
+            <div id="budgetCards" class="budget-grid"></div>
+
+            <!-- Expense List -->
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h3><i class="fa-regular fa-book"></i> 收支明細</h3>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn btn-secondary btn-sm" onclick="openLifeExpModal('income')">
+                            <i class="fa-solid fa-plus"></i> 收入
+                        </button>
+                        <button class="btn btn-primary btn-sm" onclick="openLifeExpModal('expense')">
+                            <i class="fa-solid fa-plus"></i> 支出
+                        </button>
+                    </div>
+                </div>
+                <div id="lifeExpList"></div>
+            </div>
+        </div>
+
         <!-- Tab: Analysis -->
         <div id="tab-analysis" class="tab-content">
+            <!-- Summary Stats -->
             <div class="dashboard">
                 <div class="stat-card">
-                    <div class="stat-title">每月預估收入 (TWD)</div>
-                    <input type="number" id="monthlyIncomeInput" class="stat-input" placeholder="0"
-                        oninput="updateBudgetCalc()">
+                    <div class="stat-title">本月實際收入</div>
+                    <div class="stat-value stat-positive" id="lifeActualIncome">NT$ 0</div>
+                    <div style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:8px;">
+                        <div class="stat-title" style="margin-bottom:4px;">預估收入 (未記帳時作備用)</div>
+                        <input type="number" id="monthlyIncomeInput" class="stat-input" placeholder="0"
+                            oninput="updateBudgetCalc()" style="font-size:1.1rem;">
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-title">每月固定支出 (TWD)</div>
+                    <div class="stat-title">固定支出 / 月</div>
                     <div class="stat-value stat-monthly" id="totalMonthly">NT$ 0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-title">每月剩餘預算 (TWD)</div>
+                    <div class="stat-title">生活費 / 本月</div>
+                    <div class="stat-value" id="totalLifeMonthly">NT$ 0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-title">每月結餘</div>
                     <div class="stat-value" id="remainingBudget">NT$ 0</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-title">年度預估總支出 (TWD)</div>
+                    <div class="stat-title">年度預估總支出</div>
                     <div class="stat-value stat-yearly" id="totalYearly">NT$ 0</div>
                 </div>
             </div>
 
+            <!-- Charts Row -->
+            <div class="chart-dual">
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <h3><i class="fa-solid fa-circle-dot"></i> 訂閱分類分析</h3>
+                        <select id="chartYearSelect" class="form-select" style="width:auto;padding:4px 12px;"
+                            onchange="renderChart()"></select>
+                    </div>
+                    <div class="chart-container"><canvas id="expenseChart"></canvas></div>
+                </div>
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <h3><i class="fa-solid fa-bars"></i> 生活費分類分析</h3>
+                        <input type="month" id="lifeChartMonth" class="form-input" style="width:auto;"
+                            onchange="renderLifeCategoryChart()">
+                    </div>
+                    <div class="chart-container"><canvas id="lifeCategoryChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- Trend Chart -->
             <div class="chart-section">
                 <div class="chart-header">
-                    <h3>年度支出分析</h3>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <select id="chartYearSelect" class="form-select" style="width: auto; padding: 4px 12px;"
-                            onchange="renderChart()">
-                            <!-- Options generated by JS -->
-                        </select>
-                    </div>
+                    <h3><i class="fa-solid fa-chart-line"></i> 近 6 個月收支趨勢</h3>
                 </div>
-                <div class="chart-container">
-                    <canvas id="expenseChart"></canvas>
-                </div>
+                <div class="chart-container" style="height:260px;"><canvas id="trendChart"></canvas></div>
             </div>
 
             <!-- Timeline Section -->
@@ -109,8 +206,82 @@
                     <input type="month" id="timelineMonth" class="form-input" style="width: auto;"
                         onchange="renderTimeline()">
                 </div>
-                <div id="timelineContainer" class="timeline-container">
-                    <!-- JS will populate -->
+                <div id="timelineContainer" class="timeline-container"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Wealth -->
+        <div id="tab-wealth" class="tab-content">
+            <div class="dashboard" style="grid-template-columns: 1fr 2fr;">
+                <!-- Params Input -->
+                <div class="stat-card"
+                    style="display:flex; flex-direction:column; gap:16px; overflow-y:auto; max-height: calc(100vh - 150px);">
+                    <div
+                        style="font-size: 1.1rem; font-weight: 600; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
+                        投資部位 (高風險)</div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight:bold;">當前已投資資產 (NT$)</label>
+                        <input type="number" id="wealthInvestCurrentInput" class="form-input" placeholder="例如: 500000"
+                            oninput="calculateWealth()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight:bold;">每月定額投資 (NT$)</label>
+                        <input type="number" id="wealthInvestMonthlyInput" class="form-input" placeholder="每月投入股市/基金"
+                            oninput="calculateWealth()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight:bold;">預估年化報酬率 (%)</label>
+                        <input type="number" id="wealthInvestRateInput" class="form-input" placeholder="例如: 6"
+                            step="0.1" oninput="calculateWealth()">
+                    </div>
+
+                    <div
+                        style="font-size: 1.1rem; font-weight: 600; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-top: 16px;">
+                        現金/活存部位 (低風險)</div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight:bold;">當前活存存款 (NT$)</label>
+                        <input type="number" id="wealthCashCurrentInput" class="form-input" placeholder="例如: 200000"
+                            oninput="calculateWealth()">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label"
+                            style="display:flex; justify-content:space-between; font-weight:bold;">
+                            <span>每月現金存款 (NT$)</span>
+                            <button class="icon-btn" onclick="useMonthlyBalanceForWealth()"
+                                style="font-size:0.8rem; height:auto; padding:0; text-decoration:underline;"
+                                title="將收支結餘扣除定額投資後，剩下作為存款">帶入剩餘結餘</button>
+                        </label>
+                        <input type="number" id="wealthCashMonthlyInput" class="form-input" placeholder="每月增加之現金"
+                            oninput="calculateWealth()">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 16px;">
+                        <label class="form-label" style="font-weight:bold;">活/定存年化利率 (%)</label>
+                        <input type="number" id="wealthCashRateInput" class="form-input" placeholder="例如: 1.5"
+                            step="0.1" oninput="calculateWealth()">
+                    </div>
+
+                    <div
+                        style="font-size: 1.1rem; font-weight: 600; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-top: 8px;">
+                        最終目標</div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-weight:bold;">目標總金額 (NT$)</label>
+                        <input type="number" id="wealthTargetInput" class="form-input" value="10000000"
+                            oninput="calculateWealth()">
+                    </div>
+                </div>
+
+                <!-- Result & Chart -->
+                <div class="stat-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+                    <div>
+                        <div class="stat-title" style="font-size:1rem; margin-bottom:8px;">預估達成時間</div>
+                        <div id="wealthResultText" style="font-size:2rem; font-weight:600; color:var(--text-color);">
+                            請輸入參數...</div>
+                        <div id="wealthSummaryText" style="margin-top:8px; font-size:0.9rem; color:var(--text-muted);">
+                        </div>
+                    </div>
+                    <div style="height: 300px; margin-top:20px;">
+                        <canvas id="wealthChart"></canvas>
+                    </div>
                 </div>
             </div>
         </div>
@@ -234,9 +405,121 @@
         </div>
     </div>
 
+    <!-- Modal: Add Life Expense / Income -->
+    <div class="modal-overlay" id="lifeExpModalOverlay">
+        <div class="modal" style="max-width:440px;">
+            <div class="modal-header">
+                <span id="lifeExpModalTitle">新增記錄</span>
+                <span class="close-modal" onclick="closeLifeExpModal()">&times;</span>
+            </div>
+            <!-- Type Toggle -->
+            <div class="type-toggle">
+                <button class="type-btn active" id="typeExpBtn" onclick="setLifeExpType('expense')">
+                    <i class="fa-solid fa-arrow-up-from-bracket"></i> 支出
+                </button>
+                <button class="type-btn" id="typeIncBtn" onclick="setLifeExpType('income')">
+                    <i class="fa-solid fa-arrow-down-to-bracket"></i> 收入
+                </button>
+            </div>
+            <form id="lifeExpForm" onsubmit="handleLifeExpSubmit(event)">
+                <input type="hidden" id="lifeExpId">
+                <input type="hidden" id="lifeExpType" value="expense">
+                <!-- Category (expense only) -->
+                <div class="form-group" id="lifeExpCatGroup">
+                    <label class="form-label" style="display:flex;justify-content:space-between;">
+                        支出分類
+                        <span class="link-btn" onclick="openLifeCatModal('expense')">管理分類</span>
+                    </label>
+                    <select id="lifeExpCat" class="form-select">
+                        <!-- JS populated -->
+                    </select>
+                </div>
+                <!-- Income Category (income only) -->
+                <div class="form-group" id="lifeExpIncCatGroup" style="display:none;">
+                    <label class="form-label" style="display:flex;justify-content:space-between;">
+                        收入分類
+                        <span class="link-btn" onclick="openLifeCatModal('income')">管理分類</span>
+                    </label>
+                    <select id="lifeExpIncCat" class="form-select">
+                        <!-- JS populated -->
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">金額 (TWD)</label>
+                        <input type="number" id="lifeExpAmount" class="form-input" required min="1" step="1"
+                            placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">日期</label>
+                        <input type="date" id="lifeExpDate" class="form-input" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">備註 (選填)</label>
+                    <input type="text" id="lifeExpNote" class="form-input" placeholder="例如：超市採購...">
+                </div>
+                <button type="submit" class="btn btn-primary" id="lifeExpSubmitBtn"
+                    style="width:100%;margin-top:10px;">儲存支出</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Set Budget -->
+    <div class="modal-overlay" id="budgetModalOverlay">
+        <div class="modal" style="max-width:380px;">
+            <div class="modal-header">
+                <span>設定月預算</span>
+                <span class="close-modal" onclick="closeBudgetModal()">&times;</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label" id="budgetModalCatLabel">分類</label>
+                <input type="hidden" id="budgetModalCatId">
+                <input type="number" id="budgetAmtInput" class="form-input stat-input" min="0" placeholder="0"
+                    style="font-size:1.6rem;border:none;border-bottom:1px solid var(--border-color);background:transparent;outline:none;width:100%;">
+            </div>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px;">設定後適用於當前顯示月份</p>
+            <button class="btn btn-primary" style="width:100%;" onclick="saveBudget()">儲存預算</button>
+        </div>
+    </div>
+
+    <!-- Modal: Manage Life Categories -->
+    <div class="modal-overlay" id="lifeCatModalOverlay">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span id="lifeCatModalTitle">管理記帳分類</span>
+                <span class="close-modal" onclick="closeLifeCatModal()">&times;</span>
+            </div>
+            <!-- Type Toggle for Category Management -->
+            <div class="type-toggle" style="margin-bottom:16px;">
+                <button class="type-btn active" id="catTypeExpBtn" onclick="setCatManageType('expense')">支出分類</button>
+                <button class="type-btn" id="catTypeIncBtn" onclick="setCatManageType('income')">收入分類</button>
+            </div>
+            <div class="form-row" style="margin-bottom:16px;">
+                <input type="hidden" id="editLifeCatId">
+                <input type="text" id="newLifeCatName" class="form-input" placeholder="分類名稱" style="flex:2">
+                <input type="color" id="newLifeCatColor" class="form-input"
+                    style="flex:0 0 42px;padding:2px;height:42px;" value="#C17B2E">
+                <button class="btn btn-primary" id="saveLifeCatBtn" onclick="saveLifeCategory()" style="flex:0"
+                    title="儲存"><i class="fa-solid fa-check"></i></button>
+                <button class="btn btn-secondary" id="cancelLifeCatBtn" onclick="cancelLifeCatEdit()"
+                    style="flex:0;display:none;" title="取消"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="lifeCategoryList" class="category-list"></div>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
-    <script src="script.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/ui-fixed.js"></script>
+    <script src="js/ui-life.js"></script>
+    <script src="js/ui-analysis.js"></script>
+    <script src="js/ui-wealth.js"></script>
+    <script src="js/main.js"></script>
 </body>
 
 </html>
