@@ -52,6 +52,21 @@ function saveLifeData() {
 
 function exportData() {
     var storedIncome = localStorage.getItem(INCOME_KEY); // optionally export this
+
+    // Force save wealth params right now, just in case debounce hasn't fired
+    if (document.getElementById('wealthTargetInput')) {
+        localStorage.setItem(WEALTH_PARAMS_KEY, JSON.stringify({
+            invCurrent: document.getElementById('wealthInvestCurrentInput').value,
+            invMonthly: document.getElementById('wealthInvestMonthlyInput').value,
+            invRate: document.getElementById('wealthInvestRateInput').value,
+            cashCurrent: document.getElementById('wealthCashCurrentInput').value,
+            cashMonthly: document.getElementById('wealthCashMonthlyInput').value,
+            cashRate: document.getElementById('wealthCashRateInput').value,
+            target: document.getElementById('wealthTargetInput').value
+        }));
+    }
+
+    var storedWealth = localStorage.getItem(WEALTH_PARAMS_KEY);
     const dataStr = JSON.stringify({
         items,
         categories,
@@ -59,8 +74,11 @@ function exportData() {
         lifeCategories,
         lifeIncomeCategories,
         lifeBudgets,
+        projects,
+        projectExpenses,
         settings: {
-            estimatedIncome: storedIncome
+            estimatedIncome: storedIncome,
+            wealthParams: storedWealth ? JSON.parse(storedWealth) : null
         }
     }, null, 2);
     const blob = new Blob([dataStr], { type: "application/json" });
@@ -85,15 +103,23 @@ function importData(input) {
                     lifeCategories = data.lifeCategories || DEFAULT_LIFE_CATS;
                     lifeIncomeCategories = data.lifeIncomeCategories || DEFAULT_LIFE_INC_CATS;
                     lifeBudgets = data.lifeBudgets || {};
-                    if (data.settings && data.settings.estimatedIncome !== undefined) {
-                        localStorage.setItem(INCOME_KEY, data.settings.estimatedIncome);
-                        var incInput = document.getElementById('monthlyIncomeInput');
-                        if (incInput) incInput.value = data.settings.estimatedIncome;
+                    projects = data.projects || [];
+                    projectExpenses = data.projectExpenses || [];
+                    if (data.settings) {
+                        if (data.settings.estimatedIncome !== undefined) {
+                            localStorage.setItem(INCOME_KEY, data.settings.estimatedIncome);
+                            var incInput = document.getElementById('monthlyIncomeInput');
+                            if (incInput) incInput.value = data.settings.estimatedIncome;
+                        }
+                        if (data.settings.wealthParams) {
+                            localStorage.setItem(WEALTH_PARAMS_KEY, JSON.stringify(data.settings.wealthParams));
+                        }
                     }
                     saveData();
                     saveLifeData();
                     showToast('匯入成功');
                     init(); // Auto refresh UI
+                    if (typeof initWealthTab === 'function') initWealthTab();
                 }
             } else if (Array.isArray(data)) {
                 if (confirm('匯入舊版備份？')) {

@@ -8,6 +8,9 @@ const LIFE_CAT_KEY = 'sub_mgr_life_categories';
 const LIFE_INC_CAT_KEY = 'sub_mgr_life_inc_categories';
 const LIFE_BDG_KEY = 'sub_mgr_life_budgets';
 const WEALTH_PARAMS_KEY = 'sub_mgr_wealth_params';
+const PROJECTS_KEY = 'sub_mgr_projects';
+const PROJECT_EXP_KEY = 'sub_mgr_project_expenses';
+const PROJECT_CAT_KEY = 'sub_mgr_project_categories';
 
 let items = [];
 let categories = [];
@@ -15,12 +18,16 @@ let lifeExpenses = [];
 let lifeCategories = [];
 let lifeIncomeCategories = [];
 let lifeBudgets = {};
+let projects = [];
+let projectExpenses = [];
+let projectCategories = [];
 let lifeCurrentMonth = '';
 let chartInstance = null;
 let lifeCatChartInstance = null;
 let trendChartInstance = null;
 let wealthChartInstance = null;
 let currentChartYear = new Date().getFullYear();
+let _subChartType = 'year';
 
 // Default Categories
 const DEFAULT_CATS = [
@@ -45,6 +52,15 @@ const DEFAULT_LIFE_INC_CATS = [
     { id: 'lc_inc_bonus', name: '獎金', color: '#C17B2E' },
     { id: 'lc_inc_invest', name: '投資', color: '#2A6475' },
     { id: 'lc_inc_other', name: '其他', color: '#8A8A8A' }
+];
+
+const DEFAULT_PROJECT_CATS = [
+    { id: 'pc_trans', name: '交通', color: '#2A6475' },
+    { id: 'pc_stay', name: '住宿', color: '#5A9E7A' },
+    { id: 'pc_food', name: '飲食', color: '#C17B2E' },
+    { id: 'pc_ticket', name: '門票', color: '#8B5CF6' },
+    { id: 'pc_shop', name: '購物', color: '#D46060' },
+    { id: 'pc_other', name: '其他', color: '#8A8A8A' }
 ];
 
 let dragSrcEl = null;
