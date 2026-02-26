@@ -55,12 +55,16 @@ function switchTab(tabId) {
     if (tabId === 'wealth') {
         requestAnimationFrame(() => calculateWealth());
     }
+    if (tabId === 'projects') {
+        requestAnimationFrame(() => renderProjects());
+    }
 }
 
 function init() {
     initTheme();
     loadData();
     loadLifeData(); // from data.js
+    if (typeof loadProjectsData === 'function') loadProjectsData(); // from ui-projects.js
 
     const today = new Date().toISOString().split('T')[0];
     const startDateInput = document.getElementById('itemStartDate');
@@ -119,5 +123,19 @@ if (budgetModalLocal) {
 if (lifeCatModalLocal) {
     lifeCatModalLocal.addEventListener('click', function (e) {
         if (e.target === lifeCatModalLocal) closeLifeCatModal();
+    });
+}
+
+const projectModalLocal = document.getElementById('projectModalOverlay');
+if (projectModalLocal) {
+    projectModalLocal.addEventListener('click', function (e) {
+        if (e.target === projectModalLocal) closeProjectModal();
+    });
+}
+
+const projectDetailModalLocal = document.getElementById('projectDetailModalOverlay');
+if (projectDetailModalLocal) {
+    projectDetailModalLocal.addEventListener('click', function (e) {
+        if (e.target === projectDetailModalLocal) closeProjectDetailModal();
     });
 }

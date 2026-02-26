@@ -40,6 +40,9 @@
             <button class="tab-btn" onclick="switchTab('wealth')">
                 <i class="fa-solid fa-seedling"></i> 資產試算
             </button>
+            <button class="tab-btn" onclick="switchTab('projects')">
+                <i class="fa-solid fa-plane-up"></i> 專案預算
+            </button>
         </div>
 
         <!-- Tab: Management -->
@@ -89,12 +92,7 @@
                         class="fa-solid fa-sliders"></i></button>
             </div>
 
-            <div class="toolbar-row secondary" style="justify-content: flex-end; margin-bottom: 16px;">
-                <button class="btn btn-secondary btn-sm" onclick="exportData()"><i class="fa-solid fa-file-export"></i>
-                    匯出全站備份 (JSON)</button>
-                <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importInput').click()"><i
-                        class="fa-solid fa-file-import"></i> 匯入備份</button>
-            </div>
+            <!-- Removed redundant export/import buttons from here -->
 
             <!-- Overview Banner -->
             <div class="overview-banner">
@@ -142,49 +140,86 @@
 
         <!-- Tab: Analysis -->
         <div id="tab-analysis" class="tab-content">
-            <!-- Summary Stats -->
-            <div class="dashboard">
-                <div class="stat-card">
-                    <div class="stat-title">本月實際收入</div>
-                    <div class="stat-value stat-positive" id="lifeActualIncome">NT$ 0</div>
-                    <div style="margin-top:8px;border-top:1px solid var(--border-color);padding-top:8px;">
-                        <div class="stat-title" style="margin-bottom:4px;">預估收入 (未記帳時作備用)</div>
-                        <input type="number" id="monthlyIncomeInput" class="stat-input" placeholder="0"
-                            oninput="updateBudgetCalc()" style="font-size:1.1rem;">
+            <div class="hero-panel">
+                <div class="hero-main">
+                    <div class="hero-title">每月結餘</div>
+                    <div class="hero-value" id="remainingBudget">NT$ 0</div>
+                    <div class="hero-options">
+                        <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                            <input type="checkbox" id="deductProjectSavings" checked onchange="updateBudgetCalc()">
+                            扣除專案預備金
+                        </label>
                     </div>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-title">固定支出 / 月</div>
-                    <div class="stat-value stat-monthly" id="totalMonthly">NT$ 0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-title">生活費 / 本月</div>
-                    <div class="stat-value" id="totalLifeMonthly">NT$ 0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-title">每月結餘</div>
-                    <div class="stat-value" id="remainingBudget">NT$ 0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-title">年度預估總支出</div>
-                    <div class="stat-value stat-yearly" id="totalYearly">NT$ 0</div>
+                <div class="hero-stats">
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-label">
+                            預估收入
+                            <span style="font-size:0.75rem;opacity:0.8;" title="若勾選則以記帳實際收入為準">
+                                <span id="lifeActualIncome" style="display:none;">0</span>
+                            </span>
+                        </div>
+                        <input type="number" id="monthlyIncomeInput" class="hero-stat-input" placeholder="0"
+                            oninput="updateBudgetCalc()" onchange="showIncomeSavedToast()" title="點擊設定您的每月預估收入">
+                    </div>
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-label">固定支出</div>
+                        <div class="hero-stat-value" id="totalMonthly">NT$ 0</div>
+                    </div>
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-label">生活費</div>
+                        <div class="hero-stat-value" id="totalLifeMonthly">NT$ 0</div>
+                    </div>
                 </div>
             </div>
 
             <!-- Charts Row -->
             <div class="chart-dual">
                 <div class="chart-section">
-                    <div class="chart-header">
-                        <h3><i class="fa-solid fa-circle-dot"></i> 訂閱分類分析</h3>
-                        <select id="chartYearSelect" class="form-select" style="width:auto;padding:4px 12px;"
-                            onchange="renderChart()"></select>
+                    <div class="chart-header"
+                        style="flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
+                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                            <h3 style="white-space:nowrap; margin:0;"><i class="fa-solid fa-circle-dot"></i> 訂閱分類分析</h3>
+                            <div
+                                style="font-size:0.85rem; color:var(--text-muted); background:var(--bg-color); padding:4px 12px; border-radius:100px; border:1px solid var(--border-color); display:flex; align-items:center; gap:6px; white-space:nowrap;">
+                                年度預估總支出
+                                <span id="totalYearly"
+                                    style="font-weight:700; color:var(--text-main); font-family:var(--font-serif);">NT$
+                                    0</span>
+                            </div>
+                        </div>
+                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                            <div class="type-toggle" style="flex:none; margin-bottom:0; height:34px;">
+                                <button class="type-btn active" id="chartShapePieBtn" onclick="setSubChartShape('pie')"
+                                    style="padding:0 10px; font-size:0.85rem; height:100%;" title="圓餅圖"><i
+                                        class="fa-solid fa-chart-pie"></i></button>
+                                <button class="type-btn" id="chartShapeBarBtn" onclick="setSubChartShape('bar')"
+                                    style="padding:0 10px; font-size:0.85rem; height:100%;" title="長條圖"><i
+                                        class="fa-solid fa-chart-simple"></i></button>
+                            </div>
+                            <div class="type-toggle" style="flex:none; margin-bottom:0; height:34px;">
+                                <button class="type-btn active" id="chartTypeYearBtn" onclick="setSubChartType('year')"
+                                    style="padding:0 12px; font-size:0.85rem; height:100%;">按年</button>
+                                <button class="type-btn" id="chartTypeMonthBtn" onclick="setSubChartType('month')"
+                                    style="padding:0 12px; font-size:0.85rem; height:100%;">按月</button>
+                            </div>
+                            <select id="chartYearSelect" class="form-select"
+                                style="width:auto; padding:0 30px 0 12px; height:34px; font-size:0.85rem;"
+                                onchange="renderChart()"></select>
+                            <input type="month" id="chartMonthSelect" class="form-input"
+                                style="width:auto; display:none; padding:0 12px; height:34px; font-size:0.85rem;"
+                                onchange="renderChart()">
+                        </div>
                     </div>
                     <div class="chart-container"><canvas id="expenseChart"></canvas></div>
+                    <div id="expenseChartList" style="margin-top:20px; max-height: 250px; overflow-y: auto;"></div>
                 </div>
                 <div class="chart-section">
-                    <div class="chart-header">
-                        <h3><i class="fa-solid fa-bars"></i> 生活費分類分析</h3>
-                        <input type="month" id="lifeChartMonth" class="form-input" style="width:auto;"
+                    <div class="chart-header"
+                        style="flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
+                        <h3 style="white-space:nowrap; margin:0;"><i class="fa-solid fa-bars"></i> 生活費分類分析</h3>
+                        <input type="month" id="lifeChartMonth" class="form-input"
+                            style="width:auto; padding:0 12px; height:34px; font-size:0.85rem;"
                             onchange="renderLifeCategoryChart()">
                     </div>
                     <div class="chart-container"><canvas id="lifeCategoryChart"></canvas></div>
@@ -197,16 +232,6 @@
                     <h3><i class="fa-solid fa-chart-line"></i> 近 6 個月收支趨勢</h3>
                 </div>
                 <div class="chart-container" style="height:260px;"><canvas id="trendChart"></canvas></div>
-            </div>
-
-            <!-- Timeline Section -->
-            <div class="chart-section">
-                <div class="chart-header">
-                    <h3><i class="fa-regular fa-calendar-check"></i> 每月付款排程</h3>
-                    <input type="month" id="timelineMonth" class="form-input" style="width: auto;"
-                        onchange="renderTimeline()">
-                </div>
-                <div id="timelineContainer" class="timeline-container"></div>
             </div>
         </div>
 
@@ -286,6 +311,159 @@
             </div>
         </div>
 
+        <!-- Tab: Projects (Travel/Events) -->
+        <div id="tab-projects" class="tab-content">
+            <!-- Project Savings Recommendation -->
+            <div class="chart-section" id="projectSavingsSection"
+                style="display:none; margin-bottom: 28px; background: transparent; border: none; padding: 0;">
+                <div class="chart-header" style="margin-bottom: 16px;">
+                    <h3><i class="fa-solid fa-piggy-bank"></i> 專案預備金總覽 (每月應存)</h3>
+                </div>
+                <div id="projectSavingsList" class="items-grid"></div>
+            </div>
+
+            <div class="toolbar">
+                <div class="toolbar-row">
+                    <button class="btn btn-primary" onclick="openProjectModal()">
+                        <i class="fa-solid fa-plane"></i> 新增企劃專案
+                    </button>
+                    <!-- Search & Filter -->
+                    <div class="search-filter">
+                        <select id="projectStatusFilter" class="form-select status-select" onchange="renderProjects()">
+                            <option value="all">全部專案</option>
+                            <option value="active" selected>進行中</option>
+                            <option value="ended">已結束</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Project Cards Layout -->
+            <div id="projectList" class="items-grid" style="margin-top: 20px;">
+                <!-- JS Populated Project Cards -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modal: Add/Edit Project -->
+    <div class="modal-overlay" id="projectModalOverlay">
+        <div class="modal">
+            <div class="modal-header">
+                <span id="projectModalTitle">新增企劃專案</span>
+                <span class="close-modal" onclick="closeProjectModal()">&times;</span>
+            </div>
+            <form id="projectForm" onsubmit="handleProjectSubmit(event)">
+                <input type="hidden" id="projectId">
+                <div class="form-group">
+                    <label class="form-label">專案名稱</label>
+                    <input type="text" id="projectName" class="form-input" required placeholder="例如：2024 京阪神之旅">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">總預算 (TWD)</label>
+                    <input type="number" id="projectBudget" class="form-input" required min="0" placeholder="0">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">開始日期</label>
+                        <input type="date" id="projectStartDate" class="form-input">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">結束日期 (選填)</label>
+                        <input type="date" id="projectEndDate" class="form-input">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">狀態</label>
+                    <select id="projectStatus" class="form-select">
+                        <option value="active">進行中</option>
+                        <option value="ended">已結束</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">儲存專案</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Project Details & Expenses -->
+    <div class="modal-overlay" id="projectDetailModalOverlay">
+        <div class="modal" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <div class="modal-header">
+                <span id="projectDetailTitle">專案明細</span>
+                <span class="close-modal" onclick="closeProjectDetailModal()">&times;</span>
+            </div>
+
+            <!-- Project Overview Header inside Details -->
+            <div class="overview-banner" style="margin-bottom: 20px;">
+                <div class="overview-stats">
+                    <div class="overview-stat">
+                        <div class="stat-title">總預算</div>
+                        <div class="stat-value" id="detailProjectBudget">NT$ 0</div>
+                    </div>
+                    <div class="overview-stat">
+                        <div class="stat-title">已花費</div>
+                        <div class="stat-value stat-monthly" id="detailProjectSpent">NT$ 0</div>
+                    </div>
+                    <div class="overview-stat">
+                        <div class="stat-title">剩餘預算</div>
+                        <div class="stat-value" id="detailProjectRemain">NT$ 0</div>
+                    </div>
+                </div>
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="detailProjectProgress" style="width:0%"></div>
+                    </div>
+                    <span class="progress-pct" id="detailProjectPct">支出 0%</span>
+                </div>
+            </div>
+
+            <!-- Add Expense Form for Project -->
+            <div style="background: var(--bg-color); padding: 16px; border-radius: 8px; margin-bottom: 20px;">
+                <h4 style="margin-top: 0; margin-bottom: 12px; color: var(--text-color);">記一筆</h4>
+                <form id="projectExpForm" onsubmit="handleProjectExpSubmit(event)">
+                    <input type="hidden" id="projectExpId">
+                    <input type="hidden" id="projectExpParentId">
+
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label" style="display:flex; justify-content:space-between;">
+                                分類
+                                <span class="link-btn" onclick="openProjectCatModal()">管理分類</span>
+                            </label>
+                            <select id="projectExpCat" class="form-select">
+                                <!-- JS populated -->
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">名稱 / 項目</label>
+                            <input type="text" id="projectExpName" class="form-input" required placeholder="例如：機票">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">金額 (TWD)</label>
+                            <input type="number" id="projectExpAmount" class="form-input" required min="0"
+                                placeholder="0">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">日期</label>
+                                <input type="date" id="projectExpDate" class="form-input" required>
+                            </div>
+                            <div class="form-group" style="flex: 1; display:flex; align-items:flex-end;">
+                                <button type="submit" class="btn btn-primary" style="width: 100%;">新增明細</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Expense List for this Project -->
+            <div class="item-list" id="projectDetailExpList">
+                <!-- JS Populated -->
+            </div>
+
+        </div>
     </div>
 
     <!-- Modal: Add/Edit Item -->
@@ -510,6 +688,27 @@
         </div>
     </div>
 
+    <!-- Modal: Manage Project Categories -->
+    <div class="modal-overlay" id="projectCatModalOverlay" style="z-index: 1050;">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span id="projectCatModalTitle">管理專案明細分類</span>
+                <span class="close-modal" onclick="closeProjectCatModal()">&times;</span>
+            </div>
+            <div class="form-row" style="margin-bottom:16px;">
+                <input type="hidden" id="editProjectCatId">
+                <input type="text" id="newProjectCatName" class="form-input" placeholder="分類名稱" style="flex:2">
+                <input type="color" id="newProjectCatColor" class="form-input"
+                    style="flex:0 0 42px;padding:2px;height:42px;" value="#2A6475">
+                <button class="btn btn-primary" id="saveProjectCatBtn" onclick="saveProjectCategory()" style="flex:0"
+                    title="儲存"><i class="fa-solid fa-check"></i></button>
+                <button class="btn btn-secondary" id="cancelProjectCatBtn" onclick="cancelProjectCatEdit()"
+                    style="flex:0;display:none;" title="取消"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="projectCategoryList" class="category-list"></div>
+        </div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
     <script src="js/state.js"></script>
@@ -519,6 +718,7 @@
     <script src="js/ui-life.js"></script>
     <script src="js/ui-analysis.js"></script>
     <script src="js/ui-wealth.js"></script>
+    <script src="js/ui-projects.js"></script>
     <script src="js/main.js"></script>
 </body>
 
