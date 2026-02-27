@@ -146,36 +146,48 @@ function drawAnnualBarChart(monthlyData) {
     const gridColor = isDark ? '#2D2B28' : '#E8E5E0';
 
     annualReportChartInstance = new Chart(ctx, {
-        type: 'bar',
+        type: 'line',
         data: {
             labels: labels,
             datasets: [
                 {
                     label: '固定支出',
                     data: monthlyData.map(d => d.fixed),
-                    backgroundColor: '#2A6475',
-                    stack: 'Stack 0'
+                    borderColor: '#2A6475',
+                    backgroundColor: '#2A647518',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    tension: 0.3,
+                    fill: true
                 },
                 {
                     label: '生活花費',
                     data: monthlyData.map(d => d.life),
-                    backgroundColor: '#C17B2E',
-                    stack: 'Stack 0'
+                    borderColor: '#C17B2E',
+                    backgroundColor: '#C17B2E18',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    tension: 0.3,
+                    fill: true
                 },
                 {
                     label: '企劃支出',
                     data: monthlyData.map(d => d.project),
-                    backgroundColor: '#8b5cf6',
-                    stack: 'Stack 0'
+                    borderColor: '#8b5cf6',
+                    backgroundColor: '#8b5cf618',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    tension: 0.3,
+                    fill: true
                 },
                 {
                     label: '總結餘',
                     data: monthlyData.map(d => d.balance),
-                    type: 'line',
                     borderColor: '#10b981',
-                    backgroundColor: '#10b981',
-                    borderWidth: 2,
-                    pointRadius: 3,
+                    backgroundColor: '#10b98118',
+                    borderWidth: 3,
+                    pointRadius: 5,
+                    tension: 0.3,
                     fill: false,
                     yAxisID: 'y'
                 }
@@ -201,15 +213,26 @@ function drawAnnualBarChart(monthlyData) {
                     }
                 }
             },
+            layout: {
+                padding: {
+                    left: 10,
+                    right: 15,
+                    bottom: 0,
+                    top: 0
+                }
+            },
             scales: {
                 x: {
-                    stacked: true,
+                    stacked: false,
                     ticks: { color: textColor, maxRotation: 0, minRotation: 0 },
                     grid: { display: false }
                 },
                 y: {
-                    stacked: true,
-                    ticks: { color: textColor, callback: val => 'NT$' + (val / 1000).toLocaleString() + 'k' },
+                    stacked: false,
+                    ticks: {
+                        color: textColor,
+                        callback: function (v) { return 'NT$' + v.toLocaleString(); }
+                    },
                     grid: { color: gridColor }
                 }
             }

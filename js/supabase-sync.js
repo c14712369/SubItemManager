@@ -167,8 +167,13 @@ async function fetchFromServer() {
             const localTimestampRaw = localStorage.getItem('last_local_update');
             const localTimestamp = localTimestampRaw ? parseInt(localTimestampRaw, 10) : 0;
 
-            // Conflict Resolution
-            if (localTimestamp > cloudTimestamp) {
+            // Conflict Resolution:
+            // Only push local over cloud if the user actually has real fixed subscription data locally.
+            // A single auto-applied salary entry (lifeExpenses=1, items=0) does NOT count as real local data
+            // and should never override what's in the cloud.
+            var localHasRealData = (items && items.length > 0) || (projects && projects.length > 0);
+
+            if (localHasRealData && localTimestamp > cloudTimestamp) {
                 console.log('本地資料較新，將本地資料推上雲端覆蓋');
                 if (loadingOverlay) loadingOverlay.classList.remove('active');
                 await syncToServer(true); // Force push local to cloud
@@ -212,15 +217,10 @@ async function fetchFromServer() {
             }
             // showToast('已載入雲端最新資料'); // Removed per request
 
-            // Refresh UI
-            if (typeof initWealthTab === 'function') initWealthTab();
-            render();
-            if (document.getElementById('tab-life').classList.contains('active')) renderLifeTab();
-            if (document.getElementById('tab-analysis').classList.contains('active')) {
-                renderChart();
-                renderLifeCategoryChart();
-            }
-            if (document.getElementById('tab-projects').classList.contains('active')) renderProjects();
+            // Refresh all UI — use init(true) to ensure every tab renders correctly
+            init(true); // skipCloudFetch=true prevents infinite re-fetch loop
+            showToast('已載入雲端最新資料');
+
         } else {
             // First log in, no cloud data. Push current local data to cloud to initialize.
             showToast('首次登入，將本地資料同步至雲端...');

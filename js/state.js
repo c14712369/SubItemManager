@@ -11,6 +11,8 @@ const WEALTH_PARAMS_KEY = 'sub_mgr_wealth_params';
 const PROJECTS_KEY = 'sub_mgr_projects';
 const PROJECT_EXP_KEY = 'sub_mgr_project_expenses';
 const PROJECT_CAT_KEY = 'sub_mgr_project_categories';
+const SALARY_DEFAULT_KEY = 'sub_mgr_default_salary';
+
 
 let items = [];
 let categories = [];

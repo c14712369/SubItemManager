@@ -60,20 +60,12 @@ function calculateStats() {
 }
 
 function updateBudgetCalc() {
-    var incomeInput = document.getElementById('monthlyIncomeInput');
-    var estimated = parseFloat(incomeInput ? incomeInput.value : 0) || 0;
-    localStorage.setItem(INCOME_KEY, estimated);
-
     var stats = calculateStats();
     var actualIncome = getLifeIncomeForMonth(lifeCurrentMonth);
     var lifeExpense = getLifeOnlyExpForMonth(lifeCurrentMonth);
 
-    // Use actual recorded income if any; else fallback to estimate
-    var income = actualIncome > 0 ? actualIncome : estimated;
-
-    // Update analysis displays
-    var lifeActualEl = document.getElementById('lifeActualIncome');
-    if (lifeActualEl) lifeActualEl.textContent = 'NT$ ' + actualIncome.toLocaleString();
+    // Use actual recorded income only
+    var income = actualIncome;
 
     var lifeEl = document.getElementById('totalLifeMonthly');
     if (lifeEl) lifeEl.textContent = 'NT$ ' + Math.round(lifeExpense).toLocaleString();
@@ -195,10 +187,6 @@ function renderProjectSavingsInfo() {
     }
 }
 
-function showIncomeSavedToast() {
-    showToast('已儲存預估收入');
-    if (typeof triggerCloudSync === 'function') triggerCloudSync();
-}
 
 function calculateExpenseForMonth(item, year, month) {
     const start = new Date(item.startDate);
@@ -375,15 +363,19 @@ function renderChart() {
 
     if (data.length > 0) {
         if (_subChartShape === 'pie') {
+            var dk = document.documentElement.getAttribute('data-theme') === 'dark';
+            var tc = dk ? '#F0EDE8' : '#1A1A1A';
+
             chartInstance = new Chart(ctx, {
                 type: 'pie',
                 data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
                 options: {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
-                        legend: { position: 'bottom' },
-                        title: { display: true, text: `${chartTitle} (${labels.length} 分類)`, font: { size: 16 } }
-                    }
+                        legend: { position: 'bottom', labels: { color: tc } },
+                        title: { display: true, text: `${chartTitle} (${labels.length} 分類)`, color: tc, font: { size: 16 } }
+                    },
+                    layout: { padding: { left: 10, right: 10 } }
                 }
             });
         } else {
@@ -398,13 +390,14 @@ function renderChart() {
                     responsive: true, maintainAspectRatio: false,
                     plugins: {
                         legend: { display: false },
-                        title: { display: true, text: `${chartTitle} (${labels.length} 分類)`, font: { size: 16 } },
+                        title: { display: true, text: `${chartTitle} (${labels.length} 分類)`, color: tc, font: { size: 16 } },
                         tooltip: { callbacks: { label: function (c) { return 'NT$ ' + c.raw.toLocaleString(); } } }
                     },
                     scales: {
                         y: { ticks: { color: tc, callback: function (v) { return 'NT$' + v.toLocaleString(); } }, grid: { color: gc } },
                         x: { ticks: { color: tc }, grid: { display: false } }
-                    }
+                    },
+                    layout: { padding: { left: 10, right: 10 } }
                 }
             });
         }
@@ -522,7 +515,11 @@ function renderLifeCategoryChart() {
         data: { labels: labels, datasets: [{ data: data, backgroundColor: colors.map(function (c) { return c + 'CC'; }), borderColor: colors, borderWidth: 1, borderRadius: 4 }] },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function (c) { return 'NT$ ' + c.raw.toLocaleString(); } } } },
+            plugins: {
+                legend: { display: false },
+                title: { display: true, text: ym + ' 分類支出統計', color: tc, font: { size: 14 } },
+                tooltip: { callbacks: { label: function (c) { return 'NT$ ' + c.raw.toLocaleString(); } } }
+            },
             scales: { y: { ticks: { color: tc, callback: function (v) { return 'NT$' + v.toLocaleString(); } }, grid: { color: gc } }, x: { ticks: { color: tc }, grid: { display: false } } }
         }
     });

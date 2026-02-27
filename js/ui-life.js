@@ -74,55 +74,82 @@ function renderLifeTab() {
 
     renderBudgetCards();
     renderLifeExpenseList();
+    updateSalaryApplyBtn();
+
+    // Auto-apply salary if setting exists and no income recorded yet
+    autoApplySalary(lifeCurrentMonth);
 }
+
+// Track selected category filter
+var _lifeSelectedCatId = null;
 
 function renderBudgetCards() {
     var container = document.getElementById('budgetCards');
     if (!container) return;
     container.innerHTML = '';
+
+    var totalSpent = getLifeOnlyExpForMonth(lifeCurrentMonth);
+
+    // "全部" row
+    var allRow = document.createElement('div');
+    allRow.className = 'life-cat-row' + (_lifeSelectedCatId === null ? ' active' : '');
+    allRow.onclick = function () { clearLifeFilter(); };
+    allRow.innerHTML =
+        '<div class="life-cat-row-left">' +
+        '<span class="life-cat-dot" style="background:var(--primary-color)"></span>' +
+        '<span class="life-cat-row-name">全部支出</span>' +
+        '</div>' +
+        '<div class="life-cat-row-right">' +
+        '<span class="life-cat-row-amt">NT$ ' + totalSpent.toLocaleString() + '</span>' +
+        '</div>';
+    container.appendChild(allRow);
+
+    var sep = document.createElement('div');
+    sep.className = 'life-cat-sep';
+    container.appendChild(sep);
+
     lifeCategories.forEach(function (cat) {
         var spent = getLifeSpentByCat(cat.id, lifeCurrentMonth);
-        var budget = getLifeBudget(cat.id, lifeCurrentMonth);
-        var isOver = budget > 0 && spent > budget;
-        var pct = budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0;
-        var rawPct = budget > 0 ? Math.round((spent / budget) * 100) : 0;
+        if (spent <= 0) return; // 只顯示有支出的分類
 
-        var card = document.createElement('div');
-        card.className = 'budget-card';
-        // Add a subtle background color based on the category color
-        card.style.backgroundColor = cat.color + '0a'; // 0a is very low alpha (hex)
-        card.style.borderLeft = '3px solid ' + cat.color;
+        var row = document.createElement('div');
+        row.className = 'life-cat-row' + (_lifeSelectedCatId === cat.id ? ' active' : '');
+        var catId = cat.id;
+        row.onclick = function () { selectLifeCat(catId); };
 
-        var limitHtml = budget > 0
-            ? '<span class="budget-limit">/ NT$ ' + budget.toLocaleString() + '</span>'
-            : '';
-
-        var fillClass = 'progress-fill' + (isOver ? ' over-budget' : '');
-        var pctClass = 'progress-pct' + (isOver ? ' over-budget' : '');
-        var barHtml = budget > 0
-            ? '<div class="progress-bar"><div class="' + fillClass + '" style="width:' + pct + '%"></div></div><span class="' + pctClass + '">' + rawPct + '%</span>'
-            : '<div class="progress-bar"><div class="progress-fill" style="width:0%; opacity:0.1"></div></div><span class="progress-pct" style="opacity:0.3">—</span>';
-
-        var spentClass = 'budget-spent' + (isOver ? ' over-budget' : '');
-
-        card.innerHTML =
-            '<div class="budget-card-header">' +
-            '<div class="budget-cat-name">' +
-            '<span style="width:8px;height:8px;border-radius:50%;background:' + cat.color + ';display:inline-block;"></span>' +
-            cat.name +
+        row.innerHTML =
+            '<div class="life-cat-row-left">' +
+            '<span class="life-cat-dot" style="background:' + cat.color + '"></span>' +
+            '<span class="life-cat-row-name">' + cat.name + '</span>' +
             '</div>' +
-            '<div class="budget-card-actions">' +
-            '<button class="icon-btn" onclick="openLifeExpModalWithCat(\'' + cat.id + '\')" title="新增支出"><i class="fa-solid fa-plus"></i></button>' +
-            '<button class="icon-btn" onclick="openBudgetModal(\'' + cat.id + '\')" title="設定預算"><i class="fa-solid fa-sliders"></i></button>' +
-            '</div>' +
-            '</div>' +
-            '<div class="budget-card-info">' +
-            '<div style="margin-bottom:8px;"><span class="' + spentClass + '">NT$ ' + spent.toLocaleString() + '</span>' + limitHtml + '</div>' +
-            '<div class="progress-bar-wrap" style="gap:8px;">' + barHtml + '</div>' +
+            '<div class="life-cat-row-right">' +
+            '<span class="life-cat-row-amt">NT$ ' + spent.toLocaleString() + '</span>' +
+            '<button class="icon-btn life-cat-action" onclick="event.stopPropagation();openLifeExpModalWithCat(\'' + cat.id + '\')" title="新增支出"><i class="fa-solid fa-plus"></i></button>' +
             '</div>';
 
-        container.appendChild(card);
+        container.appendChild(row);
     });
+}
+
+function selectLifeCat(catId) {
+    _lifeSelectedCatId = catId;
+    renderBudgetCards();
+    renderLifeExpenseList();
+    var cat = getLifeCat(catId);
+    var titleEl = document.getElementById('lifeDetailTitle');
+    var clearBtn = document.getElementById('lifeClearFilter');
+    if (titleEl) titleEl.innerHTML = '<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:' + cat.color + ';margin-right:6px;vertical-align:middle;"></span>' + cat.name + ' 明細';
+    if (clearBtn) clearBtn.style.display = '';
+}
+
+function clearLifeFilter() {
+    _lifeSelectedCatId = null;
+    renderBudgetCards();
+    renderLifeExpenseList();
+    var titleEl = document.getElementById('lifeDetailTitle');
+    var clearBtn = document.getElementById('lifeClearFilter');
+    if (titleEl) titleEl.innerHTML = '<i class="fa-solid fa-book"></i> 全部明細';
+    if (clearBtn) clearBtn.style.display = 'none';
 }
 
 function renderLifeExpenseList() {
@@ -130,15 +157,21 @@ function renderLifeExpenseList() {
     if (!container) return;
 
     var all = lifeExpenses
-        .filter(function (e) { return e.date && e.date.startsWith(lifeCurrentMonth); })
-        .sort(function (a, b) { return b.date.localeCompare(a.date); });
+        .filter(function (e) {
+            if (!e.date || !e.date.startsWith(lifeCurrentMonth)) return false;
+            if (_lifeSelectedCatId !== null) {
+                return e.type !== 'income' && e.categoryId === _lifeSelectedCatId;
+            }
+            return true;
+        })
+        .sort(function (a, b) { return a.date.localeCompare(b.date); });
 
     if (all.length === 0) {
         container.innerHTML =
             '<div class="empty-state">' +
             '<span class="empty-icon"><i class="fa-regular fa-face-smile-beam"></i></span>' +
             '<strong>本月尚無記錄</strong>' +
-            '<p>點擊「收入」或「支出」按鈕開始記帳</p>' +
+            '<p>點擊「支出」按鈕開始記帳</p>' +
             '</div>';
         return;
     }
@@ -247,7 +280,20 @@ function handleLifeExpSubmit(e) {
     var entry;
     if (type === 'income') {
         var incCatId = document.getElementById('lifeExpIncCat').value;
-        entry = { id: id || crypto.randomUUID(), type: 'income', categoryId: incCatId, amount: amount, date: date, note: note };
+        // Smart Date Adjustment: if it's a weekend, adjust to previous Friday
+        var originalDate = new Date(date);
+        var dayOfWeek = originalDate.getDay();
+        var adjustedDate = date;
+        if (dayOfWeek === 0) { // Sun
+            originalDate.setDate(originalDate.getDate() - 2);
+            adjustedDate = originalDate.toISOString().split('T')[0];
+            showToast('已口動調整週末發薪日至週五');
+        } else if (dayOfWeek === 6) { // Sat
+            originalDate.setDate(originalDate.getDate() - 1);
+            adjustedDate = originalDate.toISOString().split('T')[0];
+            showToast('已自動調整週末發薪日至週五');
+        }
+        entry = { id: id || crypto.randomUUID(), type: 'income', categoryId: incCatId, amount: amount, date: adjustedDate, note: note };
     } else {
         var catId = document.getElementById('lifeExpCat').value;
         entry = { id: id || crypto.randomUUID(), type: 'expense', categoryId: catId, amount: amount, date: date, note: note };
@@ -430,4 +476,165 @@ function deleteLifeCategory(id) {
         renderLifeCatList();
         showToast('分類已刪除');
     }
+}
+
+// ── 預設薪資功能 ──
+
+function getDefaultSalary() {
+    var raw = localStorage.getItem(SALARY_DEFAULT_KEY);
+    return raw ? JSON.parse(raw) : null;
+}
+
+function updateSalaryApplyBtn() {
+    var wrap = document.getElementById('salaryApplyWrap');
+    if (!wrap) return;
+    var setting = getDefaultSalary();
+    if (!setting) { wrap.style.display = 'none'; return; }
+    // Only show button if this month has no income from this salary cat yet
+    var alreadyApplied = lifeExpenses.some(function (e) {
+        return e.type === 'income' &&
+            e.categoryId === setting.catId &&
+            e.date && e.date.startsWith(lifeCurrentMonth) &&
+            e._salaryDefault === true;
+    });
+    wrap.style.display = alreadyApplied ? 'none' : '';
+}
+
+function applyDefaultSalary() {
+    var setting = getDefaultSalary();
+    if (!setting) { showToast('請先設定預設薪資'); return; }
+
+    var parts = lifeCurrentMonth.split('-');
+    var year = parseInt(parts[0]);
+    var month = parseInt(parts[1]);
+
+    // Clamp day to last day of month (e.g. 31 in Feb → 28/29)
+    var maxDay = new Date(year, month, 0).getDate();
+    var targetDay = Math.min(parseInt(setting.day || 5), maxDay);
+
+    // Check for weekend and adjust to preceding Friday
+    var salaryDate = new Date(year, month - 1, targetDay);
+    var dow = salaryDate.getDay(); // 0=Sun, 6=Sat
+    var adjusted = false;
+    if (dow === 6) { salaryDate.setDate(salaryDate.getDate() - 1); adjusted = true; } // Sat → Fri
+    if (dow === 0) { salaryDate.setDate(salaryDate.getDate() - 2); adjusted = true; } // Sun → Fri
+
+    var dateStr = salaryDate.getFullYear() + '-' +
+        String(salaryDate.getMonth() + 1).padStart(2, '0') + '-' +
+        String(salaryDate.getDate()).padStart(2, '0');
+
+    var dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+    var toastMsg = '薪資已套用 NT$ ' + setting.amount.toLocaleString();
+    if (adjusted) toastMsg += '（調整至 ' + salaryDate.getDate() + ' 日，週' + dayNames[salaryDate.getDay()] + '）';
+
+    var entry = {
+        id: crypto.randomUUID(),
+        type: 'income',
+        categoryId: setting.catId,
+        amount: setting.amount,
+        date: dateStr,
+        note: setting.note || '薪資（預設帶入）',
+        _salaryDefault: true
+    };
+    lifeExpenses.push(entry);
+    saveLifeData();
+    renderLifeTab();
+    showToast(toastMsg);
+}
+
+
+function openSalarySettingModal() {
+    var sel = document.getElementById('salaryDefaultCatSelect');
+    if (sel) {
+        sel.innerHTML = lifeIncomeCategories.map(function (c) {
+            return '<option value="' + c.id + '">' + c.name + '</option>';
+        }).join('');
+    }
+    var setting = getDefaultSalary();
+    if (setting) {
+        var amtEl = document.getElementById('salaryDefaultAmtInput');
+        var dayEl = document.getElementById('salaryDefaultDay');
+        if (amtEl) amtEl.value = setting.amount;
+        if (sel) sel.value = setting.catId;
+        if (dayEl) dayEl.value = setting.day || 5;
+    }
+    var overlay = document.getElementById('salarySettingModalOverlay');
+    if (overlay) overlay.classList.add('active');
+}
+
+function closeSalarySettingModal() {
+    var overlay = document.getElementById('salarySettingModalOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+function saveDefaultSalary() {
+    var amt = parseInt(document.getElementById('salaryDefaultAmtInput').value);
+    var catId = document.getElementById('salaryDefaultCatSelect').value;
+    var day = parseInt(document.getElementById('salaryDefaultDay').value) || 5;
+    if (!amt || amt <= 0) { showToast('請輸入有效金額'); return; }
+    var setting = { amount: amt, catId: catId, day: day, note: '薪資（預設帶入）' };
+    localStorage.setItem(SALARY_DEFAULT_KEY, JSON.stringify(setting));
+    closeSalarySettingModal();
+    updateSalaryApplyBtn();
+    showToast('預設薪資已儲存');
+}
+
+function clearDefaultSalary() {
+    if (!confirm('確定清除預設薪資設定？')) return;
+    localStorage.removeItem(SALARY_DEFAULT_KEY);
+    closeSalarySettingModal();
+    updateSalaryApplyBtn();
+    showToast('預設薪資已清除');
+}
+
+function getAdjustedPaydate(ym, payday) {
+    var parts = ym.split('-');
+    var year = parseInt(parts[0]);
+    var month = parseInt(parts[1]);
+
+    // Target date
+    var d = new Date(year, month - 1, payday);
+
+    // If payday is e.g. 31 but month has 30, it wraps. Cap it at month end.
+    var monthEnd = new Date(year, month, 0).getDate();
+    if (payday > monthEnd) d = new Date(year, month - 1, monthEnd);
+
+    var dayOfWeek = d.getDay(); // 0=Sun, 6=Sat
+    if (dayOfWeek === 0) { // Sunday -> Friday
+        d.setDate(d.getDate() - 2);
+    } else if (dayOfWeek === 6) { // Saturday -> Friday
+        d.setDate(d.getDate() - 1);
+    }
+
+    return d.toISOString().split('T')[0];
+}
+
+function autoApplySalary(ym) {
+    // Check if we have default salary
+    var setting = getDefaultSalary();
+    if (!setting) return;
+
+    // Check if any income exists for this month
+    var existingIncome = getLifeIncomeForMonth(ym);
+    if (existingIncome > 0) return;
+
+    // Calculate correct date
+    var dateStr = getAdjustedPaydate(ym, setting.day || 5);
+
+    // Create new income entry
+    var newExp = {
+        id: Date.now() + Math.random().toString(36).substr(2, 5),
+        type: 'income',
+        categoryId: setting.catId,
+        amount: setting.amount,
+        date: dateStr,
+        note: setting.note || '薪資（自動入帳）'
+    };
+
+    lifeExpenses.push(newExp);
+    saveLifeData();
+
+    // Re-render to show changes
+    render(); // Use global render to update all tabs including Analysis
+    if (typeof triggerCloudSync === 'function') triggerCloudSync();
 }
