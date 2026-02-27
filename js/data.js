@@ -26,6 +26,7 @@ function loadData() {
 function saveData() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     localStorage.setItem(CAT_KEY, JSON.stringify(categories));
+    if (typeof triggerCloudSync === 'function') triggerCloudSync();
     render();
 }
 
@@ -48,6 +49,7 @@ function saveLifeData() {
     localStorage.setItem(LIFE_CAT_KEY, JSON.stringify(lifeCategories));
     localStorage.setItem(LIFE_INC_CAT_KEY, JSON.stringify(lifeIncomeCategories));
     localStorage.setItem(LIFE_BDG_KEY, JSON.stringify(lifeBudgets));
+    if (typeof triggerCloudSync === 'function') triggerCloudSync();
 }
 
 function exportData() {
@@ -76,6 +78,7 @@ function exportData() {
         lifeBudgets,
         projects,
         projectExpenses,
+        projectCategories,
         settings: {
             estimatedIncome: storedIncome,
             wealthParams: storedWealth ? JSON.parse(storedWealth) : null
@@ -88,11 +91,11 @@ function exportData() {
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
-function importData(input) {
+async function importData(input) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function (e) {
+    reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
             if (data.items && Array.isArray(data.items)) {
@@ -105,6 +108,7 @@ function importData(input) {
                     lifeBudgets = data.lifeBudgets || {};
                     projects = data.projects || [];
                     projectExpenses = data.projectExpenses || [];
+                    projectCategories = data.projectCategories || DEFAULT_PROJECT_CATS;
                     if (data.settings) {
                         if (data.settings.estimatedIncome !== undefined) {
                             localStorage.setItem(INCOME_KEY, data.settings.estimatedIncome);
@@ -117,16 +121,19 @@ function importData(input) {
                     }
                     saveData();
                     saveLifeData();
+                    if (typeof saveProjectsData === 'function') saveProjectsData();
+                    if (typeof syncToServer === 'function') await syncToServer(true);
                     showToast('匯入成功');
-                    init(); // Auto refresh UI
+                    init(true); // Auto refresh UI, skip cloud pull
                     if (typeof initWealthTab === 'function') initWealthTab();
                 }
             } else if (Array.isArray(data)) {
                 if (confirm('匯入舊版備份？')) {
                     items = data;
                     saveData();
+                    if (typeof syncToServer === 'function') await syncToServer(true);
                     showToast('匯入成功');
-                    init();
+                    init(true);
                 }
             }
         } catch (err) { console.error(err); showToast('檔案格式錯誤'); }

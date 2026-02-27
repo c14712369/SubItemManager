@@ -71,6 +71,7 @@ function _doCalculateWealth() {
         cashRate: document.getElementById('wealthCashRateInput').value,
         target: document.getElementById('wealthTargetInput').value
     }));
+    if (typeof triggerCloudSync === 'function') triggerCloudSync();
 
     var resultEl = document.getElementById('wealthResultText');
     var summaryEl = document.getElementById('wealthSummaryText');

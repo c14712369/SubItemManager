@@ -197,6 +197,7 @@ function renderProjectSavingsInfo() {
 
 function showIncomeSavedToast() {
     showToast('已儲存預估收入');
+    if (typeof triggerCloudSync === 'function') triggerCloudSync();
 }
 
 function calculateExpenseForMonth(item, year, month) {
@@ -417,12 +418,12 @@ function renderChart() {
             let listHtml = '<div style="display:flex; flex-direction:column; gap:8px;">';
             detailedItems.forEach(di => {
                 listHtml += `
-                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 14px; background:var(--bg-color); border-radius:var(--radius-sm); border:1px solid var(--border-color);">
-                        <div style="display:flex; align-items:center; gap:10px;">
-                            <div style="width:12px; height:12px; border-radius:50%; background-color:${di.color}; flex-shrink:0;"></div>
+                    <div class="expense-list-row">
+                        <div class="expense-list-info">
+                            <div class="expense-list-color" style="background-color:${di.color};"></div>
                             <span style="font-weight:500;">${di.name}</span>
                         </div>
-                        <div style="font-weight:bold; color:var(--text-main);">
+                        <div class="expense-list-amount">
                             NT$ ${Math.round(di.cost).toLocaleString()}
                         </div>
                     </div>
