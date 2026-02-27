@@ -38,7 +38,9 @@ function switchTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
     });
-    document.getElementById(`tab-${tabId}`).classList.add('active');
+    const tabEl = document.getElementById(`tab-${tabId}`);
+    if (!tabEl) { console.warn('switchTab: unknown tab', tabId); return; }
+    tabEl.classList.add('active');
 
     if (tabId === 'analysis') {
         requestAnimationFrame(() => {
@@ -83,12 +85,6 @@ function init(skipCloudFetch = false) {
     initChartYearSelect();
     initWealthTab();
     switchTab('life');
-
-    const savedIncome = localStorage.getItem(INCOME_KEY);
-    if (savedIncome) {
-        const incomeInput = document.getElementById('monthlyIncomeInput');
-        if (incomeInput) incomeInput.value = savedIncome;
-    }
 
     render();
 

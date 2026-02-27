@@ -92,6 +92,8 @@ body {
 }
 
 /* ── Header ── */
+/* Sidebar Header styles consolidated later */
+
 header {
     display: flex;
     justify-content: space-between;
@@ -620,28 +622,34 @@ h1 .title-icon {
     transition: background-color 0.35s, border-color 0.35s;
 }
 
+#annualReportChartInner {
+    min-width: 800px;
+    width: 100%;
+}
+
 .chart-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    gap: 16px;
 }
 
 .chart-header-title {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     gap: 12px;
-    flex-wrap: wrap;
 }
 
 .chart-header h3 {
     font-family: var(--font-serif);
-    font-size: 1rem;
+    font-size: 1.1rem;
     font-weight: 700;
     color: var(--text-main);
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     margin: 0;
 }
 
@@ -649,7 +657,7 @@ h1 .title-icon {
     font-size: 0.8rem;
     color: var(--text-muted);
     background: var(--bg-color);
-    padding: 4px 12px;
+    padding: 6px 14px;
     border-radius: 100px;
     border: 1px solid var(--border-color);
     display: flex;
@@ -666,16 +674,25 @@ h1 .title-icon {
 
 .chart-controls {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     align-items: center;
     flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.chart-controls .type-toggle {
+    margin-bottom: 0;
 }
 
 .chart-select {
     width: auto !important;
-    height: 34px !important;
-    font-size: 0.85rem !important;
+    height: 38px !important;
+    font-size: 0.9rem !important;
     padding: 0 12px !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
 }
 
 .chart-header h3 i {
@@ -995,6 +1012,10 @@ h1 .title-icon {
     margin-bottom: 12px;
 }
 
+#tab-analysis .overview-stats {
+    grid-template-columns: repeat(2, 1fr);
+}
+
 @media (max-width: 600px) {
     .overview-stats {
         grid-template-columns: 1fr;
@@ -1007,26 +1028,11 @@ h1 .title-icon {
     border-right: 1px solid var(--border-color);
 }
 
-@media (max-width: 600px) {
-    .overview-stat {
-        padding: 0;
-        border-right: none;
-        border-bottom: 1px dashed var(--border-color);
-        padding-bottom: 8px;
-    }
-
-    .overview-stat:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
-    }
-}
-
-.overview-stat:first-child {
-    padding-left: 0;
-}
-
-.overview-stat:last-child {
-    border-right: none;
+.hero-options {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+    width: fit-content;
 }
 
 .stat-title {
@@ -1538,6 +1544,10 @@ h1 .title-icon {
     .chart-header h3 {
         width: 100%;
     }
+
+    #annualReportChartInner {
+        min-width: 100% !important;
+    }
 }
 
 @media (max-width: 600px) {
@@ -1685,12 +1695,21 @@ h1 .title-icon {
     }
 
     .chart-controls {
-        gap: 6px;
+        gap: 8px;
+        justify-content: flex-start;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .type-toggle {
+        margin-bottom: 0;
+        flex-shrink: 0;
     }
 
     .type-btn {
-        padding: 8px !important;
+        padding: 6px 10px !important;
         font-size: 0.75rem !important;
+        height: 34px;
     }
 
     .loading-overlay .loading-text {
@@ -1848,5 +1867,226 @@ video {
     /* Hide the global FAB since mobile has its own centered one */
     .fab-global {
         display: none;
+    }
+}
+
+/* ── Life Sidebar Layout ── */
+.life-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    gap: 20px;
+    align-items: start;
+    margin-top: 20px;
+}
+
+/* Left sidebar */
+.life-sidebar {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: sticky;
+    top: 20px;
+}
+
+.life-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-color);
+    margin: 0;
+}
+
+.life-sidebar-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.life-sidebar-title {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.life-cat-list {
+    padding: 0;
+}
+
+.life-cat-sep {
+    height: 1px;
+    background: var(--border-color);
+    margin: 6px 12px;
+    opacity: 0.6;
+}
+
+.life-cat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    gap: 8px;
+    border-left: 2px solid transparent;
+}
+
+.life-cat-row:hover {
+    background: var(--bg-color);
+}
+
+.life-cat-row.active {
+    background: rgba(42, 100, 117, 0.07);
+    border-left-color: var(--primary-color);
+}
+
+.life-cat-row:hover .life-cat-action {
+    opacity: 1;
+}
+
+.life-cat-row-left {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    flex: 1;
+    min-width: 0;
+}
+
+.life-cat-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.life-cat-row-info {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 0;
+}
+
+.life-cat-row-name {
+    font-size: 0.88rem;
+    font-weight: 500;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.life-cat-mini-bar {
+    height: 3px;
+    background: var(--border-color);
+    border-radius: 2px;
+    width: 72px;
+    overflow: hidden;
+}
+
+.life-cat-mini-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.life-cat-mini-fill.over {
+    background: var(--danger-color);
+}
+
+.life-cat-row-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.life-cat-row-amt {
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: var(--font-serif);
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.life-cat-row-amt.over {
+    color: var(--danger-color);
+}
+
+.life-cat-budget-badge {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    margin-right: 2px;
+}
+
+.life-cat-budget-badge.over {
+    color: var(--danger-color);
+}
+
+.life-cat-action {
+    opacity: 0;
+    font-size: 0.78rem;
+    padding: 3px 4px;
+    transition: opacity 0.15s, color 0.1s;
+}
+
+.life-sidebar-income-btn {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Right detail panel */
+.life-detail-panel {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    min-height: 300px;
+    overflow: hidden;
+}
+
+.life-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-color);
+}
+
+.life-detail-header h3 {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+}
+
+.life-detail-header h3 i {
+    color: var(--primary-color);
+}
+
+#lifeExpList {
+    padding: 8px 0;
+}
+
+/* Mobile: stack vertically */
+@media (max-width: 700px) {
+    .life-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .life-sidebar {
+        position: static;
+    }
+
+    .life-cat-action {
+        opacity: 1;
     }
 }
