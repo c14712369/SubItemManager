@@ -23,9 +23,14 @@ function loadData() {
     if (migrated) saveData();
 }
 
+function updateLocalTimestamp() {
+    localStorage.setItem('last_local_update', Date.now().toString());
+}
+
 function saveData() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     localStorage.setItem(CAT_KEY, JSON.stringify(categories));
+    updateLocalTimestamp();
     if (typeof triggerCloudSync === 'function') triggerCloudSync();
     render();
 }
@@ -49,6 +54,7 @@ function saveLifeData() {
     localStorage.setItem(LIFE_CAT_KEY, JSON.stringify(lifeCategories));
     localStorage.setItem(LIFE_INC_CAT_KEY, JSON.stringify(lifeIncomeCategories));
     localStorage.setItem(LIFE_BDG_KEY, JSON.stringify(lifeBudgets));
+    updateLocalTimestamp();
     if (typeof triggerCloudSync === 'function') triggerCloudSync();
 }
 

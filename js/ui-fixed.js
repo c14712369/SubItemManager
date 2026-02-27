@@ -204,25 +204,53 @@ function closeModal() {
     if (modalOverlay) modalOverlay.classList.remove('active');
 }
 
-function handleCurrencyChange() {
+async function handleCurrencyChange() {
     const curr = document.getElementById('itemCurrency').value;
     const rateRow = document.getElementById('exchangeRateRow');
     const rateInput = document.getElementById('itemExchangeRate');
     if (!rateRow || !rateInput) return;
+
     if (curr === 'TWD') {
-        rateRow.style.display = 'none'; rateInput.value = 1;
+        rateRow.style.display = 'none';
+        rateInput.value = 1;
+        calculateTWD();
     } else {
         rateRow.style.display = 'flex';
+
+        // Show loading state
+        rateInput.placeholder = '抓取即時匯率中...';
+
+        try {
+            // Fetch live exchange rates against TWD
+            const response = await fetch('https://open.er-api.com/v6/latest/' + curr);
+            if (response.ok) {
+                const data = await response.json();
+                if (data && data.rates && data.rates.TWD) {
+                    // Pre-fill with the fetched rate, but do not override if the modal is in edit mode and rate already exists
+                    const currentModalTitle = document.getElementById('modalTitle').textContent;
+                    if (currentModalTitle === '新增項目' || !rateInput.value || rateInput.value == "1") {
+                        rateInput.value = data.rates.TWD.toFixed(4);
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('匯率 API 抓取失敗:', error);
+            showToast('即時匯率抓取失敗，請手動輸入');
+        } finally {
+            rateInput.placeholder = '請手動輸入';
+            calculateTWD();
+        }
     }
-    calculateTWD();
 }
 
 function calculateTWD() {
     const original = parseFloat(document.getElementById('itemOriginalAmount').value) || 0;
     const rate = parseFloat(document.getElementById('itemExchangeRate').value) || 1;
     const total = Math.round(original * rate);
-    document.getElementById('itemAmountTWD').value = `NT$ ${total.toLocaleString()}`;
-    document.getElementById('itemAmount').value = total;
+    const twdInput = document.getElementById('itemAmountTWD');
+    const amountHidden = document.getElementById('itemAmount');
+    if (twdInput) twdInput.value = `NT$ ${total.toLocaleString()}`;
+    if (amountHidden) amountHidden.value = total;
 }
 
 function editItem(id) {
