@@ -153,7 +153,7 @@ async function fetchFromServer() {
     try {
         const { data, error } = await supabaseClient
             .from('user_backups')
-            .select('app_data')
+            .select('app_data, updated_at')
             .eq('user_id', currentUser.id)
             .single();
 
@@ -164,6 +164,18 @@ async function fetchFromServer() {
         }
 
         if (data && data.app_data) {
+            const cloudTimestamp = new Date(data.updated_at).getTime();
+            const localTimestampRaw = localStorage.getItem('last_local_update');
+            const localTimestamp = localTimestampRaw ? parseInt(localTimestampRaw, 10) : 0;
+
+            // Conflict Resolution
+            if (localTimestamp > cloudTimestamp) {
+                console.log('本地資料較新，將本地資料推上雲端覆蓋');
+                if (loadingOverlay) loadingOverlay.classList.remove('active');
+                await syncToServer(true); // Force push local to cloud
+                return;
+            }
+
             const appData = data.app_data;
             // Overwrite JS variables & LocalStorage
             items = appData.items || [];

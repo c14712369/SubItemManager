@@ -47,11 +47,28 @@ function calculateWealth() {
 }
 
 function _doCalculateWealth() {
-    // 投資部位
+    // 取出現狀
     var invCurrent = parseFloat(document.getElementById('wealthInvestCurrentInput').value) || 0;
     var invMonthly = parseFloat(document.getElementById('wealthInvestMonthlyInput').value) || 0;
     var invRate = parseFloat(document.getElementById('wealthInvestRateInput').value) || 0;
     var invMonthlyRate = (invRate / 100) / 12;
+
+    var autoSync = document.getElementById('autoSyncWealthToggle').checked;
+
+    // 如果勾選了自動同步，就在此時偷偷執行一次數值更新，但不觸發無限回圈
+    if (autoSync) {
+        var stats = typeof calculateStats === 'function' ? calculateStats() : { monthly: 0 };
+        var incomeInput = document.getElementById('monthlyIncomeInput');
+        var estimated = parseFloat(incomeInput ? incomeInput.value : 0) || 0;
+        var actualIncome = typeof getLifeIncomeForMonth === 'function' ? getLifeIncomeForMonth(lifeCurrentMonth) : 0;
+        var lifeExpense = typeof getLifeOnlyExpForMonth === 'function' ? getLifeOnlyExpForMonth(lifeCurrentMonth) : 0;
+
+        var income = actualIncome > 0 ? actualIncome : estimated;
+        var remaining = income - stats.monthly - lifeExpense;
+        var cashAvailable = Math.max(0, Math.round(remaining - invMonthly));
+
+        document.getElementById('wealthCashMonthlyInput').value = cashAvailable;
+    }
 
     // 現金部位
     var cashCurrent = parseFloat(document.getElementById('wealthCashCurrentInput').value) || 0;
@@ -69,7 +86,8 @@ function _doCalculateWealth() {
         cashCurrent: document.getElementById('wealthCashCurrentInput').value,
         cashMonthly: document.getElementById('wealthCashMonthlyInput').value,
         cashRate: document.getElementById('wealthCashRateInput').value,
-        target: document.getElementById('wealthTargetInput').value
+        target: document.getElementById('wealthTargetInput').value,
+        autoSync: autoSync
     }));
     if (typeof triggerCloudSync === 'function') triggerCloudSync();
 

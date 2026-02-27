@@ -50,6 +50,8 @@
             <button class="tab-btn" onclick="switchTab('projects')">
                 <i class="fa-solid fa-plane-up"></i> 專案預算
             </button>
+            <button class="tab-btn" onclick="switchTab('annual')" id="tab-annual"><i
+                    class="fa-solid fa-calendar-days"></i> 年度報表</button>
         </div>
 
         <!-- Tab: Management -->
@@ -263,11 +265,19 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label"
-                            style="display:flex; justify-content:space-between; font-weight:bold;">
+                            style="display:flex; justify-content:space-between; align-items:flex-end; font-weight:bold; margin-bottom: 2px;">
                             <span>每月現金存款 (NT$)</span>
-                            <button class="icon-btn" onclick="useMonthlyBalanceForWealth()"
-                                style="font-size:0.8rem; height:auto; padding:0; text-decoration:underline;"
-                                title="將收支結餘扣除定額投資後，剩下作為存款">帶入剩餘結餘</button>
+                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                                <span
+                                    style="font-size: 0.8rem; display:flex; align-items:center; gap: 4px; font-weight: normal;">
+                                    <input type="checkbox" id="autoSyncWealthToggle" onchange="calculateWealth()"
+                                        style="accent-color: var(--primary-color);">
+                                    自動連動結餘
+                                </span>
+                                <button class="icon-btn" onclick="useMonthlyBalanceForWealth()"
+                                    style="font-size:0.8rem; height:auto; padding:0; text-decoration:underline;"
+                                    title="手動將收支結餘扣除定額投資後，剩下作為存款">帶入本月結餘</button>
+                            </div>
                         </label>
                         <input type="number" id="wealthCashMonthlyInput" class="form-input" placeholder="每月增加之現金"
                             oninput="calculateWealth()">
@@ -456,6 +466,56 @@
                 <!-- JS Populated -->
             </div>
 
+        </div>
+    </div>
+
+    <!-- Tab 5: Annual Report -->
+    <div id="tab-annual" class="tab-content" style="display: none;">
+        <div class="header-title" style="margin-bottom: 24px; padding-top: 10px;">
+            <h2><i class="fa-solid fa-calendar-days" style="color:var(--primary-color); margin-right:8px;"></i>年度總結報表
+            </h2>
+            <div class="subtitle">整合生活費、固定支出與企劃的年度花費</div>
+        </div>
+
+        <div class="chart-section" style="margin-bottom:24px;">
+            <div class="chart-header">
+                <div class="chart-header-title">
+                    <h3><i class="fa-solid fa-chart-bar"></i> 全年度各月收支總覽</h3>
+                </div>
+                <div class="chart-controls">
+                    <select id="annualReportYear" class="form-select chart-select" onchange="renderAnnualReport()">
+                        <!-- options populated by js -->
+                    </select>
+                </div>
+            </div>
+            <div class="dashboard" style="margin-bottom: 16px;">
+                <div class="stat-card" style="padding:16px;">
+                    <div class="stat-title">年度總收入</div>
+                    <div class="stat-value stat-positive" id="annualTotalIncome">NT$ 0</div>
+                </div>
+                <div class="stat-card" style="padding:16px;">
+                    <div class="stat-title">年度總支出</div>
+                    <div class="stat-value stat-negative" id="annualTotalExpense">NT$ 0</div>
+                </div>
+                <div class="stat-card" style="padding:16px;">
+                    <div class="stat-title">年度總結餘</div>
+                    <div class="stat-value" id="annualTotalBalance">NT$ 0</div>
+                </div>
+            </div>
+            <div class="chart-container" style="height: 350px;">
+                <canvas id="annualReportChart"></canvas>
+            </div>
+        </div>
+
+        <div class="chart-section" style="margin-bottom:24px;">
+            <div class="chart-header">
+                <div class="chart-header-title">
+                    <h3><i class="fa-solid fa-chart-pie"></i> 年度支出分佈</h3>
+                </div>
+            </div>
+            <div class="chart-container" style="height: 300px;">
+                <canvas id="annualPieChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -749,6 +809,7 @@
     <script src="js/ui-analysis.js"></script>
     <script src="js/ui-wealth.js"></script>
     <script src="js/ui-projects.js"></script>
+    <script src="js/ui-annual.js"></script>
     <script src="js/main.js"></script>
 </body>
 
