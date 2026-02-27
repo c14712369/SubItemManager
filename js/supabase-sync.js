@@ -8,7 +8,6 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     updateAuthUI();
 
     if (event === 'SIGNED_IN') {
-        showToast('已登入，正在同步雲端資料...');
         fetchFromServer();
     } else if (event === 'SIGNED_OUT') {
         showToast('已登出，切換為本地端模式');
@@ -216,7 +215,7 @@ async function fetchFromServer() {
             // Refresh UI
             if (typeof initWealthTab === 'function') initWealthTab();
             render();
-            if (document.getElementById('tab-life').classList.contains('active')) renderLifeTabs();
+            if (document.getElementById('tab-life').classList.contains('active')) renderLifeTab();
             if (document.getElementById('tab-analysis').classList.contains('active')) {
                 renderChart();
                 renderLifeCategoryChart();
