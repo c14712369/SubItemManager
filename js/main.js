@@ -60,7 +60,7 @@ function switchTab(tabId) {
     }
 }
 
-function init() {
+function init(skipCloudFetch = false) {
     initTheme();
     loadData();
     loadLifeData(); // from data.js
@@ -80,7 +80,7 @@ function init() {
 
     initChartYearSelect();
     initWealthTab();
-    switchTab('manage');
+    switchTab('life');
 
     const savedIncome = localStorage.getItem(INCOME_KEY);
     if (savedIncome) {
@@ -89,6 +89,9 @@ function init() {
     }
 
     render();
+
+    // Now that local arrays are filled with defaults or local data, it's safe to sync
+    if (typeof checkSession === 'function') checkSession(skipCloudFetch);
 }
 
 // 綁定全域 Event Listeners

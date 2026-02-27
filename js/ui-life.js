@@ -89,23 +89,26 @@ function renderBudgetCards() {
 
         var card = document.createElement('div');
         card.className = 'budget-card';
+        // Add a subtle background color based on the category color
+        card.style.backgroundColor = cat.color + '0a'; // 0a is very low alpha (hex)
+        card.style.borderLeft = '3px solid ' + cat.color;
 
         var limitHtml = budget > 0
             ? '<span class="budget-limit">/ NT$ ' + budget.toLocaleString() + '</span>'
-            : '<span class="budget-no-limit">未設預算</span>';
+            : '';
 
         var fillClass = 'progress-fill' + (isOver ? ' over-budget' : '');
         var pctClass = 'progress-pct' + (isOver ? ' over-budget' : '');
         var barHtml = budget > 0
             ? '<div class="progress-bar"><div class="' + fillClass + '" style="width:' + pct + '%"></div></div><span class="' + pctClass + '">' + rawPct + '%</span>'
-            : '<div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div><span class="progress-pct">—</span>';
+            : '<div class="progress-bar"><div class="progress-fill" style="width:0%; opacity:0.1"></div></div><span class="progress-pct" style="opacity:0.3">—</span>';
 
         var spentClass = 'budget-spent' + (isOver ? ' over-budget' : '');
 
         card.innerHTML =
             '<div class="budget-card-header">' +
             '<div class="budget-cat-name">' +
-            '<span style="width:10px;height:10px;border-radius:50%;background:' + cat.color + ';display:inline-block;flex-shrink:0;"></span>' +
+            '<span style="width:8px;height:8px;border-radius:50%;background:' + cat.color + ';display:inline-block;"></span>' +
             cat.name +
             '</div>' +
             '<div class="budget-card-actions">' +
@@ -113,8 +116,10 @@ function renderBudgetCards() {
             '<button class="icon-btn" onclick="openBudgetModal(\'' + cat.id + '\')" title="設定預算"><i class="fa-solid fa-sliders"></i></button>' +
             '</div>' +
             '</div>' +
-            '<div class="budget-amounts"><span class="' + spentClass + '">NT$ ' + spent.toLocaleString() + '</span>' + limitHtml + '</div>' +
-            '<div class="progress-bar-wrap">' + barHtml + '</div>';
+            '<div class="budget-card-info">' +
+            '<div style="margin-bottom:8px;"><span class="' + spentClass + '">NT$ ' + spent.toLocaleString() + '</span>' + limitHtml + '</div>' +
+            '<div class="progress-bar-wrap" style="gap:8px;">' + barHtml + '</div>' +
+            '</div>';
 
         container.appendChild(card);
     });

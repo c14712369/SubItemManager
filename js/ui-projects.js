@@ -20,6 +20,7 @@ function saveProjectsData() {
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
     localStorage.setItem(PROJECT_EXP_KEY, JSON.stringify(projectExpenses));
     localStorage.setItem(PROJECT_CAT_KEY, JSON.stringify(projectCategories));
+    if (typeof triggerCloudSync === 'function') triggerCloudSync();
 }
 
 function openProjectModal(id) {

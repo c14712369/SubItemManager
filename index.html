@@ -21,21 +21,28 @@
                 <h1><i class="fa-regular fa-credit-card title-icon"></i> 收支管理系統</h1>
                 <span class="subtitle">記錄每一筆固定支出與日常生活費</span>
             </div>
-            <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="切換深色/淺色模式">
-                <i class="fa-regular fa-moon" id="themeIcon"></i>
-            </button>
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span id="authUserEmail"
+                    style="display: none; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;"></span>
+                <button class="btn btn-outline btn-sm" id="authLoginBtn" onclick="openAuthModal()">
+                    <i class="fa-solid fa-user"></i> 登入 / 註冊
+                </button>
+                <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="切換深色/淺色模式">
+                    <i class="fa-regular fa-moon" id="themeIcon"></i>
+                </button>
+            </div>
         </header>
 
         <!-- Tabs Navigation -->
         <div class="tabs-nav">
-            <button class="tab-btn active" onclick="switchTab('manage')">
-                <i class="fa-solid fa-list-check"></i> 固定支出
-            </button>
-            <button class="tab-btn" onclick="switchTab('life')">
+            <button class="tab-btn active" onclick="switchTab('life')">
                 <i class="fa-solid fa-wallet"></i> 生活費記帳
             </button>
             <button class="tab-btn" onclick="switchTab('analysis')">
                 <i class="fa-solid fa-chart-pie"></i> 收支分析
+            </button>
+            <button class="tab-btn" onclick="switchTab('manage')">
+                <i class="fa-solid fa-list-check"></i> 固定支出
             </button>
             <button class="tab-btn" onclick="switchTab('wealth')">
                 <i class="fa-solid fa-seedling"></i> 資產試算
@@ -46,7 +53,7 @@
         </div>
 
         <!-- Tab: Management -->
-        <div id="tab-manage" class="tab-content active">
+        <div id="tab-manage" class="tab-content">
             <div class="toolbar">
                 <div class="toolbar-row">
                     <button class="btn btn-primary" onclick="openModal()"><i class="fa-solid fa-plus"></i> 新增項目</button>
@@ -80,7 +87,7 @@
         </div>
 
         <!-- Tab: Life Expenses -->
-        <div id="tab-life" class="tab-content">
+        <div id="tab-life" class="tab-content active">
             <!-- Month Navigator -->
             <div class="month-nav">
                 <button class="icon-btn" onclick="changeLifeMonth(-1)" title="上個月"><i
@@ -106,7 +113,7 @@
                         <div class="stat-value stat-monthly" id="lifeMonthSpent">NT$ 0</div>
                     </div>
                     <div class="overview-stat">
-                        <div class="stat-title">本月結餘</div>
+                        <div class="stat-title">生活費結餘</div>
                         <div class="stat-value" id="lifeMonthRemain">NT$ 0</div>
                     </div>
                 </div>
@@ -140,35 +147,33 @@
 
         <!-- Tab: Analysis -->
         <div id="tab-analysis" class="tab-content">
-            <div class="hero-panel">
-                <div class="hero-main">
-                    <div class="hero-title">每月結餘</div>
-                    <div class="hero-value" id="remainingBudget">NT$ 0</div>
-                    <div class="hero-options">
-                        <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
-                            <input type="checkbox" id="deductProjectSavings" checked onchange="updateBudgetCalc()">
-                            扣除專案預備金
-                        </label>
-                    </div>
-                </div>
-                <div class="hero-stats">
-                    <div class="hero-stat-item">
-                        <div class="hero-stat-label">
-                            預估收入
-                            <span style="font-size:0.75rem;opacity:0.8;" title="若勾選則以記帳實際收入為準">
-                                <span id="lifeActualIncome" style="display:none;">0</span>
-                            </span>
+            <div class="overview-banner">
+                <div class="overview-stats">
+                    <div class="overview-stat">
+                        <div class="stat-title">每月總結餘</div>
+                        <div class="stat-value" id="remainingBudget">NT$ 0</div>
+                        <div class="hero-options">
+                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
+                                <input type="checkbox" id="deductProjectSavings" checked onchange="updateBudgetCalc()">
+                                扣除專案預定金
+                            </label>
                         </div>
-                        <input type="number" id="monthlyIncomeInput" class="hero-stat-input" placeholder="0"
-                            oninput="updateBudgetCalc()" onchange="showIncomeSavedToast()" title="點擊設定您的每月預估收入">
                     </div>
-                    <div class="hero-stat-item">
-                        <div class="hero-stat-label">固定支出</div>
-                        <div class="hero-stat-value" id="totalMonthly">NT$ 0</div>
+                    <div class="overview-stat">
+                        <div class="stat-title">預估收入</div>
+                        <input type="number" id="monthlyIncomeInput" class="hero-stat-input"
+                            style="width: 100%; border:none; border-bottom:1px dashed var(--border-color); background:transparent; font-family:var(--font-serif); font-size:1.25rem; font-weight:700; color:var(--text-main); outline:none;"
+                            placeholder="0" oninput="updateBudgetCalc()" onchange="showIncomeSavedToast()">
                     </div>
-                    <div class="hero-stat-item">
-                        <div class="hero-stat-label">生活費</div>
-                        <div class="hero-stat-value" id="totalLifeMonthly">NT$ 0</div>
+                    <div class="overview-stat">
+                        <div class="stat-title">支出小計</div>
+                        <div id="statTotalExp"
+                            style="font-size:1.25rem; font-weight:700; font-family:var(--font-serif);">
+                            <div style="font-size:0.7rem; color:var(--text-muted); font-weight:400;">固定: <span
+                                    id="totalMonthly">0</span></div>
+                            <div style="font-size:0.7rem; color:var(--text-muted); font-weight:400;">生活: <span
+                                    id="totalLifeMonthly">0</span></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -176,50 +181,39 @@
             <!-- Charts Row -->
             <div class="chart-dual">
                 <div class="chart-section">
-                    <div class="chart-header"
-                        style="flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
-                        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
-                            <h3 style="white-space:nowrap; margin:0;"><i class="fa-solid fa-circle-dot"></i> 訂閱分類分析</h3>
-                            <div
-                                style="font-size:0.85rem; color:var(--text-muted); background:var(--bg-color); padding:4px 12px; border-radius:100px; border:1px solid var(--border-color); display:flex; align-items:center; gap:6px; white-space:nowrap;">
-                                年度預估總支出
-                                <span id="totalYearly"
-                                    style="font-weight:700; color:var(--text-main); font-family:var(--font-serif);">NT$
-                                    0</span>
+                    <div class="chart-header">
+                        <div class="chart-header-title">
+                            <h3><i class="fa-solid fa-circle-dot"></i> 訂閱分類分析</h3>
+                            <div class="yearly-badge">
+                                年度預估總支出 <span id="totalYearly">NT$ 0</span>
                             </div>
                         </div>
-                        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                            <div class="type-toggle" style="flex:none; margin-bottom:0; height:34px;">
+                        <div class="chart-controls">
+                            <div class="type-toggle">
                                 <button class="type-btn active" id="chartShapePieBtn" onclick="setSubChartShape('pie')"
-                                    style="padding:0 10px; font-size:0.85rem; height:100%;" title="圓餅圖"><i
-                                        class="fa-solid fa-chart-pie"></i></button>
+                                    title="圓餅圖"><i class="fa-solid fa-chart-pie"></i></button>
                                 <button class="type-btn" id="chartShapeBarBtn" onclick="setSubChartShape('bar')"
-                                    style="padding:0 10px; font-size:0.85rem; height:100%;" title="長條圖"><i
-                                        class="fa-solid fa-chart-simple"></i></button>
+                                    title="長條圖"><i class="fa-solid fa-chart-simple"></i></button>
                             </div>
-                            <div class="type-toggle" style="flex:none; margin-bottom:0; height:34px;">
-                                <button class="type-btn active" id="chartTypeYearBtn" onclick="setSubChartType('year')"
-                                    style="padding:0 12px; font-size:0.85rem; height:100%;">按年</button>
-                                <button class="type-btn" id="chartTypeMonthBtn" onclick="setSubChartType('month')"
-                                    style="padding:0 12px; font-size:0.85rem; height:100%;">按月</button>
+                            <div class="type-toggle">
+                                <button class="type-btn active" id="chartTypeYearBtn"
+                                    onclick="setSubChartType('year')">按年</button>
+                                <button class="type-btn" id="chartTypeMonthBtn"
+                                    onclick="setSubChartType('month')">按月</button>
                             </div>
-                            <select id="chartYearSelect" class="form-select"
-                                style="width:auto; padding:0 30px 0 12px; height:34px; font-size:0.85rem;"
+                            <select id="chartYearSelect" class="form-select chart-select"
                                 onchange="renderChart()"></select>
-                            <input type="month" id="chartMonthSelect" class="form-input"
-                                style="width:auto; display:none; padding:0 12px; height:34px; font-size:0.85rem;"
-                                onchange="renderChart()">
+                            <input type="month" id="chartMonthSelect" class="form-input chart-select"
+                                style="display:none;" onchange="renderChart()">
                         </div>
                     </div>
                     <div class="chart-container"><canvas id="expenseChart"></canvas></div>
                     <div id="expenseChartList" style="margin-top:20px; max-height: 250px; overflow-y: auto;"></div>
                 </div>
                 <div class="chart-section">
-                    <div class="chart-header"
-                        style="flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
-                        <h3 style="white-space:nowrap; margin:0;"><i class="fa-solid fa-bars"></i> 生活費分類分析</h3>
-                        <input type="month" id="lifeChartMonth" class="form-input"
-                            style="width:auto; padding:0 12px; height:34px; font-size:0.85rem;"
+                    <div class="chart-header">
+                        <h3 style="margin:0;"><i class="fa-solid fa-bars"></i> 生活費分類分析</h3>
+                        <input type="month" id="lifeChartMonth" class="form-input chart-select"
                             onchange="renderLifeCategoryChart()">
                     </div>
                     <div class="chart-container"><canvas id="lifeCategoryChart"></canvas></div>
@@ -237,10 +231,9 @@
 
         <!-- Tab: Wealth -->
         <div id="tab-wealth" class="tab-content">
-            <div class="dashboard" style="grid-template-columns: 1fr 2fr;">
+            <div class="dashboard">
                 <!-- Params Input -->
-                <div class="stat-card"
-                    style="display:flex; flex-direction:column; gap:16px; overflow-y:auto; max-height: calc(100vh - 150px);">
+                <div class="stat-card">
                     <div
                         style="font-size: 1.1rem; font-weight: 600; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
                         投資部位 (高風險)</div>
@@ -296,7 +289,7 @@
                 </div>
 
                 <!-- Result & Chart -->
-                <div class="stat-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+                <div class="stat-card wealth-result-card">
                     <div>
                         <div class="stat-title" style="font-size:1rem; margin-bottom:8px;">預估達成時間</div>
                         <div id="wealthResultText" style="font-size:2rem; font-weight:600; color:var(--text-color);">
@@ -709,11 +702,48 @@
         </div>
     </div>
 
+    <!-- Modal: Auth / Login -->
+    <div class="modal-overlay" id="authModalOverlay">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <span>登入 / 註冊</span>
+                <span class="close-modal" onclick="closeAuthModal()">&times;</span>
+            </div>
+            <form id="authForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label class="form-label">Email 信箱</label>
+                    <input type="email" id="authEmail" class="form-input" required placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密碼</label>
+                    <input type="password" id="authPassword" class="form-input" required placeholder="請輸入密碼">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">登入 / 註冊</button>
+                <div style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted); text-align: center;">
+                    若系統找不到帳號，將提示您直接註冊
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="syncLoading" class="loading-overlay">
+        <div class="spinner"></div>
+        <div class="loading-text">雲端資料同步中...</div>
+    </div>
+
     <div id="toast" class="toast"></div>
 
+    <!-- Core Logic & Data Scripts First -->
     <script src="js/state.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/data.js"></script>
+
+    <!-- Supabase Scripts After State -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-sync.js"></script>
+
+    <!-- UI Scripts -->
     <script src="js/ui-fixed.js"></script>
     <script src="js/ui-life.js"></script>
     <script src="js/ui-analysis.js"></script>

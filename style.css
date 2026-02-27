@@ -85,6 +85,12 @@ body {
     padding: 32px 24px;
 }
 
+@media (max-width: 600px) {
+    .container {
+        padding: 20px 16px;
+    }
+}
+
 /* ── Header ── */
 header {
     display: flex;
@@ -94,6 +100,21 @@ header {
     padding-bottom: 20px;
     border-bottom: 1px solid var(--border-color);
     position: relative;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+@media (max-width: 600px) {
+    header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding-bottom: 15px;
+        margin-bottom: 24px;
+    }
+
+    header::before {
+        display: none;
+    }
 }
 
 header::before {
@@ -165,6 +186,13 @@ h1 .title-icon {
     gap: 0;
     margin-bottom: 28px;
     border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+    .tabs-nav {
+        margin-bottom: 16px;
+    }
 }
 
 .tab-btn {
@@ -183,6 +211,21 @@ h1 .title-icon {
     align-items: center;
     gap: 7px;
     letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .tab-btn {
+        padding: 8px 12px;
+        font-size: 0.78rem;
+        gap: 5px;
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
+    .tab-btn i {
+        font-size: 0.85rem;
+    }
 }
 
 .tab-btn:hover {
@@ -584,6 +627,13 @@ h1 .title-icon {
     margin-bottom: 20px;
 }
 
+.chart-header-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
 .chart-header h3 {
     font-family: var(--font-serif);
     font-size: 1rem;
@@ -592,6 +642,40 @@ h1 .title-icon {
     display: flex;
     align-items: center;
     gap: 8px;
+    margin: 0;
+}
+
+.yearly-badge {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: var(--bg-color);
+    padding: 4px 12px;
+    border-radius: 100px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.yearly-badge span {
+    font-weight: 700;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+}
+
+.chart-controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.chart-select {
+    width: auto !important;
+    height: 34px !important;
+    font-size: 0.85rem !important;
+    padding: 0 12px !important;
 }
 
 .chart-header h3 i {
@@ -859,69 +943,7 @@ h1 .title-icon {
 }
 
 /* ── Responsive ── */
-@media (max-width: 640px) {
-    .container {
-        padding: 20px 16px;
-    }
-
-    header::before {
-        left: -16px;
-    }
-
-    .toolbar-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .toolbar-row .btn {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .divider-vertical {
-        display: none;
-    }
-
-    .dashboard {
-        grid-template-columns: 1fr;
-    }
-
-    .form-row {
-        grid-template-columns: 1fr;
-    }
-
-    .search-filter {
-        flex-direction: column;
-    }
-
-    .items-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .chart-dual {
-        grid-template-columns: 1fr;
-    }
-
-    .budget-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .overview-stats {
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .overview-stat {
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
-        padding: 0 0 10px 0;
-    }
-
-    .overview-stat:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
-    }
-}
+/* Base media queries removed from here to be moved to the bottom */
 
 /* ═══════════════════════════════════════
    生活費記帳模組
@@ -960,23 +982,43 @@ h1 .title-icon {
 .overview-banner {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
-    border-left: 4px solid var(--primary-color);
     border-radius: var(--radius);
-    padding: 20px 22px;
-    margin-bottom: 20px;
-    transition: background-color 0.35s, border-color 0.35s;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-sm);
 }
 
 .overview-stats {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0;
-    margin-bottom: 14px;
+    margin-bottom: 12px;
+}
+
+@media (max-width: 600px) {
+    .overview-stats {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
 }
 
 .overview-stat {
-    flex: 1;
-    padding: 0 16px;
+    padding: 0 12px;
     border-right: 1px solid var(--border-color);
+}
+
+@media (max-width: 600px) {
+    .overview-stat {
+        padding: 0;
+        border-right: none;
+        border-bottom: 1px dashed var(--border-color);
+        padding-bottom: 8px;
+    }
+
+    .overview-stat:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
 }
 
 .overview-stat:first-child {
@@ -987,20 +1029,39 @@ h1 .title-icon {
     border-right: none;
 }
 
-.overview-stat .stat-title {
-    font-size: 0.75rem;
-    margin-bottom: 4px;
+.stat-title {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }
 
-.overview-stat .stat-value {
-    font-size: 1.45rem;
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-family: var(--font-serif);
 }
 
-/* ── Progress Bar ── */
+.stat-positive {
+    color: var(--success-color);
+}
+
+.stat-negative {
+    color: var(--danger-color);
+}
+
+.stat-monthly {
+    color: var(--primary-color);
+}
+
 .progress-bar-wrap {
     display: flex;
     align-items: center;
     gap: 12px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
 }
 
 .progress-bar {
@@ -1015,8 +1076,7 @@ h1 .title-icon {
     height: 100%;
     background: var(--primary-color);
     border-radius: 3px;
-    transition: width 0.4s ease, background-color 0.3s;
-    max-width: 100%;
+    transition: width 0.5s ease;
 }
 
 .progress-fill.over-budget {
@@ -1024,10 +1084,10 @@ h1 .title-icon {
 }
 
 .progress-pct {
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: 0.75rem;
+    font-weight: 700;
     color: var(--text-muted);
-    min-width: 40px;
+    min-width: 35px;
     text-align: right;
 }
 
@@ -1038,8 +1098,8 @@ h1 .title-icon {
 /* ── Budget Grid & Card ── */
 .budget-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
     margin-bottom: 24px;
 }
 
@@ -1047,28 +1107,35 @@ h1 .title-icon {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
-    padding: 18px;
-    transition: border-left-color 0.2s, background-color 0.35s, border-color 0.35s;
+    padding: 12px 14px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 100px;
 }
 
 .budget-card:hover {
-    border-left: 3px solid var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
 }
 
 .budget-card-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
 }
 
 .budget-cat-name {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-family: var(--font-serif);
-    font-weight: 700;
-    font-size: 0.95rem;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 0.85rem;
     color: var(--text-main);
 }
 
@@ -1085,9 +1152,8 @@ h1 .title-icon {
 }
 
 .budget-spent {
-    font-family: var(--font-serif);
-    font-size: 1.2rem;
     font-weight: 700;
+    font-size: 1.1rem;
     color: var(--text-main);
 }
 
@@ -1378,4 +1444,279 @@ h1 .title-icon {
 
 .hero-stat-input:focus {
     border-bottom-color: var(--primary-color);
+}
+
+/* ── Loading Overlay ── */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    transition: opacity 0.3s ease;
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s ease-in-out infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    font-weight: 500;
+    letter-spacing: 1px;
+    font-size: 0.95rem;
+}
+
+.expense-list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--bg-color);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.expense-list-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.expense-list-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.expense-list-amount {
+    font-weight: bold;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+}
+
+/* ── Mobile Utilities & RWD Overrides ── */
+@media (max-width: 768px) {
+    .chart-dual {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 16px;
+    }
+
+    .chart-header>div {
+        width: 100%;
+    }
+
+    .chart-header h3 {
+        width: 100%;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 20px 16px;
+    }
+
+    header>div[style*="flex"] {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        width: 100%;
+        gap: 12px !important;
+    }
+
+    header::before {
+        display: none;
+    }
+
+    #authUserEmail {
+        margin-right: 0 !important;
+        font-size: 0.8rem !important;
+        opacity: 0.8;
+    }
+
+    #authLoginBtn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .month-nav {
+        justify-content: center;
+        width: 100%;
+        gap: 10px;
+    }
+
+    .tabs-nav {
+        margin-bottom: 16px;
+        gap: 4px;
+        justify-content: center;
+    }
+
+    .tab-btn {
+        padding: 8px 10px;
+        font-size: 0.78rem;
+        gap: 5px;
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
+    .tab-btn i {
+        font-size: 0.85rem;
+    }
+
+    .chart-section {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .chart-header {
+        margin-bottom: 14px;
+        gap: 12px;
+    }
+
+    .overview-stats {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .overview-stat {
+        padding: 0;
+        border-right: none;
+        border-bottom: 1px dashed var(--border-color);
+        padding-bottom: 8px;
+    }
+
+    .overview-stat:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .budget-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Original 640px overrides relocated here */
+    .toolbar-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar-row .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .divider-vertical {
+        display: none;
+    }
+
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .search-filter {
+        flex-direction: column;
+    }
+
+    .items-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 400px) {
+    .stat-value {
+        font-size: 1.1rem;
+    }
+
+    .chart-header h3 {
+        font-size: 0.9rem;
+    }
+
+    #wealthResultText {
+        font-size: 1.5rem !important;
+    }
+
+    .chart-section {
+        padding: 15px;
+    }
+
+    .chart-header-title {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 8px;
+    }
+
+    .yearly-badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+
+    .chart-controls {
+        gap: 6px;
+    }
+
+    .type-btn {
+        padding: 8px !important;
+        font-size: 0.75rem !important;
+    }
+
+    .loading-overlay .loading-text {
+        font-size: 0.85rem;
+    }
+}
+
+.wealth-result-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+@media (max-width: 600px) {
+    .wealth-result-card {
+        gap: 24px;
+    }
+}
+
+/* Global overflow safety */
+img,
+canvas,
+iframe,
+video {
+    max-width: 100%;
+}
+
+* {
+    box-sizing: border-box;
 }
