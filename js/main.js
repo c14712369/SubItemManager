@@ -47,6 +47,8 @@ function switchTab(tabId) {
             renderLifeCategoryChart();
             renderTrendChart();
             updateBudgetCalc();
+            initAnnualReport();
+            renderAnnualReport();
         });
     }
     if (tabId === 'life') {
@@ -57,12 +59,6 @@ function switchTab(tabId) {
     }
     if (tabId === 'projects') {
         requestAnimationFrame(() => renderProjects());
-    }
-    if (tabId === 'annual') {
-        requestAnimationFrame(() => {
-            initAnnualReport();
-            renderAnnualReport();
-        });
     }
 }
 

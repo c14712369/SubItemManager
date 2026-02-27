@@ -69,11 +69,8 @@ function renderAnnualReport() {
 
         // --- 1. 計算該月固定支出 ---
         let fixedExp = 0;
-        const targetDate = new Date(year, month - 1, 15); // 用當月中間當作基準點測試
         items.forEach(item => {
-            if (isItemActiveInMonth(item, targetDate)) {
-                fixedExp += (item.amount / getMonthsInCycle(item.cycle));
-            }
+            fixedExp += calculateExpenseForMonth(item, parseInt(year), month);
         });
         monthlyData[month - 1].fixed = Math.round(fixedExp);
         totalYearFixed += Math.round(fixedExp);
@@ -207,7 +204,7 @@ function drawAnnualBarChart(monthlyData) {
             scales: {
                 x: {
                     stacked: true,
-                    ticks: { color: textColor },
+                    ticks: { color: textColor, maxRotation: 0, minRotation: 0 },
                     grid: { display: false }
                 },
                 y: {
@@ -248,7 +245,7 @@ function drawAnnualPieChart(dataObj) {
             cutout: '65%',
             plugins: {
                 legend: {
-                    position: 'right',
+                    position: 'bottom',
                     labels: { color: textColor, padding: 20 }
                 },
                 tooltip: {
