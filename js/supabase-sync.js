@@ -219,7 +219,7 @@ async function fetchFromServer() {
 
             // Refresh all UI — use init(true) to ensure every tab renders correctly
             init(true); // skipCloudFetch=true prevents infinite re-fetch loop
-            showToast('已載入雲端最新資料');
+            // showToast('已載入雲端最新資料'); // Removed to reduce notification clutter
 
         } else {
             // First log in, no cloud data. Push current local data to cloud to initialize.

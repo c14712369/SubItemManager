@@ -1068,34 +1068,28 @@
         </div>
     </div>
 
+    <!-- Bottom Navigation for Mobile -->
     <nav class="bottom-nav">
-        <a href="#" class="nav-item" onclick="switchTab('life'); return false;">
+        <!-- Add class active dynamically in JS -->
+        <a href="#" class="nav-item active" onclick="switchTab('life'); return false;">
             <i class="fa-solid fa-wallet"></i>
             <span>生活</span>
         </a>
+        <a href="#" class="nav-item" onclick="switchTab('analysis'); return false;">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>分析</span>
+        </a>
         <a href="#" class="nav-item" onclick="switchTab('fixed'); return false;">
-            <i class="fa-solid fa-receipt"></i>
+            <i class="fa-solid fa-list-check"></i>
             <span>固定</span>
+        </a>
+        <a href="#" class="nav-item" onclick="switchTab('wealth'); return false;">
+            <i class="fa-solid fa-seedling"></i>
+            <span>試算</span>
         </a>
         <a href="#" class="nav-item" onclick="switchTab('projects'); return false;">
             <i class="fa-solid fa-plane-up"></i>
             <span>專案</span>
-        </a>
-
-        <!-- Central FAB Spacer -->
-        <div class="nav-item-fab-spacer">
-            <button class="fab-quick-add" onclick="openLifeExpModal()" title="快速記帳">
-                <i class="fa-solid fa-plus"></i>
-            </button>
-        </div>
-
-        <a href="#" class="nav-item" onclick="switchTab('analysis'); return false;">
-            <i class="fa-solid fa-chart-line"></i>
-            <span>分析</span>
-        </a>
-        <a href="#" class="nav-item" onclick="switchTab('wealth'); return false;">
-            <i class="fa-solid fa-piggy-bank"></i>
-            <span>試算</span>
         </a>
         <a href="#" class="nav-item" onclick="switchTab('annual'); return false;">
             <i class="fa-solid fa-calendar-days"></i>
