@@ -49,6 +49,10 @@ function switchTab(tabId) {
             renderLifeCategoryChart();
             renderTrendChart();
             updateBudgetCalc();
+        });
+    }
+    if (tabId === 'annual') {
+        requestAnimationFrame(() => {
             initAnnualReport();
             renderAnnualReport();
         });
@@ -57,7 +61,7 @@ function switchTab(tabId) {
         requestAnimationFrame(() => renderLifeTab());
     }
     if (tabId === 'wealth') {
-        requestAnimationFrame(() => calculateWealth());
+        requestAnimationFrame(() => initWealthTab());
     }
     if (tabId === 'projects') {
         requestAnimationFrame(() => renderProjects());
