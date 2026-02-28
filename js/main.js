@@ -69,8 +69,8 @@ function switchTab(tabId) {
         }
     }, 10);
 
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabId));
+    document.querySelectorAll('.tab-btn, .nav-item').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('onclick').includes(`switchTab('${tabId}')`));
     });
     document.querySelectorAll('.tab-content').forEach(content => {
         content.classList.remove('active');
