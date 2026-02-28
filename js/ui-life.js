@@ -38,6 +38,59 @@ function getLifeOnlyExpForMonth(ym) {
         .reduce((s, e) => s + (e.amount || 0), 0);
 }
 
+function getMonthlyFixedTotal(ym) {
+    if (!ym) return 0;
+
+    // Parse the current viewing month
+    const [yearStr, monthStr] = ym.split('-');
+    const viewYear = parseInt(yearStr);
+    const viewMonth = parseInt(monthStr); // 1-12
+
+    const monthStart = new Date(viewYear, viewMonth - 1, 1);
+    const monthEnd = new Date(viewYear, viewMonth, 0); // Last day of that month
+    monthStart.setHours(0, 0, 0, 0);
+    monthEnd.setHours(23, 59, 59, 999);
+
+    const activeItems = items.filter(item => {
+        const start = new Date(item.startDate);
+        start.setHours(0, 0, 0, 0);
+
+        // If it starts after the viewing month ends, it's not active yet
+        if (start > monthEnd) return false;
+
+        // If it ended before the viewing month started, it's no longer active
+        const end = item.endDate ? new Date(item.endDate) : null;
+        if (end) {
+            end.setHours(23, 59, 59, 999);
+            if (end < monthStart) return false;
+        }
+
+        return true;
+    });
+
+    return activeItems.reduce((total, item) => {
+        let monthly = item.amount;
+        // For fixed one-time items, only count if it specifically falls in this month
+        if (item.cycle === 'fixed') {
+            const startD = new Date(item.startDate);
+            if (startD.getFullYear() === viewYear && (startD.getMonth() + 1) === viewMonth) {
+                return total + item.amount;
+            }
+            return total;
+        }
+
+        switch (item.cycle) {
+            case 'daily': monthly = item.amount * 30; break;
+            case 'weekly': monthly = item.amount * 4.33; break;
+            case 'bimonthly': monthly = item.amount / 2; break;
+            case 'quarterly': monthly = item.amount / 3; break;
+            case 'halfyear': monthly = item.amount / 6; break;
+            case 'yearly': monthly = item.amount / 12; break;
+        }
+        return total + monthly;
+    }, 0);
+}
+
 function renderLifeTab() {
     // Auto-apply salary if setting exists and no income recorded yet
     // Do this BEFORE calculating totals so the current render picks up the new entry
@@ -48,12 +101,18 @@ function renderLifeTab() {
 
     var totalIncome = getLifeIncomeForMonth(lifeCurrentMonth);
     var totalExpense = getLifeOnlyExpForMonth(lifeCurrentMonth);
-    var remain = totalIncome - totalExpense;
-    var isOver = totalExpense > totalIncome && totalIncome > 0;
-    var pct = totalIncome > 0 ? Math.min(Math.round((totalExpense / totalIncome) * 100), 100) : 0;
-    var rawPct = totalIncome > 0 ? Math.round((totalExpense / totalIncome) * 100) : 0;
+    var totalFixed = getMonthlyFixedTotal(lifeCurrentMonth); // Fetch fixed expenses for the specific month
+
+    var remain = totalIncome - totalExpense - totalFixed; // Deduct fixed as well
+
+    // For progress bar: Total outgoing vs income
+    var totalOutgoing = totalExpense + totalFixed;
+    var isOver = totalOutgoing > totalIncome && totalIncome > 0;
+    var pct = totalIncome > 0 ? Math.min(Math.round((totalOutgoing / totalIncome) * 100), 100) : 0;
+    var rawPct = totalIncome > 0 ? Math.round((totalOutgoing / totalIncome) * 100) : 0;
 
     var incomeEl = document.getElementById('lifeMonthBudget');
+    var fixedEl = document.getElementById('lifeMonthFixed'); // New element
     var spentEl = document.getElementById('lifeMonthSpent');
     var remainEl = document.getElementById('lifeMonthRemain');
     var barEl = document.getElementById('lifeOverallProgress');
@@ -61,9 +120,10 @@ function renderLifeTab() {
     var actualEl = document.getElementById('lifeActualIncome');
 
     if (incomeEl) incomeEl.textContent = 'NT$ ' + totalIncome.toLocaleString();
+    if (fixedEl) fixedEl.textContent = 'NT$ ' + Math.round(totalFixed).toLocaleString();
     if (spentEl) spentEl.textContent = 'NT$ ' + totalExpense.toLocaleString();
     if (remainEl) {
-        remainEl.textContent = 'NT$ ' + Math.abs(remain).toLocaleString() + (remain < 0 ? ' (超支)' : '');
+        remainEl.textContent = 'NT$ ' + Math.abs(Math.round(remain)).toLocaleString() + (remain < 0 ? ' (超支)' : '');
         remainEl.className = 'stat-value ' + (remain < 0 ? 'stat-negative' : 'stat-positive');
     }
     if (barEl) {
@@ -102,6 +162,7 @@ function renderBudgetCards() {
         '</div>' +
         '<div class="life-cat-row-right">' +
         '<span class="life-cat-row-amt">NT$ ' + totalSpent.toLocaleString() + '</span>' +
+        '<button class="icon-btn life-cat-action" style="visibility:hidden;"><i class="fa-solid fa-plus"></i></button>' +
         '</div>';
     container.appendChild(allRow);
 
@@ -179,10 +240,13 @@ function renderLifeExpenseList() {
 
     container.innerHTML = all.map(function (e) {
         var day = parseInt(e.date.split('-')[2]);
+        var editBtn = '<button class="icon-btn" onclick="editLifeExp(\'' + e.id + '\')" title="編輯"><i class="fa-solid fa-pen"></i></button>';
+        var delBtn = '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>';
+
         if (e.type === 'income') {
             var incCat = getLifeIncCat(e.categoryId);
             var rawNote = e.note ? e.note : incCat.name;
-            var note = rawNote.replace(/[（\(\[].*?[）\)\]]/g, '').trim(); // Remove any parentheses/brackets content
+            var note = rawNote.replace(/[（\(\[].*?[）\)\]]/g, '').trim();
             if (note === '') note = incCat.name;
             return '<div class="life-income-row">' +
                 '<div class="life-income-date" style="color:' + incCat.color + ';">' + day + '</div>' +
@@ -192,7 +256,7 @@ function renderLifeExpenseList() {
                 '<div class="life-income-note">' + note + '</div>' +
                 '</div>' +
                 '<div class="life-income-amount">+ NT$ ' + e.amount.toLocaleString() + '</div>' +
-                '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>' +
+                editBtn + delBtn +
                 '</div>';
         } else {
             var cat = getLifeCat(e.categoryId);
@@ -204,8 +268,8 @@ function renderLifeExpenseList() {
                 '<div class="life-exp-cat">' + cat.name + '</div>' +
                 '<div class="life-exp-note">' + nodeNote + '</div>' +
                 '</div>' +
-                '<div class="life-exp-amount">NT$ ' + e.amount.toLocaleString() + '</div>' +
-                '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>' +
+                '<div class="life-exp-amount" style="color: var(--danger-color);">- NT$ ' + e.amount.toLocaleString() + '</div>' +
+                editBtn + delBtn +
                 '</div>';
         }
     }).join('');
@@ -319,6 +383,33 @@ function deleteLifeExp(id) {
         saveLifeData();
         showToast('已刪除');
         renderLifeTab();
+    }
+}
+
+function editLifeExp(id) {
+    var e = lifeExpenses.find(function (x) { return x.id === id; });
+    if (!e) return;
+
+    // Open the modal fresh, then fill in existing values
+    openLifeExpModal(e.type === 'income' ? 'income' : 'expense');
+
+    // Restore the hidden id so submit knows it's an update
+    document.getElementById('lifeExpId').value = e.id;
+
+    // Fill amount, date, note
+    document.getElementById('lifeExpAmount').value = e.amount;
+    document.getElementById('lifeExpDate').value = e.date;
+    document.getElementById('lifeExpNote').value = e.note || '';
+
+    // Set the correct category
+    if (e.type === 'income') {
+        var incSel = document.getElementById('lifeExpIncCat');
+        if (incSel) incSel.value = e.categoryId;
+        document.getElementById('lifeExpModalTitle').textContent = '編輯收入';
+    } else {
+        var catSel = document.getElementById('lifeExpCat');
+        if (catSel) catSel.value = e.categoryId;
+        document.getElementById('lifeExpModalTitle').textContent = '編輯支出';
     }
 }
 

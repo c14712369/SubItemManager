@@ -239,12 +239,159 @@ document.addEventListener('click', function (e) {
         const dd = document.getElementById('stockDropdown');
         if (dd) dd.style.display = 'none';
     }
+    const cagrWrap = document.getElementById('cagrSearchWrap');
+    if (cagrWrap && !cagrWrap.contains(e.target)) {
+        const cdd = document.getElementById('investTickerDropdown');
+        if (cdd) cdd.style.display = 'none';
+    }
     const bankWrap = document.getElementById('bankSearchWrap');
     if (bankWrap && !bankWrap.contains(e.target)) {
         const bdd = document.getElementById('bankDropdown');
         if (bdd) bdd.style.display = 'none';
     }
 });
+
+// ─────────────────────────────────────────
+// ── CAGR Auto-Fetch Logic ──
+// ─────────────────────────────────────────
+let _investTickerDropdownIndex = -1;
+let _investTickerDropdownItems = [];
+let _selectedCAGRSymbol = '';
+
+function onInvestTickerSearchInput(query) {
+    const q = query.trim();
+    const dropdown = document.getElementById('investTickerDropdown');
+    if (!q) {
+        dropdown.style.display = 'none';
+        _investTickerDropdownItems = [];
+        return;
+    }
+
+    const lower = q.toLowerCase();
+    _investTickerDropdownItems = STOCK_LIST.filter(s =>
+        s.symbol.toLowerCase().startsWith(lower) ||
+        s.name.toLowerCase().includes(lower)
+    ).slice(0, 8);
+
+    if (_investTickerDropdownItems.length === 0) {
+        dropdown.innerHTML = `<div class="stock-dropdown-hint">按 Enter 直接使用「${q}」</div>`;
+        dropdown.style.display = 'block';
+        _investTickerDropdownIndex = -1;
+        return;
+    }
+
+    _investTickerDropdownIndex = -1;
+    dropdown.innerHTML = _investTickerDropdownItems.map((s, i) => `
+        <div class="stock-dropdown-item" data-idx="${i}" onclick="selectInvestTickerItem(${i})">
+            <span class="stock-dd-symbol">${s.symbol}</span>
+            <span class="stock-dd-name">${s.name}</span>
+        </div>
+    `).join('');
+    dropdown.style.display = 'block';
+}
+
+function onInvestTickerSearchKeydown(event) {
+    const dropdown = document.getElementById('investTickerDropdown');
+    const items = dropdown.querySelectorAll('.stock-dropdown-item');
+
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        _investTickerDropdownIndex = Math.min(_investTickerDropdownIndex + 1, items.length - 1);
+        _highlightInvestTickerDropdownItem(items);
+    } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        _investTickerDropdownIndex = Math.max(_investTickerDropdownIndex - 1, -1);
+        _highlightInvestTickerDropdownItem(items);
+    } else if (event.key === 'Enter') {
+        event.preventDefault();
+        if (_investTickerDropdownIndex >= 0 && _investTickerDropdownIndex < _investTickerDropdownItems.length) {
+            selectInvestTickerItem(_investTickerDropdownIndex);
+        } else {
+            const raw = document.getElementById('wealthInvestTickerSearch').value.trim().toUpperCase();
+            if (raw) selectInvestTickerSymbol(raw);
+        }
+    } else if (event.key === 'Escape') {
+        dropdown.style.display = 'none';
+    }
+}
+
+function _highlightInvestTickerDropdownItem(items) {
+    items.forEach((el, i) => el.classList.toggle('active', i === _investTickerDropdownIndex));
+    if (_investTickerDropdownIndex >= 0) items[_investTickerDropdownIndex]?.scrollIntoView({ block: 'nearest' });
+}
+
+function selectInvestTickerItem(idx) {
+    const stock = _investTickerDropdownItems[idx];
+    if (!stock) return;
+    const fullSymbol = stock.symbol + (stock.suffix || '');
+    selectInvestTickerSymbol(fullSymbol, stock.name);
+}
+
+function selectInvestTickerSymbol(symbol, name = '') {
+    const dropdown = document.getElementById('investTickerDropdown');
+    dropdown.style.display = 'none';
+
+    _selectedCAGRSymbol = symbol;
+    document.getElementById('wealthInvestTickerSearch').value = name ? `${symbol} ${name}` : symbol;
+
+    refreshCAGR();
+}
+
+async function refreshCAGR() {
+    if (!_selectedCAGRSymbol) return;
+
+    const years = parseInt(document.getElementById('wealthInvestRangeSelect').value) || 5;
+    const statusEl = document.getElementById('wealthCAGRStatus');
+    const rateInput = document.getElementById('wealthInvestRateInput');
+
+    statusEl.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> 正在計算 ${years}Y 年化報酬率...`;
+
+    try {
+        const cagr = await fetchCAGR(_selectedCAGRSymbol, years);
+        if (cagr !== null) {
+            const percentage = (cagr * 100).toFixed(2);
+            rateInput.value = percentage;
+            statusEl.style.color = 'var(--success-color)';
+            statusEl.textContent = `✅ 過去 ${years}Y 年化報酬率: ${percentage}%`;
+            calculateWealth(); // 觸發試算更新
+        } else {
+            statusEl.style.color = 'var(--text-muted)';
+            statusEl.textContent = `❌ 無法取得 ${years}Y 數據，請手動輸入`;
+        }
+    } catch (e) {
+        statusEl.textContent = '❌ 計算失敗';
+    }
+}
+
+async function fetchCAGR(symbol, years) {
+    // 使用 corsproxy.io
+    const range = years + 'y';
+    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1mo&range=${range}`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
+    try {
+        const res = await fetch(proxyUrl);
+        if (!res.ok) return null;
+        const data = await res.json();
+
+        const indicators = data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
+        if (!indicators || indicators.length < 2) return null;
+
+        // 過濾掉 null 的價格
+        const prices = indicators.filter(p => p !== null && p !== undefined);
+        if (prices.length < 2) return null;
+
+        const startPrice = prices[0];
+        const endPrice = prices[prices.length - 1];
+
+        // CAGR 公式: (EndValue / StartValue) ^ (1 / years) - 1
+        const cagr = Math.pow(endPrice / startPrice, 1 / years) - 1;
+        return cagr;
+    } catch (e) {
+        console.error("CAGR fetch error:", e);
+        return null;
+    }
+}
 
 // ─────────────────────────────────────────
 // ── 銀行帳戶 Autocomplete ──
@@ -462,7 +609,6 @@ async function saveHolding() {
     let symbol = document.getElementById('holdingSymbolInput').value.trim().toUpperCase();
     const name = document.getElementById('holdingNameInput').value.trim();
     const shares = parseFloat(document.getElementById('holdingSharesInput').value);
-    const manualPrice = parseFloat(document.getElementById('holdingPriceInput').value);
 
     // Allow fallback: if user typed directly without selecting, try to use search input as symbol
     if (!symbol) {
@@ -475,12 +621,12 @@ async function saveHolding() {
     }
 
     const holding = {
-        id: crypto.randomUUID(),
+        id: 'h-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
         symbol,
         name,
         shares,
-        lastPrice: manualPrice > 0 ? manualPrice : null,
-        lastUpdated: manualPrice > 0 ? new Date().toISOString() : null
+        lastPrice: null,
+        lastUpdated: null
     };
 
     wealthHoldings.push(holding);
@@ -490,15 +636,21 @@ async function saveHolding() {
     calculateWealth();
     showToast(`${symbol} 已新增`);
 
-    // 如果沒有手動輸入股價，嘗試抓取
-    if (!manualPrice) {
-        await fetchSinglePrice(holding.id);
-    }
+    // 嘗試抓取即時股價
+    await fetchSinglePrice(holding.id);
 }
 
 function deleteHolding(id) {
+    console.log("Attempting to delete holding with ID:", id);
     if (!confirm('確定刪除此持股？')) return;
+
+    const initialLength = wealthHoldings.length;
     wealthHoldings = wealthHoldings.filter(h => h.id !== id);
+
+    if (wealthHoldings.length === initialLength) {
+        console.warn("Holding ID not found in wealthHoldings array:", id);
+    }
+
     saveWealthData();
     renderHoldings();
     calculateWealth();
@@ -522,7 +674,7 @@ async function fetchSinglePrice(id) {
             calculateWealth();
             showToast(`${h.symbol} 更新至 NT$ ${price.toLocaleString()}`);
         } else {
-            showToast(`${h.symbol} 無法取得股價，請手動輸入`);
+            showToast(`${h.symbol} 無法取得股價，請稍後再試`);
         }
     } catch (e) {
         showToast('股價抓取失敗');
@@ -646,7 +798,7 @@ function saveBankAccount() {
         const acc = wealthBankAccounts.find(a => a.id === editId);
         if (acc) { acc.bankName = bankName; acc.balance = balance; acc.rate = rate; }
     } else {
-        wealthBankAccounts.push({ id: crypto.randomUUID(), bankName, balance, rate });
+        wealthBankAccounts.push({ id: 'b-' + Date.now() + '-' + Math.floor(Math.random() * 1000), bankName, balance, rate });
     }
 
     saveWealthData();
@@ -797,7 +949,19 @@ function _doCalculateWealth() {
         var m = months % 12;
         var timeStr = (y > 0 ? y + ' 年 ' : '') + (m > 0 ? m + ' 個月' : (y === 0 ? '不到 1 個月' : ''));
         resultEl.textContent = '約需 ' + timeStr;
-        summaryEl.textContent = '總結累積：NT$ ' + Math.round(total).toLocaleString() + ' (現金 NT$ ' + Math.round(curCash).toLocaleString() + ' / 投資 NT$ ' + Math.round(curInv).toLocaleString() + ')';
+        summaryEl.innerHTML = `
+            <div class="wealth-summary-line">
+                <span class="wealth-summary-label">總結累積：</span>
+                <span class="wealth-summary-value">NT$ ${Math.round(total).toLocaleString()}</span>
+            </div>
+            <div class="wealth-summary-line" style="font-size: 0.82rem; margin-top: 4px; border-top: 1px dashed var(--border-color); padding-top: 4px;">
+                <span class="wealth-summary-label">現金：</span>
+                <span class="wealth-summary-value">NT$ ${Math.round(curCash).toLocaleString()}</span>
+                <span style="margin: 0 4px; color: var(--border-color);">|</span>
+                <span class="wealth-summary-label">投資：</span>
+                <span class="wealth-summary-value">NT$ ${Math.round(curInv).toLocaleString()}</span>
+            </div>
+        `;
     }
 
     renderWealthChart(dataLabels, cashData, investData, totalData, targetFV);

@@ -60,9 +60,15 @@ function calculateStats() {
 }
 
 function updateBudgetCalc() {
-    var stats = calculateStats();
-    var actualIncome = getLifeIncomeForMonth(lifeCurrentMonth);
-    var lifeExpense = getLifeOnlyExpForMonth(lifeCurrentMonth);
+    var monthInput = document.getElementById('analysisOverviewMonth');
+    if (monthInput && !monthInput.value) {
+        monthInput.value = lifeCurrentMonth || new Date().toISOString().slice(0, 7);
+    }
+    var ym = monthInput && monthInput.value ? monthInput.value : lifeCurrentMonth;
+
+    var actualIncome = getLifeIncomeForMonth(ym);
+    var lifeExpense = getLifeOnlyExpForMonth(ym);
+    var fixedExpense = getMonthlyFixedTotal(ym);
 
     // Use actual recorded income only
     var income = actualIncome;
@@ -70,7 +76,10 @@ function updateBudgetCalc() {
     var lifeEl = document.getElementById('totalLifeMonthly');
     if (lifeEl) lifeEl.textContent = 'NT$ ' + Math.round(lifeExpense).toLocaleString();
 
-    var remaining = income - stats.monthly - lifeExpense;
+    var fixedEl = document.getElementById('totalMonthly');
+    if (fixedEl) fixedEl.textContent = 'NT$ ' + Math.round(fixedExpense).toLocaleString();
+
+    var remaining = income - fixedExpense - lifeExpense;
 
     // Calculate total project savings to deduct
     var totalSavings = 0;
@@ -529,16 +538,18 @@ function renderTrendChart() {
     var ctx = document.getElementById('trendChart');
     if (!ctx) return;
 
+    var rangeSelect = document.getElementById('trendRangeSelect');
+    var range = rangeSelect ? parseInt(rangeSelect.value) : 6;
+
     var months = [], now = new Date();
-    for (var i = 5; i >= 0; i--) {
+    for (var i = range - 1; i >= 0; i--) {
         var t = new Date(now.getFullYear(), now.getMonth() - i, 1);
         months.push(t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0'));
     }
 
     var labels = months.map(function (ym) { return ym.split('-')[1] + '月'; });
-    var sub = Math.round(calculateStats().monthly);
-    var subData = months.map(function () { return sub; });
-    var lifeData = months.map(function (ym) { return getLifeTotalForMonth(ym); });
+    var subData = months.map(function (ym) { return Math.round(getMonthlyFixedTotal(ym)); });
+    var lifeData = months.map(function (ym) { return getLifeOnlyExpForMonth(ym); });
 
     if (trendChartInstance) { trendChartInstance.destroy(); trendChartInstance = null; }
 
