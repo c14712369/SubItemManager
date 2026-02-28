@@ -516,7 +516,12 @@ h1 .title-icon {
 }
 
 /* ?�?� Item Row (Fixed Expense List View) ?�?� */
-#itemsList {    display: flex;    flex-direction: column;    gap: 6px;    max-width: 800px;}
+#itemsList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 800px;
+}
 
 .item-row {
     display: flex;
@@ -2321,7 +2326,7 @@ video {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
-    min-height: 300px;
+    min-height: 180px;
     width: 100%;
     overflow: hidden;
 }
@@ -2351,7 +2356,7 @@ video {
 }
 
 #lifeExpList {
-    padding: 8px 0;
+    padding: 8px 0 16px 0;
 }
 
 /* Mobile: stack vertically */
@@ -2674,10 +2679,14 @@ video {
 
 
 /* Override: limit fixed expense list width */
-#itemsList { max-width: 800px; }
+#itemsList {
+    max-width: 800px;
+}
 
 /* Override: limit fixed expense list width */
-#itemsList { max-width: 800px; }
+#itemsList {
+    max-width: 800px;
+}
 
 /* ── Fixed Expenses Two-Column Layout ── */
 .fixed-layout {
@@ -2691,6 +2700,7 @@ video {
     .fixed-layout {
         grid-template-columns: 1fr;
     }
+
     .fixed-summary-col {
         order: -1;
     }
@@ -2782,6 +2792,7 @@ video {
     .wealth-form-grid {
         grid-template-columns: 1fr;
     }
+
     .wealth-calc-grid {
         grid-template-columns: 1fr;
     }
@@ -2817,15 +2828,18 @@ video {
         display: flex;
         flex-direction: column;
     }
+
     .holding-selected-row {
         flex-wrap: wrap;
         gap: 6px;
     }
+
     .holding-selected-price {
         width: 100%;
         margin-left: 0;
         font-size: 0.82rem;
     }
+
     .stock-dropdown {
         max-height: 200px;
     }
