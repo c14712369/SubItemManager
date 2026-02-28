@@ -56,6 +56,9 @@ function updateThemeIcon(isDark) {
 }
 
 function switchTab(tabId) {
+    // Reset scroll position to top
+    window.scrollTo(0, 0);
+
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabId));
     });
