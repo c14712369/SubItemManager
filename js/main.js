@@ -1,5 +1,29 @@
 // ====== js/main.js ======
 
+// --- Privacy Mode ---
+window.isPrivacyMode = localStorage.getItem('privacy_mode') === 'true';
+
+const originalToLocaleString = Number.prototype.toLocaleString;
+Number.prototype.toLocaleString = function (locales, options) {
+    if (window.isPrivacyMode) {
+        return '****';
+    }
+    return originalToLocaleString.call(this, locales, options);
+};
+
+function togglePrivacy() {
+    window.isPrivacyMode = !window.isPrivacyMode;
+    localStorage.setItem('privacy_mode', window.isPrivacyMode);
+
+    const icon = document.getElementById('privacyIcon');
+    if (icon) {
+        icon.className = window.isPrivacyMode ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    }
+
+    // Refresh the UI to apply masking (skip fetching cloud data)
+    init(true);
+}
+
 function initTheme() {
     const savedTheme = localStorage.getItem(THEME_KEY);
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
