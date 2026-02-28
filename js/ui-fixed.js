@@ -345,6 +345,9 @@ function render() {
         const endDate = item.endDate ? new Date(item.endDate) : null;
         const isEnded = endDate && endDate < now;
 
+        let dateRange = `${item.startDate}`;
+        if (item.endDate) dateRange += ` ~ ${item.endDate}`;
+
         let amountDisplay = `NT$ ${item.amount.toLocaleString()}`;
         if (item.currency && item.currency !== 'TWD') {
             amountDisplay = `${item.currency} ${item.originalAmount.toLocaleString()} <span style="font-size:0.8em;color:var(--text-muted);">(≈NT$${item.amount.toLocaleString()})</span>`;
@@ -364,8 +367,9 @@ function render() {
                 <div class="item-row-tags">
                     <span class="item-row-cat" style="background:${category.color}20;color:${category.color}">${category.name}</span>
                     <span class="item-row-cycle">${cycleLabel}</span>
-                    ${item.note ? `<span class="item-row-note"><i class="fa-regular fa-comment"></i> ${item.note}</span>` : ''}
                 </div>
+                <div class="item-row-date"><i class="fa-regular fa-calendar" style="margin-right:3px;"></i>${dateRange}</div>
+                ${item.note ? `<div class="item-row-note"><i class="fa-regular fa-comment"></i> ${item.note}</div>` : ''}
             </div>
             <div class="item-row-amount">${amountDisplay}</div>
             <div class="item-row-actions">

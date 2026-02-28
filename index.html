@@ -11,6 +11,14 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
+
+    <!-- PWA Setup -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="收支管理系統">
+    <link rel="apple-touch-icon" href="favicon.ico">
+    <meta name="theme-color" content="#c17b2e">
 </head>
 
 <body>
@@ -21,21 +29,21 @@
                 <h1><i class="fa-regular fa-credit-card title-icon"></i> 收支管理系統</h1>
                 <span class="subtitle">記錄每一筆固定支出與日常生活費</span>
             </div>
-            <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 12px; justify-content: flex-end;">
-                <span id="authUserEmail"
-                    style="display: none; font-size: 0.85rem; color: var(--text-muted); font-weight: 500; word-break: break-all;"></span>
-                <button class="btn btn-outline btn-sm" id="authLoginBtn" onclick="openAuthModal()"
-                    style="white-space: nowrap;">
+            <div class="header-controls">
+                <div class="header-controls-top">
+                    <span id="authUserEmail"></span>
+                    <div class="header-icons">
+                        <button class="icon-btn" onclick="openGlobalSearch()" title="全局搜尋" style="font-size: 1.2rem;">
+                            <i class="fa-solid fa-search"></i>
+                        </button>
+                        <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="切換深色/淺色模式">
+                            <i class="fa-regular fa-moon" id="themeIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                <button class="btn btn-outline btn-sm" id="authLoginBtn" onclick="openAuthModal()">
                     <i class="fa-solid fa-user"></i> 登入 / 註冊
                 </button>
-                <div style="display: flex; gap: 8px; flex-shrink: 0;">
-                    <button class="icon-btn" onclick="openGlobalSearch()" title="全局搜尋" style="font-size: 1.2rem;">
-                        <i class="fa-solid fa-search"></i>
-                    </button>
-                    <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="切換深色/淺色模式">
-                        <i class="fa-regular fa-moon" id="themeIcon"></i>
-                    </button>
-                </div>
             </div>
         </header>
 
@@ -140,7 +148,11 @@
 
                     </div>
                     <div class="overview-stat">
-                        <div class="stat-title">本月支出</div>
+                        <div class="stat-title">本月固定支出</div>
+                        <div class="stat-value stat-monthly" id="lifeMonthFixed">NT$ 0</div>
+                    </div>
+                    <div class="overview-stat">
+                        <div class="stat-title">本月生活支出</div>
                         <div class="stat-value stat-monthly" id="lifeMonthSpent">NT$ 0</div>
                     </div>
                     <div class="overview-stat">
@@ -193,7 +205,12 @@
             <div class="overview-banner">
                 <div class="overview-stats">
                     <div class="overview-stat">
-                        <div class="stat-title">每月總結餘</div>
+                        <div class="stat-title"
+                            style="display:flex; justify-content:space-between; align-items:center;">
+                            每月總結餘
+                            <input type="month" id="analysisOverviewMonth" class="form-input chart-select"
+                                onchange="updateBudgetCalc()" style="width:auto; padding: 2px 8px; font-size: 0.85rem;">
+                        </div>
                         <div class="stat-value" id="remainingBudget">NT$ 0</div>
                         <div class="hero-options">
                             <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
@@ -263,7 +280,13 @@
             <!-- Trend Chart -->
             <div class="chart-section">
                 <div class="chart-header">
-                    <h3><i class="fa-solid fa-chart-line"></i> 近 6 個月收支趨勢</h3>
+                    <h3><i class="fa-solid fa-chart-line"></i> 收支趨勢</h3>
+                    <select id="trendRangeSelect" class="form-select chart-select" onchange="renderTrendChart()">
+                        <option value="3">近 3 個月</option>
+                        <option value="6" selected>近 6 個月</option>
+                        <option value="12">近 12 個月</option>
+                        <option value="24">近 24 個月</option>
+                    </select>
                 </div>
                 <div class="chart-container" style="height:260px;"><canvas id="trendChart"></canvas></div>
             </div>
@@ -345,9 +368,32 @@
                                     placeholder="每月投入股市" oninput="calculateWealth()">
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label">投資年化報酬率 (%)</label>
+                                <label class="form-label" style="margin-bottom:8px;">投資年化報酬率 (%)</label>
+                                <div class="wealth-cagr-controls" style="display:flex; gap:8px; margin-bottom:8px;">
+                                    <div id="cagrSearchWrap" style="position:relative; flex:1; min-width:0;">
+                                        <input type="text" id="wealthInvestTickerSearch" class="form-input"
+                                            placeholder="標的搜尋(例:0050)..."
+                                            style="font-size:0.75rem; padding:4px 8px; height:32px;"
+                                            oninput="onInvestTickerSearchInput(this.value)"
+                                            onkeydown="onInvestTickerSearchKeydown(event)">
+                                        <div id="investTickerDropdown" class="stock-dropdown"
+                                            style="display:none; font-size:0.8rem; top:calc(100% + 2px);"></div>
+                                    </div>
+                                    <select id="wealthInvestRangeSelect" class="form-select"
+                                        style="font-size:0.75rem; padding:2px 4px; height:32px; width:70px; flex-shrink:0;"
+                                        onchange="refreshCAGR()">
+                                        <option value="3">3Y</option>
+                                        <option value="5" selected>5Y</option>
+                                        <option value="10">10Y</option>
+                                        <option value="15">15Y</option>
+                                        <option value="20">20Y</option>
+                                    </select>
+                                </div>
                                 <input type="number" id="wealthInvestRateInput" class="form-input" placeholder="例如: 8"
                                     step="0.1" oninput="calculateWealth()">
+                                <div id="wealthCAGRStatus"
+                                    style="font-size:0.72rem; color:var(--text-muted); margin-top:4px; min-height:1em;">
+                                </div>
                             </div>
                             <div class="form-group" style="margin-bottom:0;">
                                 <label class="form-label">每月存款 (NT$)</label>
@@ -381,15 +427,13 @@
 
                     <!-- Right: Result -->
                     <div class="wealth-calc-col">
-                        <div style="margin-bottom:16px;">
+                        <div class="wealth-result-card">
                             <div class="stat-title">預估達成時間</div>
-                            <div id="wealthResultText"
-                                style="font-size:2rem;font-weight:600;color:var(--text-color);line-height:1.2;margin-top:6px;">
+                            <div id="wealthResultText" class="wealth-result-main">
                                 請輸入參數...</div>
-                            <div id="wealthSummaryText"
-                                style="margin-top:8px;font-size:0.85rem;color:var(--text-muted);"></div>
+                            <div id="wealthSummaryText" class="wealth-result-summary"></div>
                         </div>
-                        <div style="height:260px;">
+                        <div style="height:260px; margin-top:16px;">
                             <canvas id="wealthChart"></canvas>
                         </div>
                     </div>
@@ -972,17 +1016,9 @@
             <input type="hidden" id="holdingNameInput">
 
             <!-- Shares -->
-            <div class="form-row" style="margin-top:4px;">
-                <div class="form-group" style="margin-bottom:0;">
-                    <label class="form-label">持有股數</label>
-                    <input type="number" id="holdingSharesInput" class="form-input" placeholder="例如：100" min="0"
-                        step="1">
-                </div>
-                <div class="form-group" style="margin-bottom:0;">
-                    <label class="form-label">手動股價 (選填)</label>
-                    <input type="number" id="holdingPriceInput" class="form-input" placeholder="留空使用自動抓取" min="0"
-                        step="0.01">
-                </div>
+            <div class="form-group" style="margin-top:4px;">
+                <label class="form-label">持有股數</label>
+                <input type="number" id="holdingSharesInput" class="form-input" placeholder="例如：100" min="0" step="1">
             </div>
 
             <p style="font-size:0.78rem;color:var(--text-muted);margin:12px 0 16px;">
@@ -1031,11 +1067,15 @@
     <nav class="bottom-nav">
         <a href="#" class="nav-item" onclick="switchTab('life'); return false;">
             <i class="fa-solid fa-wallet"></i>
-            <span>生活費</span>
+            <span>生活</span>
         </a>
         <a href="#" class="nav-item" onclick="switchTab('fixed'); return false;">
             <i class="fa-solid fa-receipt"></i>
-            <span>固定支出</span>
+            <span>固定</span>
+        </a>
+        <a href="#" class="nav-item" onclick="switchTab('projects'); return false;">
+            <i class="fa-solid fa-plane-up"></i>
+            <span>專案</span>
         </a>
 
         <!-- Central FAB Spacer -->
@@ -1053,7 +1093,16 @@
             <i class="fa-solid fa-piggy-bank"></i>
             <span>試算</span>
         </a>
+        <a href="#" class="nav-item" onclick="switchTab('annual'); return false;">
+            <i class="fa-solid fa-calendar-days"></i>
+            <span>報表</span>
+        </a>
     </nav>
+
+    <!-- Global FAB (shown on mobile, floating above nav) -->
+    <button class="fab-global" onclick="openLifeExpModal()" title="快速記帳">
+        <i class="fa-solid fa-plus"></i>
+    </button>
 
     <!-- Core Logic & Data Scripts First -->
     <script src="js/state.js"></script>
@@ -1072,6 +1121,21 @@
     <script src="js/ui-wealth.js"></script>
     <script src="js/ui-projects.js"></script>
     <script src="js/ui-annual.js"></script>
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+    <!-- Main App Logic -->
     <script src="js/main.js"></script>
 </body>
 
