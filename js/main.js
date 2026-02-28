@@ -56,8 +56,18 @@ function updateThemeIcon(isDark) {
 }
 
 function switchTab(tabId) {
-    // Reset scroll position to top
-    window.scrollTo(0, 0);
+    // Robust cross-browser scroll reset
+    setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        document.body.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+
+        // Force the header into view as a fallback for strict mobile containers
+        const header = document.querySelector('header');
+        if (header) {
+            header.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+    }, 10);
 
     document.querySelectorAll('.tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.getAttribute('onclick').includes(tabId));
