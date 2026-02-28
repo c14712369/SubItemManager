@@ -184,13 +184,12 @@ function renderLifeExpenseList() {
             var rawNote = e.note ? e.note : incCat.name;
             var note = rawNote.replace(/[（\(\[].*?[）\)\]]/g, '').trim(); // Remove any parentheses/brackets content
             if (note === '') note = incCat.name;
-            var ns = e.note ? '' : ' style="color:var(--text-muted);font-style:italic;"';
             return '<div class="life-income-row">' +
                 '<div class="life-income-date" style="color:' + incCat.color + ';">' + day + '</div>' +
                 '<div class="life-income-arrow" style="background:' + incCat.color + ';"></div>' +
                 '<div class="life-income-info">' +
                 '<div class="life-income-src">' + incCat.name + '</div>' +
-                '<div class="life-income-note"' + ns + '>' + note + '</div>' +
+                '<div class="life-income-note">' + note + '</div>' +
                 '</div>' +
                 '<div class="life-income-amount">+ NT$ ' + e.amount.toLocaleString() + '</div>' +
                 '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>' +
@@ -198,13 +197,12 @@ function renderLifeExpenseList() {
         } else {
             var cat = getLifeCat(e.categoryId);
             var nodeNote = e.note ? e.note : cat.name;
-            var nsCat = e.note ? '' : ' style="color:var(--text-muted);font-style:italic;"';
             return '<div class="life-exp-row">' +
                 '<div class="life-exp-date">' + day + '</div>' +
                 '<div class="life-exp-dot" style="background:' + cat.color + '"></div>' +
                 '<div class="life-exp-info">' +
                 '<div class="life-exp-cat">' + cat.name + '</div>' +
-                '<div class="life-exp-note"' + nsCat + '>' + nodeNote + '</div>' +
+                '<div class="life-exp-note">' + nodeNote + '</div>' +
                 '</div>' +
                 '<div class="life-exp-amount">NT$ ' + e.amount.toLocaleString() + '</div>' +
                 '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>' +
