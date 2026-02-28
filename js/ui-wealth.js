@@ -553,9 +553,12 @@ async function refreshAllPrices() {
 async function fetchStockPrice(rawSymbol) {
     // 如果是純數字且 4 碼，判斷為台股
     const symbol = /^\d{4,5}$/.test(rawSymbol) ? rawSymbol + '.TW' : rawSymbol;
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+    // 使用 CORS 代理伺服器
+    const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
+    const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
     try {
-        const res = await fetch(url);
+        const res = await fetch(proxyUrl);
         if (!res.ok) return null;
         const data = await res.json();
         const meta = data?.chart?.result?.[0]?.meta;
@@ -564,6 +567,7 @@ async function fetchStockPrice(rawSymbol) {
         const price = meta.regularMarketPrice || meta.previousClose || null;
         return price;
     } catch (e) {
+        console.error("Fetch error via proxy:", e);
         return null;
     }
 }
