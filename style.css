@@ -1,9 +1,9 @@
-/* ===========================
-   日式簡約 — SubItemManager
+﻿/* ===========================
+   ?��?簡�? ??SubItemManager
    Wabi-Sabi Minimalism
    =========================== */
 
-/* ── CSS Variables ── */
+/* ?�?� CSS Variables ?�?� */
 :root {
     --primary-color: #2A6475;
     --primary-hover: #1E5060;
@@ -42,14 +42,14 @@
     --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-/* ── Reset ── */
+/* ?�?� Reset ?�?� */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-/* ── Base ── */
+/* ?�?� Base ?�?� */
 body {
     font-family: var(--font-sans);
     background-color: var(--bg-color);
@@ -59,7 +59,7 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
-/* ── Scrollbar ── */
+/* ?�?� Scrollbar ?�?� */
 ::-webkit-scrollbar {
     width: 4px;
     height: 4px;
@@ -78,7 +78,7 @@ body {
     background: var(--text-muted);
 }
 
-/* ── Layout ── */
+/* ?�?� Layout ?�?� */
 .container {
     max-width: 1020px;
     margin: 0 auto;
@@ -91,7 +91,7 @@ body {
     }
 }
 
-/* ── Header ── */
+/* ?�?� Header ?�?� */
 /* Sidebar Header styles consolidated later */
 
 header {
@@ -160,7 +160,7 @@ h1 .title-icon {
     letter-spacing: 0.08em;
 }
 
-/* ── Theme Toggle ── */
+/* ?�?� Theme Toggle ?�?� */
 .theme-toggle {
     font-size: 1rem;
     width: 36px;
@@ -182,7 +182,7 @@ h1 .title-icon {
     color: var(--primary-color);
 }
 
-/* ── Tabs ── */
+/* ?�?� Tabs ?�?� */
 .tabs-nav {
     display: flex;
     gap: 0;
@@ -253,7 +253,7 @@ h1 .title-icon {
     display: block;
 }
 
-/* ── Animations ── */
+/* ?�?� Animations ?�?� */
 @keyframes slideUp {
     from {
         opacity: 0;
@@ -276,7 +276,7 @@ h1 .title-icon {
     }
 }
 
-/* ── Toolbar ── */
+/* ?�?� Toolbar ?�?� */
 .toolbar {
     display: flex;
     flex-direction: column;
@@ -320,7 +320,7 @@ h1 .title-icon {
     align-self: center;
 }
 
-/* ── Buttons ── */
+/* ?�?� Buttons ?�?� */
 .btn {
     padding: 9px 18px;
     border: none;
@@ -391,7 +391,7 @@ h1 .title-icon {
     font-size: 0.82rem;
 }
 
-/* ── Icon-only Button ── */
+/* ?�?� Icon-only Button ?�?� */
 .icon-btn {
     background: none;
     border: none;
@@ -418,7 +418,7 @@ h1 .title-icon {
     transform: scale(0.92);
 }
 
-/* ── Item Cards (Bento Grid) ── */
+/* ?�?� Item Cards (Bento Grid) ?�?� */
 .items-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
@@ -515,7 +515,134 @@ h1 .title-icon {
     gap: 4px;
 }
 
-/* ── Dashboard ── */
+/* ?�?� Item Row (Fixed Expense List View) ?�?� */
+#itemsList {    display: flex;    flex-direction: column;    gap: 6px;    max-width: 800px;}
+
+.item-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.item-row:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.item-row--ended {
+    opacity: 0.6;
+}
+
+.item-row-bar {
+    width: 4px;
+    min-width: 4px;
+    align-self: stretch;
+    flex-shrink: 0;
+}
+
+.item-row-main {
+    flex: 1;
+    padding: 10px 12px;
+    min-width: 0;
+}
+
+.item-row-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    line-height: 1.4;
+}
+
+.item-row-tags {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.item-row-cat {
+    font-size: 0.72rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.item-row-cycle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.item-row-note {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+.item-row-badge {
+    font-size: 0.68rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.item-row-badge--ended {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+[data-theme="dark"] .item-row-badge--ended {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.item-row-amount {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    padding: 10px 12px;
+    text-align: right;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.item-row-actions {
+    display: flex;
+    gap: 2px;
+    padding: 6px 8px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+    .item-row-note {
+        display: none;
+    }
+
+    .item-row-amount {
+        font-size: 0.85rem;
+        padding: 8px 8px;
+    }
+}
+
+
+/* ?�?� Dashboard ?�?� */
 .dashboard {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -612,7 +739,7 @@ h1 .title-icon {
     opacity: 0.4;
 }
 
-/* ── Chart Section ── */
+/* ?�?� Chart Section ?�?� */
 .chart-section {
     background: var(--card-bg);
     padding: 22px;
@@ -707,7 +834,7 @@ h1 .title-icon {
     justify-content: center;
 }
 
-/* ── Form Elements ── */
+/* ?�?� Form Elements ?�?� */
 .form-group {
     margin-bottom: 16px;
 }
@@ -750,7 +877,7 @@ h1 .title-icon {
     gap: 14px;
 }
 
-/* ── Modal ── */
+/* ?�?� Modal ?�?� */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -824,7 +951,7 @@ h1 .title-icon {
     color: var(--text-main);
 }
 
-/* ── Link Button ── */
+/* ?�?� Link Button ?�?� */
 .link-btn {
     color: var(--primary-color);
     cursor: pointer;
@@ -839,7 +966,7 @@ h1 .title-icon {
     border-bottom-color: var(--primary-color);
 }
 
-/* ── Category List ── */
+/* ?�?� Category List ?�?� */
 .category-list {
     display: flex;
     flex-direction: column;
@@ -889,7 +1016,7 @@ h1 .title-icon {
 
 
 
-/* ── Empty State ── */
+/* ?�?� Empty State ?�?� */
 .empty-state {
     grid-column: 1 / -1;
     text-align: center;
@@ -921,7 +1048,7 @@ h1 .title-icon {
     margin-bottom: 6px;
 }
 
-/* ── Toast ── */
+/* ?�?� Toast ?�?� */
 .toast {
     position: fixed;
     bottom: 24px;
@@ -959,14 +1086,14 @@ h1 .title-icon {
     color: #fff;
 }
 
-/* ── Responsive ── */
+/* ?�?� Responsive ?�?� */
 /* Base media queries removed from here to be moved to the bottom */
 
-/* ═══════════════════════════════════════
-   生活費記帳模組
-   ═══════════════════════════════════════ */
+/* ?��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��???
+   ?�活費�?帳模�?
+   ?��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��???*/
 
-/* ── Month Navigator ── */
+/* ?�?� Month Navigator ?�?� */
 .month-nav {
     display: flex;
     align-items: center;
@@ -995,31 +1122,115 @@ h1 .title-icon {
     justify-content: center;
 }
 
-/* ── Overview Banner ── */
 .overview-banner {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     padding: 16px 20px;
-    margin-bottom: 24px;
+    margin: 0 auto 24px auto;
+    /* Centered */
     box-shadow: var(--shadow-sm);
+    max-width: 640px;
+}
+
+@media (max-width: 768px) {
+    .overview-banner {
+        max-width: 100%;
+    }
 }
 
 .overview-stats {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0;
+    grid-template-columns: repeat(3, auto);
+    gap: 40px;
     margin-bottom: 12px;
 }
 
 #tab-analysis .overview-stats {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, auto);
+    gap: 60px;
 }
 
 @media (max-width: 600px) {
-    .overview-stats {
+
+    .overview-stats,
+    #tab-analysis .overview-stats {
         grid-template-columns: 1fr;
-        gap: 12px;
+        gap: 16px;
+    }
+
+    .overview-banner {
+        padding: 20px 16px;
+    }
+
+    .overview-stat {
+        border-right: none !important;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0 0 16px 0 !important;
+        width: 100%;
+    }
+
+    .overview-stat:last-child {
+        border-bottom: none;
+        padding-bottom: 0 !important;
+    }
+
+    .hero-options {
+        margin-top: 10px;
+        width: 100%;
+    }
+}
+
+.stat-sub-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: var(--font-serif);
+    max-width: 320px;
+    /* Tighten on desktop */
+}
+
+@media (max-width: 600px) {
+    .stat-sub-group {
+        max-width: none;
+    }
+}
+
+.stat-sub-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.stat-sub-item .label {
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.stat-sub-item .label i {
+    font-size: 0.85rem;
+    margin-right: 8px;
+    opacity: 0.7;
+    width: 14px;
+    text-align: center;
+}
+
+.stat-sub-item .value {
+    color: var(--text-main);
+    font-weight: 700;
+    text-align: right;
+    font-feature-settings: "tnum";
+    /* Tabular numbers for better alignment */
+}
+
+@media (max-width: 480px) {
+    .stat-sub-item {
+        font-size: 1.05rem;
     }
 }
 
@@ -1028,11 +1239,25 @@ h1 .title-icon {
     border-right: 1px solid var(--border-color);
 }
 
+.overview-stat:last-child {
+    border-right: none;
+}
+
 .hero-options {
     margin-top: 14px;
     padding-top: 10px;
     border-top: 1px dashed var(--border-color);
     width: fit-content;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.hero-options label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
 }
 
 .stat-title {
@@ -1101,7 +1326,7 @@ h1 .title-icon {
     color: var(--danger-color);
 }
 
-/* ── Budget Grid & Card ── */
+/* ?�?� Budget Grid & Card ?�?� */
 .budget-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -1178,7 +1403,7 @@ h1 .title-icon {
     font-style: italic;
 }
 
-/* ── Life Expense Row ── */
+/* ?�?� Life Expense Row ?�?� */
 .life-exp-row {
     display: flex;
     align-items: center;
@@ -1232,7 +1457,28 @@ h1 .title-icon {
     min-width: 80px;
 }
 
-/* ── Dual Chart Layout ── */
+@media (max-width: 480px) {
+    .life-exp-row {
+        gap: 8px;
+        padding: 12px 0;
+    }
+
+    .life-exp-date {
+        font-size: 0.9rem;
+        min-width: 24px;
+    }
+
+    .life-exp-note {
+        font-size: 0.82rem;
+    }
+
+    .life-exp-amount {
+        font-size: 0.88rem;
+        min-width: 70px;
+    }
+}
+
+/* ?�?� Dual Chart Layout ?�?� */
 .chart-dual {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
@@ -1244,7 +1490,7 @@ h1 .title-icon {
     margin-bottom: 0;
 }
 
-/* ── Type Toggle (收入/支出切換) ── */
+/* ?�?� Type Toggle (?�入/?�出?��?) ?�?� */
 .type-toggle {
     display: flex;
     gap: 0;
@@ -1288,7 +1534,7 @@ h1 .title-icon {
     background: var(--success-color);
 }
 
-/* ── Life Income Row ── */
+/* ?�?� Life Income Row ?�?� */
 .life-income-row {
     display: flex;
     align-items: center;
@@ -1306,7 +1552,8 @@ h1 .title-icon {
     font-family: var(--font-serif);
     font-size: 1rem;
     font-weight: 700;
-    color: var(--success-color);
+    color: var(--primary-color);
+    /* Sync with exp date color */
     min-width: 28px;
     text-align: center;
 }
@@ -1332,6 +1579,8 @@ h1 .title-icon {
 .life-income-note {
     font-size: 0.88rem;
     color: var(--text-main);
+    line-height: 1.4;
+    /* Added for consistency */
 }
 
 .life-income-amount {
@@ -1339,11 +1588,33 @@ h1 .title-icon {
     font-weight: 700;
     font-size: 0.95rem;
     color: var(--success-color);
+    /* Keep success color for amount only */
     text-align: right;
     min-width: 80px;
 }
 
-/* ── Hero Panel (Dashboard A) ── */
+@media (max-width: 480px) {
+    .life-income-row {
+        gap: 8px;
+        padding: 12px 0;
+    }
+
+    .life-income-date {
+        font-size: 0.9rem;
+        min-width: 24px;
+    }
+
+    .life-income-note {
+        font-size: 0.82rem;
+    }
+
+    .life-income-amount {
+        font-size: 0.88rem;
+        min-width: 70px;
+    }
+}
+
+/* ?�?� Hero Panel (Dashboard A) ?�?� */
 .hero-panel {
     background: var(--card-bg);
     border-radius: var(--radius-lg);
@@ -1452,7 +1723,7 @@ h1 .title-icon {
     border-bottom-color: var(--primary-color);
 }
 
-/* ── Loading Overlay ── */
+/* ?�?� Loading Overlay ?�?� */
 .loading-overlay {
     position: fixed;
     top: 0;
@@ -1525,7 +1796,7 @@ h1 .title-icon {
     font-family: var(--font-serif);
 }
 
-/* ── Mobile Utilities & RWD Overrides ── */
+/* ?�?� Mobile Utilities & RWD Overrides ?�?� */
 @media (max-width: 768px) {
     .chart-dual {
         grid-template-columns: 1fr;
@@ -1741,7 +2012,7 @@ video {
     box-sizing: border-box;
 }
 
-/* ── Bottom Navigation & FAB ── */
+/* ?�?� Bottom Navigation & FAB ?�?� */
 .bottom-nav {
     display: none;
     position: fixed;
@@ -1870,14 +2141,20 @@ video {
     }
 }
 
-/* ── Life Sidebar Layout ── */
+/* ?�?� Life Sidebar Layout ?�?� */
 .life-layout {
     display: grid;
     grid-template-columns: 240px 1fr;
-    gap: 20px;
+    /* Keep explicit width for sidebar */
+    justify-content: center;
+    /* Center the group */
+    max-width: 800px;
+    /* Adjusted from 1000px per user request */
+    margin: 20px auto 0 auto;
+    gap: 24px;
     align-items: start;
-    margin-top: 20px;
 }
+
 
 /* Left sidebar */
 .life-sidebar {
@@ -2045,6 +2322,7 @@ video {
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     min-height: 300px;
+    width: 100%;
     overflow: hidden;
 }
 
@@ -2086,7 +2364,469 @@ video {
         position: static;
     }
 
+    .life-detail-panel {
+        min-height: 0;
+        /* Clear min-height for mobile */
+    }
+
     .life-cat-action {
         opacity: 1;
+    }
+}
+
+/* ?�?� Wealth Tab ?�?� */
+.wealth-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 700px) {
+    .wealth-panels {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wealth-panel {
+    margin-bottom: 0 !important;
+}
+
+.wealth-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    gap: 12px;
+}
+
+.wealth-panel-title {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 4px 0;
+}
+
+.wealth-panel-title i {
+    color: var(--primary-color);
+}
+
+.wealth-panel-total {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+}
+
+.wealth-panel-total strong {
+    color: var(--text-main);
+    font-family: var(--font-serif);
+}
+
+.wealth-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 60px;
+}
+
+.wealth-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s;
+}
+
+.wealth-row:hover {
+    border-color: var(--primary-color);
+}
+
+.wealth-row-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 72px;
+}
+
+.wealth-row-symbol {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+    white-space: nowrap;
+}
+
+.wealth-row-name {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+}
+
+.wealth-row-mid {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.wealth-row-detail {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.wealth-row-price {
+    font-size: 0.8rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.wealth-row-time {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 0 4px;
+}
+
+.wealth-row-value {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.wealth-row-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.wealth-empty {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    padding: 12px 0;
+    font-style: italic;
+}
+
+/* Wealth Projection Grid */
+.wealth-calc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
+}
+
+@media (max-width: 700px) {
+    .wealth-calc-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wealth-calc-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.wealth-current-display {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+}
+
+.wealth-current-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.wealth-current-label {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wealth-current-value {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+/* ?�?� Stock Autocomplete ?�?� */
+.stock-search-wrap {
+    position: relative;
+}
+
+.stock-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    z-index: 500;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.stock-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stock-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.stock-dropdown-item:hover,
+.stock-dropdown-item.active {
+    background: rgba(42, 100, 117, 0.08);
+}
+
+.stock-dd-symbol {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    min-width: 64px;
+}
+
+.stock-dd-name {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stock-dropdown-hint {
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Selected stock info bar */
+.holding-selected-info {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 8px;
+}
+
+.holding-selected-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.holding-selected-symbol {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--primary-color);
+}
+
+.holding-selected-name {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    flex: 1;
+}
+
+.holding-selected-price {
+    font-size: 0.85rem;
+    color: var(--success-color);
+    font-weight: 600;
+    margin-left: auto;
+}
+
+
+/* Override: limit fixed expense list width */
+#itemsList { max-width: 800px; }
+
+/* Override: limit fixed expense list width */
+#itemsList { max-width: 800px; }
+
+/* ── Fixed Expenses Two-Column Layout ── */
+.fixed-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .fixed-layout {
+        grid-template-columns: 1fr;
+    }
+    .fixed-summary-col {
+        order: -1;
+    }
+}
+
+.fixed-list-col {
+    min-width: 0;
+}
+
+.fixed-summary-col {
+    position: sticky;
+    top: 20px;
+}
+
+/* Summary panel rows */
+.fixed-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+
+.fixed-summary-row:last-child {
+    border-bottom: none;
+}
+
+.fixed-summary-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.fixed-summary-name {
+    flex: 1;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.fixed-summary-amount {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.fixed-summary-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 2px solid var(--border-color);
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+}
+
+.fixed-summary-yearly {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+/* Mobile: disable sticky on summary panel */
+@media (max-width: 800px) {
+    .fixed-summary-col {
+        position: static !important;
+    }
+}
+
+/* ── Wealth Calculator Form (mobile-first) ── */
+.wealth-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+    .wealth-form-grid {
+        grid-template-columns: 1fr;
+    }
+    .wealth-calc-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wealth-auto-sync-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.wealth-target-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: nowrap;
+}
+
+.wealth-target-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Mobile: holding modal form-row to single column */
+@media (max-width: 540px) {
+    #holdingModalOverlay .form-row {
+        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+    }
+    .holding-selected-row {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+    .holding-selected-price {
+        width: 100%;
+        margin-left: 0;
+        font-size: 0.82rem;
+    }
+    .stock-dropdown {
+        max-height: 200px;
     }
 }

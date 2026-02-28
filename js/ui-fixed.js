@@ -339,56 +339,107 @@ function render() {
     });
 
     filtered.forEach((item, index) => {
-        const el = document.createElement('div');
-        el.className = 'item-card';
-        el.setAttribute('draggable', 'true');
-        el.dataset.id = item.id;
-        el.dataset.index = items.indexOf(item);
-
-        el.addEventListener('dragstart', handleDragStart);
-        el.addEventListener('dragover', handleDragOver);
-        el.addEventListener('drop', handleDrop);
-        el.addEventListener('dragenter', handleDragEnter);
-        el.addEventListener('dragleave', handleDragLeave);
-        el.addEventListener('dragend', handleDragEnd);
-
         const category = categories.find(c => c.id === item.categoryId) || categories[categories.length - 1];
         const cycleLabel = getCycleLabel(item.cycle);
 
-        let statusHtml = '';
         const endDate = item.endDate ? new Date(item.endDate) : null;
-        if (endDate && endDate < now) {
-            statusHtml = '<span style="font-size:0.8rem; background:#fee2e2; color:#ef4444; padding:2px 6px; border-radius:4px; margin-left:8px;">已結束</span>';
-            el.style.opacity = '0.7';
-        }
+        const isEnded = endDate && endDate < now;
 
         let amountDisplay = `NT$ ${item.amount.toLocaleString()}`;
         if (item.currency && item.currency !== 'TWD') {
-            amountDisplay = `${item.currency} ${item.originalAmount.toLocaleString()} <span style="font-size:0.8em; color:var(--text-muted);">(≈ NT$${item.amount.toLocaleString()})</span>`;
+            amountDisplay = `${item.currency} ${item.originalAmount.toLocaleString()} <span style="font-size:0.8em;color:var(--text-muted);">(≈NT$${item.amount.toLocaleString()})</span>`;
         }
 
+        const el = document.createElement('div');
+        el.className = 'item-row' + (isEnded ? ' item-row--ended' : '');
+        el.dataset.id = item.id;
+
         el.innerHTML = `
-            <div class="item-header">
-                <div class="item-name">${item.name} ${statusHtml}</div>
-                <div class="item-amount">${amountDisplay}</div>
+            <div class="item-row-bar" style="background:${category.color}"></div>
+            <div class="item-row-main">
+                <div class="item-row-name">
+                    ${item.name}
+                    ${isEnded ? '<span class="item-row-badge item-row-badge--ended">已結束</span>' : ''}
+                </div>
+                <div class="item-row-tags">
+                    <span class="item-row-cat" style="background:${category.color}20;color:${category.color}">${category.name}</span>
+                    <span class="item-row-cycle">${cycleLabel}</span>
+                    ${item.note ? `<span class="item-row-note"><i class="fa-regular fa-comment"></i> ${item.note}</span>` : ''}
+                </div>
             </div>
-            <div style="display:flex; gap: 8px; align-items: center; margin-bottom: 8px;">
-                <span class="item-cycle" style="background:${category.color}20; color:${category.color}">${category.name}</span>
-                <span style="font-size: 0.8rem; color: var(--text-muted);">${cycleLabel}</span>
-            </div>
-            <div class="item-meta">
-                <div><i class="fa-regular fa-calendar"></i> 開始：${item.startDate}</div>
-                ${item.endDate ? `<div><i class="fa-regular fa-calendar-xmark"></i> 結束：${item.endDate}</div>` : ''}
-                ${item.note ? `<div><i class="fa-regular fa-comment"></i> ${item.note}</div>` : ''}
-            </div>
-            <div class="item-actions">
-                <button class="icon-btn" onclick="editItem('${item.id}')"><i class="fa-solid fa-pen"></i></button>
-                <button class="icon-btn delete" onclick="deleteItem('${item.id}')"><i class="fa-solid fa-trash"></i></button>
+            <div class="item-row-amount">${amountDisplay}</div>
+            <div class="item-row-actions">
+                <button class="icon-btn" onclick="editItem('${item.id}')" title="編輯"><i class="fa-solid fa-pen"></i></button>
+                <button class="icon-btn delete" onclick="deleteItem('${item.id}')" title="刪除"><i class="fa-solid fa-trash"></i></button>
             </div>
         `;
         list.appendChild(el);
     });
+
+    renderFixedSummary();
 }
+
+// ── Summary Panel (right sidebar) ──
+function renderFixedSummary() {
+    const el = document.getElementById('fixedSummaryContent');
+    if (!el) return;
+
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    // Only active items
+    const activeItems = items.filter(item => {
+        const endDate = item.endDate ? new Date(item.endDate) : null;
+        return !(endDate && endDate < now);
+    });
+
+    if (activeItems.length === 0) {
+        el.innerHTML = '<div style="font-size:0.82rem;color:var(--text-muted);font-style:italic;">尚無進行中項目</div>';
+        return;
+    }
+
+    // Group by category
+    const catMap = {};
+    let grandTotal = 0;
+    activeItems.forEach(item => {
+        const cat = categories.find(c => c.id === item.categoryId) || categories[categories.length - 1];
+        const monthly = toMonthlyAmount(item.amount, item.cycle);
+        if (!catMap[cat.id]) catMap[cat.id] = { name: cat.name, color: cat.color, monthly: 0 };
+        catMap[cat.id].monthly += monthly;
+        grandTotal += monthly;
+    });
+
+    const rows = Object.values(catMap).sort((a, b) => b.monthly - a.monthly);
+
+    el.innerHTML = rows.map(c => `
+        <div class="fixed-summary-row">
+            <span class="fixed-summary-dot" style="background:${c.color}"></span>
+            <span class="fixed-summary-name">${c.name}</span>
+            <span class="fixed-summary-amount">NT$ ${Math.round(c.monthly).toLocaleString()}</span>
+        </div>
+    `).join('') + `
+        <div class="fixed-summary-total">
+            <span>每月合計</span>
+            <span>NT$ ${Math.round(grandTotal).toLocaleString()}</span>
+        </div>
+        <div class="fixed-summary-yearly">每年估計 NT$ ${Math.round(grandTotal * 12).toLocaleString()}</div>
+    `;
+}
+
+// Helper: convert any cycle amount to monthly
+function toMonthlyAmount(amount, cycle) {
+    switch (cycle) {
+        case 'daily': return amount * 30;
+        case 'weekly': return amount * 4.33;
+        case 'monthly': return amount;
+        case 'bimonthly': return amount / 2;
+        case 'quarterly': return amount / 3;
+        case 'halfyear': return amount / 6;
+        case 'yearly': return amount / 12;
+        default: return amount;
+    }
+}
+
 
 function handleDragStart(e) {
     dragSrcEl = this;

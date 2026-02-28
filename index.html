@@ -56,14 +56,18 @@
             <button class="tab-btn" onclick="switchTab('projects')">
                 <i class="fa-solid fa-plane-up"></i> 專案預算
             </button>
+            <button class="tab-btn" onclick="switchTab('annual')">
+                <i class="fa-solid fa-calendar-days"></i> 年度報表
+            </button>
         </div>
 
         <!-- Tab: Management / Fixed Expenses -->
         <div id="tab-fixed" class="tab-content">
-            <div class="toolbar">
+
+            <!-- Toolbar (全寬) -->
+            <div class="toolbar" style="margin-bottom:16px;">
                 <div class="toolbar-row">
                     <button class="btn btn-primary" onclick="openModal()"><i class="fa-solid fa-plus"></i> 新增項目</button>
-                    <!-- Search & Filter -->
                     <div class="search-filter">
                         <input type="text" id="searchInput" class="form-input search-input" placeholder="搜尋名稱或備註..."
                             oninput="render()">
@@ -80,10 +84,31 @@
                 </div>
             </div>
 
-            <div id="itemsList" class="items-grid">
-                <!-- JS will populate items here -->
+            <!-- Two-column layout -->
+            <div class="fixed-layout">
+                <!-- Left: Item List -->
+                <div class="fixed-list-col">
+                    <div id="itemsList">
+                        <!-- JS will populate items here -->
+                    </div>
+                </div>
+
+                <!-- Right: Summary Panel -->
+                <div class="fixed-summary-col">
+                    <div class="fixed-summary-panel chart-section" style="padding:16px;">
+                        <h3
+                            style="font-family:var(--font-serif);font-size:0.95rem;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+                            <i class="fa-solid fa-chart-pie" style="color:var(--primary-color);"></i> 支出彙總
+                        </h3>
+                        <div id="fixedSummaryContent">
+                            <!-- JS populated -->
+                        </div>
+                    </div>
+                </div>
             </div>
+
         </div>
+
 
         <!-- Tab: Life Expenses -->
         <div id="tab-life" class="tab-content active">
@@ -112,13 +137,7 @@
                             </button>
                         </div>
                         <div class="stat-value stat-positive" id="lifeMonthBudget">NT$ 0</div>
-                        <div id="salaryApplyWrap" style="margin-top:6px;display:none;">
-                            <button class="btn btn-secondary btn-sm" onclick="applyDefaultSalary()"
-                                style="font-size:0.78rem;padding:4px 10px;gap:5px;">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i>
-                                套用預設薪資
-                            </button>
-                        </div>
+
                     </div>
                     <div class="overview-stat">
                         <div class="stat-title">本月支出</div>
@@ -185,12 +204,15 @@
                     </div>
                     <div class="overview-stat">
                         <div class="stat-title">支出小計</div>
-                        <div id="statTotalExp"
-                            style="font-size:1.4rem; font-weight:700; font-family:var(--font-serif);">
-                            <div style="font-size:0.9rem; color:var(--text-muted); font-weight:400;">固定: <span
-                                    id="totalMonthly">0</span></div>
-                            <div style="font-size:0.9rem; color:var(--text-muted); font-weight:400;">生活: <span
-                                    id="totalLifeMonthly">0</span></div>
+                        <div id="statTotalExp" class="stat-sub-group">
+                            <div class="stat-sub-item">
+                                <span class="label"><i class="fa-solid fa-lock"></i>固定:</span>
+                                <span id="totalMonthly" class="value">0</span>
+                            </div>
+                            <div class="stat-sub-item">
+                                <span class="label"><i class="fa-solid fa-leaf"></i>生活:</span>
+                                <span id="totalLifeMonthly" class="value">0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -246,147 +268,136 @@
                 <div class="chart-container" style="height:260px;"><canvas id="trendChart"></canvas></div>
             </div>
 
-            <!-- Annual Report Section -->
-            <!-- Tab 5: Annual Report -->
-            <div
-                style="max-width: 800px; margin: 40px auto 0; padding-top: 30px; border-top: 1px solid var(--border-color);">
-                <div class="header-title" style="margin-bottom: 24px; padding-top: 10px;">
-                    <h2><i class="fa-solid fa-calendar-days"
-                            style="color:var(--primary-color); margin-right:8px;"></i>年度總結報表
-                    </h2>
-                    <div class="subtitle">整合生活費、固定支出與企劃的年度花費</div>
-                </div>
-
-                <div class="chart-section" style="margin-bottom:24px;">
-                    <div class="chart-header">
-                        <div class="chart-header-title">
-                            <h3><i class="fa-solid fa-chart-bar"></i> 全年度各月收支總覽</h3>
-                        </div>
-                        <div class="chart-controls">
-                            <select id="annualReportYear" class="form-select chart-select"
-                                onchange="renderAnnualReport()">
-                                <!-- options populated by js -->
-                            </select>
-                        </div>
-                    </div>
-                    <div class="dashboard" style="margin-bottom: 16px;">
-                        <div class="stat-card" style="padding:16px;">
-                            <div class="stat-title">年度總收入</div>
-                            <div class="stat-value stat-positive" id="annualTotalIncome">NT$ 0</div>
-                        </div>
-                        <div class="stat-card" style="padding:16px;">
-                            <div class="stat-title">年度總支出</div>
-                            <div class="stat-value stat-negative" id="annualTotalExpense">NT$ 0</div>
-                        </div>
-                        <div class="stat-card" style="padding:16px;">
-                            <div class="stat-title">年度總結餘</div>
-                            <div class="stat-value" id="annualTotalBalance">NT$ 0</div>
-                        </div>
-                    </div>
-                    <div class="chart-container" style="height: 350px; overflow-x: auto; overflow-y: hidden;">
-                        <div id="annualReportChartInner" style="height: 100%;">
-                            <canvas id="annualReportChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="chart-section" style="margin-bottom:24px;">
-                    <div class="chart-header">
-                        <div class="chart-header-title">
-                            <h3><i class="fa-solid fa-chart-pie"></i> 年度支出分佈</h3>
-                        </div>
-                    </div>
-                    <div class="chart-container" style="height: 300px;">
-                        <canvas id="annualPieChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-
         </div><!-- /tab-analysis -->
 
         <!-- Tab: Wealth -->
         <div id="tab-wealth" class="tab-content">
-            <div class="dashboard">
-                <!-- Params Input -->
-                <div class="stat-card">
-                    <div
-                        style="font-size: 1.1rem; font-weight: 600; border-bottom: 2px solid var(--border-color); padding-bottom: 8px;">
-                        投資部位 (高風險)</div>
-                    <div class="form-group">
-                        <label class="form-label" style="font-weight:bold;">當前已投資資產 (NT$)</label>
-                        <input type="number" id="wealthInvestCurrentInput" class="form-input" placeholder="例如: 500000"
-                            oninput="calculateWealth()">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" style="font-weight:bold;">每月定額投資 (NT$)</label>
-                        <input type="number" id="wealthInvestMonthlyInput" class="form-input" placeholder="每月投入股市/基金"
-                            oninput="calculateWealth()">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" style="font-weight:bold;">預估年化報酬率 (%)</label>
-                        <input type="number" id="wealthInvestRateInput" class="form-input" placeholder="例如: 6"
-                            step="0.1" oninput="calculateWealth()">
-                    </div>
 
-                    <div
-                        style="font-size: 1.1rem; font-weight: 600; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-top: 16px;">
-                        現金/活存部位 (低風險)</div>
-                    <div class="form-group">
-                        <label class="form-label" style="font-weight:bold;">當前活存存款 (NT$)</label>
-                        <input type="number" id="wealthCashCurrentInput" class="form-input" placeholder="例如: 200000"
-                            oninput="calculateWealth()">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label"
-                            style="display:flex; justify-content:space-between; align-items:flex-end; font-weight:bold; margin-bottom: 2px;">
-                            <span>每月現金存款 (NT$)</span>
-                            <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
-                                <span
-                                    style="font-size: 0.8rem; display:flex; align-items:center; gap: 4px; font-weight: normal;">
-                                    <input type="checkbox" id="autoSyncWealthToggle" onchange="calculateWealth()"
-                                        style="accent-color: var(--primary-color);">
-                                    自動連動結餘
-                                </span>
-                                <button class="icon-btn" onclick="useMonthlyBalanceForWealth()"
-                                    style="font-size:0.8rem; height:auto; padding:0; text-decoration:underline;"
-                                    title="手動將收支結餘扣除定額投資後，剩下作為存款">帶入本月結餘</button>
-                            </div>
-                        </label>
-                        <input type="number" id="wealthCashMonthlyInput" class="form-input" placeholder="每月增加之現金"
-                            oninput="calculateWealth()">
-                    </div>
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label class="form-label" style="font-weight:bold;">活/定存年化利率 (%)</label>
-                        <input type="number" id="wealthCashRateInput" class="form-input" placeholder="例如: 1.5"
-                            step="0.1" oninput="calculateWealth()">
-                    </div>
+            <!-- Row 1: Holdings + Bank -->
+            <div class="wealth-panels">
 
-                    <div
-                        style="font-size: 1.1rem; font-weight: 600; border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-top: 8px;">
-                        最終目標</div>
-                    <div class="form-group">
-                        <label class="form-label" style="font-weight:bold;">目標總金額 (NT$)</label>
-                        <input type="number" id="wealthTargetInput" class="form-input" value="10000000"
-                            oninput="calculateWealth()">
+                <!-- Panel: Investment Holdings -->
+                <div class="wealth-panel chart-section">
+                    <div class="wealth-panel-header">
+                        <div>
+                            <h3 class="wealth-panel-title"><i class="fa-solid fa-chart-line"></i> 投資持股</h3>
+                            <div class="wealth-panel-total">總市值：<strong id="holdingsTotalValue">NT$ 0</strong></div>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                            <button class="btn btn-secondary btn-sm" onclick="refreshAllPrices()" title="全部更新股價">
+                                <i class="fa-solid fa-rotate"></i> 更新價格
+                            </button>
+                            <button class="btn btn-primary btn-sm" onclick="openAddHoldingModal()">
+                                <i class="fa-solid fa-plus"></i> 新增
+                            </button>
+                        </div>
+                    </div>
+                    <div id="holdingsList" class="wealth-list">
+                        <div class="wealth-empty">尚未新增持股</div>
                     </div>
                 </div>
 
-                <!-- Result & Chart -->
-                <div class="stat-card wealth-result-card">
-                    <div>
-                        <div class="stat-title" style="font-size:1rem; margin-bottom:8px;">預估達成時間</div>
-                        <div id="wealthResultText" style="font-size:2rem; font-weight:600; color:var(--text-color);">
-                            請輸入參數...</div>
-                        <div id="wealthSummaryText" style="margin-top:8px; font-size:0.9rem; color:var(--text-muted);">
+                <!-- Panel: Bank Accounts -->
+                <div class="wealth-panel chart-section">
+                    <div class="wealth-panel-header">
+                        <div>
+                            <h3 class="wealth-panel-title"><i class="fa-solid fa-building-columns"></i> 銀行現金</h3>
+                            <div class="wealth-panel-total">現金合計：<strong id="bankTotalValue">NT$ 0</strong></div>
                         </div>
+                        <button class="btn btn-primary btn-sm" onclick="openAddBankModal()">
+                            <i class="fa-solid fa-plus"></i> 新增
+                        </button>
                     </div>
-                    <div style="height: 300px; margin-top:20px;">
-                        <canvas id="wealthChart"></canvas>
+                    <div id="bankAccountsList" class="wealth-list">
+                        <div class="wealth-empty">尚未新增帳戶</div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Row 2: Projection Calculator -->
+            <div class="chart-section" style="margin-top:20px;">
+                <div class="wealth-panel-header" style="margin-bottom:20px;">
+                    <h3 class="wealth-panel-title"><i class="fa-solid fa-seedling"></i> 目標試算</h3>
+                    <div style="font-size:0.82rem;color:var(--text-muted);">目前資產由上方持股/帳戶自動帶入</div>
+                </div>
+
+                <div class="wealth-calc-grid">
+                    <!-- Left: Current Values (Read-only) -->
+                    <div class="wealth-calc-col">
+                        <div class="wealth-current-display">
+                            <div class="wealth-current-item">
+                                <span class="wealth-current-label"><i class="fa-solid fa-chart-line"
+                                        style="color:#3b82f6"></i> 當前投資市值</span>
+                                <span class="wealth-current-value" id="wealthInvestCurrentDisplay">NT$ 0</span>
+                            </div>
+                            <div class="wealth-current-item">
+                                <span class="wealth-current-label"><i class="fa-solid fa-building-columns"
+                                        style="color:#10b981"></i> 當前現金存款</span>
+                                <span class="wealth-current-value" id="wealthCashCurrentDisplay">NT$ 0</span>
+                            </div>
+                        </div>
+
+                        <div class="wealth-form-grid">
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">每月定投 (NT$)</label>
+                                <input type="number" id="wealthInvestMonthlyInput" class="form-input"
+                                    placeholder="每月投入股市" oninput="calculateWealth()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">投資年化報酬率 (%)</label>
+                                <input type="number" id="wealthInvestRateInput" class="form-input" placeholder="例如: 8"
+                                    step="0.1" oninput="calculateWealth()">
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">每月存款 (NT$)</label>
+                                <input type="number" id="wealthCashMonthlyInput" class="form-input" placeholder="每月增加現金"
+                                    oninput="calculateWealth()">
+                                <label class="wealth-auto-sync-label">
+                                    <input type="checkbox" id="autoSyncWealthToggle" onchange="calculateWealth()"
+                                        style="accent-color:var(--primary-color);">
+                                    <span>自動連動月結餘</span>
+                                </label>
+                            </div>
+                            <div class="form-group" style="margin-bottom:0;">
+                                <label class="form-label">活/定存利率 (%)</label>
+                                <input type="number" id="wealthCashRateInput" class="form-input" placeholder="例如: 1.5"
+                                    step="0.1" oninput="calculateWealth()">
+                            </div>
+                        </div>
+                        <div class="wealth-target-row">
+                            <div class="form-group" style="margin-bottom:0;flex:1;min-width:0;">
+                                <label class="form-label">目標總金額 (NT$)</label>
+                                <input type="number" id="wealthTargetInput" class="form-input" value="10000000"
+                                    oninput="calculateWealth()">
+                            </div>
+                            <button class="btn btn-secondary btn-sm wealth-target-btn"
+                                onclick="useMonthlyBalanceForWealth()" title="帶入本月收入扣掉固定支出與生活費的結餘">
+                                <i class="fa-solid fa-arrow-right-to-bracket"></i> 帶入結餘
+                            </button>
+                        </div>
+
+                    </div>
+
+                    <!-- Right: Result -->
+                    <div class="wealth-calc-col">
+                        <div style="margin-bottom:16px;">
+                            <div class="stat-title">預估達成時間</div>
+                            <div id="wealthResultText"
+                                style="font-size:2rem;font-weight:600;color:var(--text-color);line-height:1.2;margin-top:6px;">
+                                請輸入參數...</div>
+                            <div id="wealthSummaryText"
+                                style="margin-top:8px;font-size:0.85rem;color:var(--text-muted);"></div>
+                        </div>
+                        <div style="height:260px;">
+                            <canvas id="wealthChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
+
         </div>
+
 
         <!-- Tab: Projects (Travel/Events) -->
         <div id="tab-projects" class="tab-content">
@@ -420,6 +431,58 @@
                 <!-- JS Populated Project Cards -->
             </div>
         </div>
+
+        <!-- Tab: Annual Report -->
+        <div id="tab-annual" class="tab-content">
+            <div class="header-title" style="margin-bottom: 24px; padding-top: 10px;">
+                <h2><i class="fa-solid fa-calendar-days"
+                        style="color:var(--primary-color); margin-right:8px;"></i>年度總結報表</h2>
+                <div class="subtitle">整合生活費、固定支出與企劃的年度花費</div>
+            </div>
+
+            <div class="chart-section" style="margin-bottom:24px;">
+                <div class="chart-header">
+                    <div class="chart-header-title">
+                        <h3><i class="fa-solid fa-chart-bar"></i> 全年度各月收支總覽</h3>
+                    </div>
+                    <div class="chart-controls">
+                        <select id="annualReportYear" class="form-select chart-select" onchange="renderAnnualReport()">
+                            <!-- options populated by js -->
+                        </select>
+                    </div>
+                </div>
+                <div class="dashboard" style="margin-bottom: 16px;">
+                    <div class="stat-card" style="padding:16px;">
+                        <div class="stat-title">年度總收入</div>
+                        <div class="stat-value stat-positive" id="annualTotalIncome">NT$ 0</div>
+                    </div>
+                    <div class="stat-card" style="padding:16px;">
+                        <div class="stat-title">年度總支出</div>
+                        <div class="stat-value stat-negative" id="annualTotalExpense">NT$ 0</div>
+                    </div>
+                    <div class="stat-card" style="padding:16px;">
+                        <div class="stat-title">年度總結餘</div>
+                        <div class="stat-value" id="annualTotalBalance">NT$ 0</div>
+                    </div>
+                </div>
+                <div class="chart-container" style="height: 350px; overflow-x: auto; overflow-y: hidden;">
+                    <div id="annualReportChartInner" style="height: 100%;">
+                        <canvas id="annualReportChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-section" style="margin-bottom:24px;">
+                <div class="chart-header">
+                    <div class="chart-header-title">
+                        <h3><i class="fa-solid fa-chart-pie"></i> 年度支出分佈</h3>
+                    </div>
+                </div>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="annualPieChart"></canvas>
+                </div>
+            </div>
+        </div><!-- /tab-annual -->
 
     </div>
 
@@ -874,7 +937,97 @@
         </div>
     </div>
 
-    <!-- Mobile Bottom Navigation -->
+    <!-- Modal: Add Holding -->
+    <div class="modal-overlay" id="holdingModalOverlay">
+        <div class="modal" style="max-width:460px;">
+            <div class="modal-header">
+                <span><i class="fa-solid fa-chart-line"></i> 新增持股</span>
+                <span class="close-modal" onclick="closeAddHoldingModal()">&times;</span>
+            </div>
+
+            <!-- Stock Search (Autocomplete) -->
+            <div class="form-group">
+                <label class="form-label">搜尋股票代號或名稱</label>
+                <div class="stock-search-wrap" id="stockSearchWrap">
+                    <input type="text" id="holdingSearchInput" class="form-input" placeholder="輸入代號或名稱，例：台積電、2330、AAPL"
+                        autocomplete="off" oninput="onStockSearchInput(this.value)"
+                        onkeydown="onStockSearchKeydown(event)">
+                    <div class="stock-dropdown" id="stockDropdown" style="display:none;"></div>
+                </div>
+            </div>
+
+            <!-- Selected Stock Info -->
+            <div id="holdingSelectedInfo" class="holding-selected-info" style="display:none;">
+                <div class="holding-selected-row">
+                    <span class="holding-selected-symbol" id="holdingSelectedSymbol"></span>
+                    <span class="holding-selected-name" id="holdingSelectedName"></span>
+                    <span class="holding-selected-price" id="holdingSelectedPrice">
+                        <i class="fa-solid fa-rotate fa-spin" style="font-size:0.8rem;"></i>
+                    </span>
+                </div>
+            </div>
+
+            <!-- Hidden inputs for actual values -->
+            <input type="hidden" id="holdingSymbolInput">
+            <input type="hidden" id="holdingNameInput">
+
+            <!-- Shares -->
+            <div class="form-row" style="margin-top:4px;">
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">持有股數</label>
+                    <input type="number" id="holdingSharesInput" class="form-input" placeholder="例如：100" min="0"
+                        step="1">
+                </div>
+                <div class="form-group" style="margin-bottom:0;">
+                    <label class="form-label">手動股價 (選填)</label>
+                    <input type="number" id="holdingPriceInput" class="form-input" placeholder="留空使用自動抓取" min="0"
+                        step="0.01">
+                </div>
+            </div>
+
+            <p style="font-size:0.78rem;color:var(--text-muted);margin:12px 0 16px;">
+                <i class="fa-solid fa-circle-info"></i> 未在清單中的股票可直接輸入代號後按 Enter 確認。台股系統會自動加 <code>.TW</code>，美股直接輸入英文代號。
+            </p>
+            <button class="btn btn-primary" style="width:100%;" onclick="saveHolding()">
+                <i class="fa-solid fa-check"></i> 新增持股
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal: Add/Edit Bank Account -->
+    <div class="modal-overlay" id="bankModalOverlay">
+        <div class="modal" style="max-width:400px;">
+            <div class="modal-header">
+                <span><i class="fa-solid fa-building-columns"></i> 銀行帳戶</span>
+                <span class="close-modal" onclick="closeAddBankModal()">&times;</span>
+            </div>
+            <input type="hidden" id="bankIdInput">
+            <div class="form-group">
+                <label class="form-label">銀行 / 帳戶名稱</label>
+                <div class="stock-search-wrap" id="bankSearchWrap">
+                    <input type="text" id="bankNameInput" class="form-input" placeholder="選擇或輸入帳戶名稱" autocomplete="off"
+                        oninput="onBankSearchInput(this.value)" onkeydown="onBankSearchKeydown(event)"
+                        onfocus="onBankSearchInput(this.value)">
+                    <div class="stock-dropdown" id="bankDropdown" style="display:none;"></div>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">存款金額 (NT$)</label>
+                    <input type="number" id="bankBalanceInput" class="form-input" placeholder="例如：200000" min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">年化利率 (%)</label>
+                    <input type="number" id="bankRateInput" class="form-input" placeholder="例如：1.5" min="0" step="0.01"
+                        value="0">
+                </div>
+            </div>
+            <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="saveBankAccount()">
+                <i class="fa-solid fa-check"></i> 儲存帳戶
+            </button>
+        </div>
+    </div>
+
     <nav class="bottom-nav">
         <a href="#" class="nav-item" onclick="switchTab('life'); return false;">
             <i class="fa-solid fa-wallet"></i>

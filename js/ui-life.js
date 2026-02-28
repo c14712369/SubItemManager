@@ -39,6 +39,10 @@ function getLifeOnlyExpForMonth(ym) {
 }
 
 function renderLifeTab() {
+    // Auto-apply salary if setting exists and no income recorded yet
+    // Do this BEFORE calculating totals so the current render picks up the new entry
+    autoApplySalary(lifeCurrentMonth);
+
     var label = document.getElementById('lifeMonthDisplay');
     if (label) label.textContent = lifeMonthLabel(lifeCurrentMonth);
 
@@ -75,9 +79,6 @@ function renderLifeTab() {
     renderBudgetCards();
     renderLifeExpenseList();
     updateSalaryApplyBtn();
-
-    // Auto-apply salary if setting exists and no income recorded yet
-    autoApplySalary(lifeCurrentMonth);
 }
 
 // Track selected category filter
@@ -180,7 +181,9 @@ function renderLifeExpenseList() {
         var day = parseInt(e.date.split('-')[2]);
         if (e.type === 'income') {
             var incCat = getLifeIncCat(e.categoryId);
-            var note = e.note ? e.note : incCat.name;
+            var rawNote = e.note ? e.note : incCat.name;
+            var note = rawNote.replace(/[（\(\[].*?[）\)\]]/g, '').trim(); // Remove any parentheses/brackets content
+            if (note === '') note = incCat.name;
             var ns = e.note ? '' : ' style="color:var(--text-muted);font-style:italic;"';
             return '<div class="life-income-row">' +
                 '<div class="life-income-date" style="color:' + incCat.color + ';">' + day + '</div>' +
@@ -189,7 +192,7 @@ function renderLifeExpenseList() {
                 '<div class="life-income-src">' + incCat.name + '</div>' +
                 '<div class="life-income-note"' + ns + '>' + note + '</div>' +
                 '</div>' +
-                '<div class="life-income-amount" style="color:' + incCat.color + ';">+ NT$ ' + e.amount.toLocaleString() + '</div>' +
+                '<div class="life-income-amount">+ NT$ ' + e.amount.toLocaleString() + '</div>' +
                 '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>' +
                 '</div>';
         } else {
@@ -572,7 +575,7 @@ function saveDefaultSalary() {
     var catId = document.getElementById('salaryDefaultCatSelect').value;
     var day = parseInt(document.getElementById('salaryDefaultDay').value) || 5;
     if (!amt || amt <= 0) { showToast('請輸入有效金額'); return; }
-    var setting = { amount: amt, catId: catId, day: day, note: '薪資（預設帶入）' };
+    var setting = { amount: amt, catId: catId, day: day, note: '薪資' };
     localStorage.setItem(SALARY_DEFAULT_KEY, JSON.stringify(setting));
     closeSalarySettingModal();
     updateSalaryApplyBtn();
@@ -621,6 +624,9 @@ function autoApplySalary(ym) {
     // Calculate correct date
     var dateStr = getAdjustedPaydate(ym, setting.day || 5);
 
+    var salaryNote = (setting.note || '薪資').replace(/[（\(\[].*?([預設|自動]|[帶入|入帳]).*?[）\)\]]/g, '').trim();
+    if (salaryNote === '') salaryNote = '薪資';
+
     // Create new income entry
     var newExp = {
         id: Date.now() + Math.random().toString(36).substr(2, 5),
@@ -628,13 +634,13 @@ function autoApplySalary(ym) {
         categoryId: setting.catId,
         amount: setting.amount,
         date: dateStr,
-        note: setting.note || '薪資（自動入帳）'
+        note: salaryNote
     };
 
     lifeExpenses.push(newExp);
     saveLifeData();
 
-    // Re-render to show changes
-    render(); // Use global render to update all tabs including Analysis
+    // Re-render is no longer needed here because autoApplySalary is now 
+    // called as the first step of renderLifeTab().
     if (typeof triggerCloudSync === 'function') triggerCloudSync();
 }
