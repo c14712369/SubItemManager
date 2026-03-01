@@ -1969,17 +1969,6 @@ h1 .title-icon {
         gap: 12px;
     }
 
-    .overview-stats {
-        grid-template-columns: 1fr;
-        gap: 12px;
-    }
-
-    .overview-stat {
-        padding: 0;
-        border-right: none;
-        border-bottom: 1px dashed var(--border-color);
-        padding-bottom: 8px;
-    }
 
     .overview-stat:last-child {
         border-bottom: none;
