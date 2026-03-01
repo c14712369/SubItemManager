@@ -2485,7 +2485,7 @@ video {
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
-    min-height: 180px;
+    min-height: auto;
     width: 100%;
     overflow: hidden;
 }
