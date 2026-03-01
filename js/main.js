@@ -12,12 +12,20 @@ function togglePrivacy() {
         icon.className = window.isPrivacyMode ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
     }
 
-    // Refresh current tab
-    const activeTab = document.querySelector('.tab-content.active');
-    if (activeTab) {
-        const id = activeTab.id.replace('tab-', '');
-        switchTab(id);
-    }
+    // Explicitly re-render all relevant UI sections to apply masking instantly
+    if (typeof renderLifeTab === 'function') renderLifeTab();
+    if (typeof renderChart === 'function') renderChart();
+    if (typeof renderTimeline === 'function') renderTimeline();
+    if (typeof renderLifeCategoryChart === 'function') renderLifeCategoryChart();
+    if (typeof renderTrendChart === 'function') renderTrendChart();
+    if (typeof updateBudgetCalc === 'function') updateBudgetCalc();
+    if (typeof initAnnualReport === 'function') initAnnualReport();
+    if (typeof renderAnnualReport === 'function') renderAnnualReport();
+    if (typeof render === 'function') render();
+    if (typeof renderProjects === 'function') renderProjects();
+    if (typeof renderHoldings === 'function') renderHoldings();
+    if (typeof renderBankAccounts === 'function') renderBankAccounts();
+    if (typeof calculateWealth === 'function') calculateWealth();
 }
 
 function initTheme() {
