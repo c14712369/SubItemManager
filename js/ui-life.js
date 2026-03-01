@@ -124,7 +124,8 @@ function renderLifeTab() {
     if (spentEl) spentEl.textContent = 'NT$ ' + totalExpense.toLocaleString();
     if (remainEl) {
         remainEl.textContent = 'NT$ ' + Math.abs(Math.round(remain)).toLocaleString() + (remain < 0 ? ' (超支)' : '');
-        remainEl.className = 'stat-value ' + (remain < 0 ? 'stat-negative' : 'stat-positive');
+        // Preserve 'hero-amount' class while adding status colors
+        remainEl.className = 'hero-amount ' + (remain < 0 ? 'stat-negative' : 'stat-positive');
     }
     if (barEl) {
         barEl.style.width = pct + '%';
@@ -138,7 +139,7 @@ function renderLifeTab() {
 
     renderBudgetCards();
     renderLifeExpenseList();
-    updateSalaryApplyBtn();
+    if (typeof updateSalaryApplyBtn === 'function') updateSalaryApplyBtn();
 }
 
 // Track selected category filter

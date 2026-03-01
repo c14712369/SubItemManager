@@ -111,6 +111,10 @@ function init(skipCloudFetch = false) {
     loadLifeData(); // from data.js
     if (typeof loadProjectsData === 'function') loadProjectsData(); // from ui-projects.js
 
+    // Apply App Identity (Icon/Theme)
+    applyAppIdentity();
+    applyDynamicManifest();
+
     const today = new Date().toISOString().split('T')[0];
     const startDateInput = document.getElementById('itemStartDate');
     if (startDateInput) startDateInput.value = today;
@@ -118,8 +122,8 @@ function init(skipCloudFetch = false) {
     const timelinePicker = document.getElementById('timelineMonth');
     if (timelinePicker) timelinePicker.value = today.slice(0, 7);
 
-    const lifeChartMonthInput = document.getElementById('lifeChartMonth');
-    if (lifeChartMonthInput) lifeChartMonthInput.value = today.slice(0, 7);
+    const analysisGlobalMonth = document.getElementById('analysisGlobalMonth');
+    if (analysisGlobalMonth) analysisGlobalMonth.value = today.slice(0, 7);
 
     lifeCurrentMonth = today.slice(0, 7);
 
@@ -182,6 +186,16 @@ if (projectModalLocal) {
 
 const projectDetailModalLocal = document.getElementById('projectDetailModalOverlay');
 if (projectDetailModalLocal) {
+    projectDetailModalLocal.addEventListener('click', function (e) {
+        if (e.target === projectDetailModalLocal) closeProjectDetailModal();
+    });
+}
+
+const identityModalLocal = document.getElementById('identityModalOverlay');
+if (identityModalLocal) {
+    identityModalLocal.addEventListener('click', function (e) {
+        if (e.target === identityModalLocal) closeIdentityModal();
+    });
 }
 
 // ── Global Search ──
@@ -292,4 +306,182 @@ function executeGlobalSearch() {
     html += '</div>';
 
     resultsContainer.innerHTML = html;
+}
+
+// ── App Identity & Icon Management ──
+let currentAppIdentity = {
+    themeColor: '#c17b2e',
+    customIcon: null
+};
+
+function openIdentityModal() {
+    const stored = localStorage.getItem(APP_IDENTITY_KEY);
+    if (stored) {
+        currentAppIdentity = JSON.parse(stored);
+    }
+
+    document.getElementById('identityThemeColor').value = currentAppIdentity.themeColor || '#c17b2e';
+    document.getElementById('identityColorValue').textContent = currentAppIdentity.themeColor.toUpperCase();
+
+    updateIdentityPreview();
+    document.getElementById('identityModalOverlay').classList.add('active');
+}
+
+function closeIdentityModal() {
+    document.getElementById('identityModalOverlay').classList.remove('active');
+}
+
+function updateIdentityPreview() {
+    const color = document.getElementById('identityThemeColor').value;
+    document.getElementById('identityColorValue').textContent = color.toUpperCase();
+
+    const previewBox = document.getElementById('iconPreview');
+    if (currentAppIdentity.customIcon) {
+        previewBox.innerHTML = `<img src="${currentAppIdentity.customIcon}" style="width:100%; height:100%; object-fit:cover;">`;
+    } else {
+        previewBox.innerHTML = `<i class="fa-solid fa-vault" style="font-size:40px; color:${color};"></i>`;
+    }
+}
+
+function handleIconUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.size > 500 * 1024) {
+        showToast('圖片太大 (限 500KB 以內)');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        currentAppIdentity.customIcon = e.target.result;
+        updateIdentityPreview();
+    };
+    reader.readAsDataURL(file);
+}
+
+function resetIdentity() {
+    currentAppIdentity = {
+        themeColor: '#C17B2E',
+        customIcon: null
+    };
+    document.getElementById('identityThemeColor').value = '#C17B2E';
+    updateIdentityPreview();
+}
+
+async function saveIdentitySettings() {
+    currentAppIdentity.themeColor = document.getElementById('identityThemeColor').value;
+    localStorage.setItem(APP_IDENTITY_KEY, JSON.stringify(currentAppIdentity));
+
+    applyAppIdentity();
+
+    const stats = await applyDynamicManifest();
+
+    if (typeof triggerCloudSync === 'function') triggerCloudSync();
+
+    showToast('系統設置已儲存並套用');
+    closeIdentityModal();
+}
+
+function applyAppIdentity() {
+    const stored = localStorage.getItem(APP_IDENTITY_KEY);
+    if (!stored) return;
+    const identity = JSON.parse(stored);
+
+    // 1. Update Theme Color Meta
+    const themeMeta = document.querySelector('meta[name="theme-color"]');
+    if (themeMeta) themeMeta.setAttribute('content', identity.themeColor);
+
+    // 2. Generate and Apply Favicon
+    generateDynamicIcon(identity);
+
+    // 3. Update CSS Variable for Primary Color if needed (Optional, we already have it in style.css but can override)
+    // document.documentElement.style.setProperty('--primary-color', identity.themeColor);
+}
+
+function generateDynamicIcon(identity) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 192;
+    canvas.height = 192;
+    const ctx = canvas.getContext('2d');
+
+    if (identity.customIcon) {
+        const img = new Image();
+        img.onload = () => {
+            ctx.clearRect(0, 0, 192, 192);
+            // Draw a rounded rectangle mask if desired
+            ctx.beginPath();
+            ctx.roundRect(0, 0, 192, 192, 40);
+            ctx.clip();
+            ctx.drawImage(img, 0, 0, 192, 192);
+            const dataUrl = canvas.toDataURL('image/png');
+            updateIconLinks(dataUrl);
+        };
+        img.src = identity.customIcon;
+    } else {
+        // Draw standard icon with chosen color
+        ctx.clearRect(0, 0, 192, 192);
+
+        // Background (optional)
+        // ctx.fillStyle = '#ffffff';
+        // ctx.beginPath();
+        // ctx.roundRect(0, 0, 192, 192, 40);
+        // ctx.fill();
+
+        // Draw fontAwesome vault symbol manually or use unicode
+        ctx.fillStyle = identity.themeColor;
+        ctx.font = 'bold 120px "Font Awesome 6 Free"';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        // Unicode for vault is f83c (must use real font if loaded)
+        // Since font might not be loaded in canvas immediately, let's use a path
+        drawVaultPath(ctx, 96, 96, 110, identity.themeColor);
+
+        const dataUrl = canvas.toDataURL('image/png');
+        updateIconLinks(dataUrl);
+    }
+}
+
+function drawVaultPath(ctx, x, y, size, color) {
+    ctx.save();
+    ctx.translate(x - size / 2, y - size / 2);
+    ctx.scale(size / 512, size / 512);
+    ctx.fillStyle = color;
+    // Simplified Vault Path (similar to FA vault)
+    const p = new Path2D("M448 80c8.8 0 16 7.2 16 16V416c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16V96c0-8.8 7.2-16 16-16H448zM0 96V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64C28.7 32 0 60.7 0 96zM192 256a64 64 0 1 0 128 0 64 64 0 1 0 -128 0zm64-32c17.7 0 32 14.3 32 32s-14.3 32-32 32s-32-14.3-32-32s14.3-32 32-32z");
+    ctx.fill(p);
+    ctx.restore();
+}
+
+function updateIconLinks(dataUrl) {
+    const icon = document.querySelector('link[rel="icon"]');
+    if (icon) icon.href = dataUrl;
+
+    const appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+    if (appleIcon) appleIcon.href = dataUrl;
+}
+
+async function applyDynamicManifest() {
+    const stored = localStorage.getItem(APP_IDENTITY_KEY);
+    if (!stored) return;
+    const identity = JSON.parse(stored);
+
+    // Fetch base manifest
+    try {
+        const response = await fetch('manifest.json');
+        const manifest = await response.json();
+
+        // Update manifest
+        manifest.theme_color = identity.themeColor;
+        // Note: Real manifestation of icon update for home screen depends on browser/OS
+        // We can't easily change the installed PWA icon without a re-install or specialized logic
+        // but this works for future installs and browser-side PWA representation.
+
+        const stringManifest = JSON.stringify(manifest);
+        const blob = new Blob([stringManifest], { type: 'application/json' });
+        const manifestURL = URL.createObjectURL(blob);
+
+        const manifestLink = document.querySelector('link[rel="manifest"]');
+        if (manifestLink) manifestLink.setAttribute('href', manifestURL);
+    } catch (e) { }
 }
