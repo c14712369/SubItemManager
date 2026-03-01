@@ -101,8 +101,13 @@ function exportStateAsJSON() {
         projectCategories: projectCategories || [],
         settings: {
             estimatedIncome: storedIncome,
-            wealthParams: storedWealth ? JSON.parse(storedWealth) : null
-        }
+            wealthParams: storedWealth ? JSON.parse(storedWealth) : null,
+            defaultSalary: localStorage.getItem(SALARY_DEFAULT_KEY) ? JSON.parse(localStorage.getItem(SALARY_DEFAULT_KEY)) : null,
+            appIdentity: localStorage.getItem(APP_IDENTITY_KEY) ? JSON.parse(localStorage.getItem(APP_IDENTITY_KEY)) : null,
+            theme: localStorage.getItem(THEME_KEY) || 'light'
+        },
+        wealthHoldings: typeof wealthHoldings !== 'undefined' ? wealthHoldings : [],
+        wealthBankAccounts: typeof wealthBankAccounts !== 'undefined' ? wealthBankAccounts : []
     };
 }
 
@@ -214,6 +219,24 @@ async function fetchFromServer() {
                 if (appData.settings.wealthParams) {
                     localStorage.setItem(WEALTH_PARAMS_KEY, JSON.stringify(appData.settings.wealthParams));
                 }
+                if (appData.settings.defaultSalary) {
+                    localStorage.setItem(SALARY_DEFAULT_KEY, JSON.stringify(appData.settings.defaultSalary));
+                }
+                if (appData.settings.appIdentity) {
+                    localStorage.setItem(APP_IDENTITY_KEY, JSON.stringify(appData.settings.appIdentity));
+                }
+                if (appData.settings.theme) {
+                    localStorage.setItem(THEME_KEY, appData.settings.theme);
+                }
+            }
+
+            if (appData.wealthHoldings) {
+                if (typeof wealthHoldings !== 'undefined') wealthHoldings = appData.wealthHoldings;
+                localStorage.setItem(WEALTH_HOLDINGS_KEY, JSON.stringify(appData.wealthHoldings));
+            }
+            if (appData.wealthBankAccounts) {
+                if (typeof wealthBankAccounts !== 'undefined') wealthBankAccounts = appData.wealthBankAccounts;
+                localStorage.setItem(WEALTH_BANKS_KEY, JSON.stringify(appData.wealthBankAccounts));
             }
             // showToast('已載入雲端最新資料'); // Removed per request
 

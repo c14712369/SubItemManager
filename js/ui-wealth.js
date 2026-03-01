@@ -534,6 +534,7 @@ function initWealthTab() {
 function saveWealthData() {
     localStorage.setItem(WEALTH_HOLDINGS_KEY, JSON.stringify(wealthHoldings));
     localStorage.setItem(WEALTH_BANKS_KEY, JSON.stringify(wealthBankAccounts));
+    if (typeof triggerCloudSync === 'function') triggerCloudSync();
 }
 
 // ── 計算總資產 ──
