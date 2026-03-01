@@ -129,8 +129,8 @@ function renderProjects() {
                 </div>
                 
                 <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:0.9rem;">
-                    <span>已花費: <b>NT$ ${spent.toLocaleString()}</b></span>
-                    <span style="color:var(--text-muted);">總預算: NT$ ${p.budget.toLocaleString()}</span>
+                    <span>已花費: <b>NT$ ${formatAmount(spent, 'expense')}</b></span>
+                    <span style="color:var(--text-muted);">總預算: NT$ ${formatAmount(p.budget, 'fixed')}</span>
                 </div>
                 <div class="progress-bar-wrap" style="margin-bottom:0;">
                     <div class="progress-bar" style="height:6px;">
@@ -138,7 +138,7 @@ function renderProjects() {
                     </div>
                 </div>
                 <div style="text-align:right; font-size:0.8rem; margin-top:4px; color:${remain < 0 ? 'var(--danger-color)' : 'var(--text-muted)'}">
-                    剩餘: NT$ ${remain.toLocaleString()}
+                    剩餘: NT$ ${formatAmount(remain, 'asset')}
                 </div>
             </div>
         `;
@@ -197,11 +197,11 @@ function renderProjectDetails(projectId) {
     var remain = p.budget - spent;
     var pct = p.budget > 0 ? Math.min(100, (spent / p.budget) * 100) : 0;
 
-    document.getElementById('detailProjectBudget').innerText = 'NT$ ' + p.budget.toLocaleString();
-    document.getElementById('detailProjectSpent').innerText = 'NT$ ' + spent.toLocaleString();
+    document.getElementById('detailProjectBudget').innerText = 'NT$ ' + formatAmount(p.budget, 'fixed');
+    document.getElementById('detailProjectSpent').innerText = 'NT$ ' + formatAmount(spent, 'expense');
 
     var remEl = document.getElementById('detailProjectRemain');
-    remEl.innerText = 'NT$ ' + remain.toLocaleString();
+    remEl.innerText = 'NT$ ' + formatAmount(remain, 'asset');
     remEl.style.color = remain < 0 ? 'var(--danger-color)' : 'var(--text-color)';
 
     document.getElementById('detailProjectPct').innerText = '支出 ' + Math.round((spent / (p.budget || 1)) * 100) + '%';
@@ -233,7 +233,7 @@ function renderProjectDetails(projectId) {
                     </div>
                 </div>
                 <div class="item-cost" style="text-align:right;">
-                    <div class="amount" style="color:var(--danger-color); font-size:1.1rem;">NT$ ${e.amount.toLocaleString()}</div>
+                    <div class="amount" style="color:var(--danger-color); font-size:1.1rem;">NT$ ${formatAmount(e.amount, 'expense')}</div>
                     <button class="icon-btn" onclick="deleteProjectExp('${e.id}', '${p.id}')" title="刪除"><i class="fa-solid fa-trash-can"></i></button>
                 </div>
             </div>

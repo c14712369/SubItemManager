@@ -553,7 +553,7 @@ function renderHoldings() {
     if (!container) return;
 
     const totalValue = getTotalInvestmentValue();
-    document.getElementById('holdingsTotalValue').textContent = 'NT$ ' + Math.round(totalValue).toLocaleString();
+    document.getElementById('holdingsTotalValue').textContent = 'NT$ ' + formatAmount(Math.round(totalValue), 'asset');
 
     if (wealthHoldings.length === 0) {
         container.innerHTML = '<div class="wealth-empty">尚未新增持股，點擊「＋ 新增」開始</div>';
@@ -562,8 +562,8 @@ function renderHoldings() {
 
     container.innerHTML = wealthHoldings.map(h => {
         const value = h.shares * (h.lastPrice || 0);
-        const priceDisplay = h.lastPrice ? 'NT$ ' + h.lastPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—';
-        const valueDisplay = h.lastPrice ? 'NT$ ' + Math.round(value).toLocaleString() : '—';
+        const priceDisplay = h.lastPrice ? 'NT$ ' + formatAmount(h.lastPrice, 'asset') : '—';
+        const valueDisplay = h.lastPrice ? 'NT$ ' + formatAmount(Math.round(value), 'asset') : '—';
         const updatedDisplay = h.lastUpdated ? new Date(h.lastUpdated).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : '';
         return `
             <div class="wealth-row" data-id="${h.id}">
@@ -673,7 +673,7 @@ async function fetchSinglePrice(id) {
             saveWealthData();
             renderHoldings();
             calculateWealth();
-            showToast(`${h.symbol} 更新至 NT$ ${price.toLocaleString()}`);
+            showToast(`${h.symbol} 更新至 NT$ ${formatAmount(price, 'asset')}`);
         } else {
             showToast(`${h.symbol} 無法取得股價，請稍後再試`);
         }
@@ -731,7 +731,7 @@ function renderBankAccounts() {
     if (!container) return;
 
     const total = getTotalCashBalance();
-    document.getElementById('bankTotalValue').textContent = 'NT$ ' + Math.round(total).toLocaleString();
+    document.getElementById('bankTotalValue').textContent = 'NT$ ' + formatAmount(Math.round(total), 'asset');
 
     if (wealthBankAccounts.length === 0) {
         container.innerHTML = '<div class="wealth-empty">尚未新增帳戶，點擊「＋ 新增」開始</div>';
@@ -747,7 +747,7 @@ function renderBankAccounts() {
                 <div class="wealth-row-mid">
                     <span class="wealth-row-detail">利率 ${a.rate || 0}%</span>
                 </div>
-                <div class="wealth-row-value">NT$ ${Math.round(a.balance || 0).toLocaleString()}</div>
+                <div class="wealth-row-value">NT$ ${formatAmount(Math.round(a.balance || 0), 'asset')}</div>
                 <div class="wealth-row-actions">
                     <button class="icon-btn" onclick="editBankAccount('${a.id}')" title="編輯"><i class="fa-solid fa-pen"></i></button>
                     <button class="icon-btn delete" onclick="deleteBankAccount('${a.id}')" title="刪除"><i class="fa-solid fa-trash"></i></button>

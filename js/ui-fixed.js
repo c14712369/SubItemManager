@@ -314,8 +314,8 @@ function handleFormSubmit(e) {
 
 function render() {
     const stats = calculateStats();
-    document.getElementById('totalMonthly').textContent = `NT$ ${Math.round(stats.monthly).toLocaleString()}`;
-    document.getElementById('totalYearly').textContent = `NT$ ${Math.round(stats.yearly).toLocaleString()}`;
+    document.getElementById('totalMonthly').textContent = `NT$ ${formatAmount(Math.round(stats.monthly), 'fixed')}`;
+    document.getElementById('totalYearly').textContent = `NT$ ${formatAmount(Math.round(stats.yearly), 'fixed')}`;
     updateBudgetCalc();
 
     const searchInput = document.getElementById('searchInput');
