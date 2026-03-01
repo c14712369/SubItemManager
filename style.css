@@ -1171,7 +1171,8 @@ h1 .title-icon {
     align-items: center;
     justify-content: center;
     gap: 16px;
-    margin-bottom: 20px;
+    margin: 0 auto 20px auto;
+    max-width: 800px;
 }
 
 .month-nav-label {
@@ -1202,7 +1203,7 @@ h1 .title-icon {
     margin: 0 auto 24px auto;
     /* Centered */
     box-shadow: var(--shadow-sm);
-    max-width: 640px;
+    max-width: 800px;
 }
 
 @media (max-width: 768px) {
@@ -1703,14 +1704,10 @@ h1 .title-icon {
 .hero-main {
     flex: 1;
     min-width: 200px;
-    border-right: 1px solid var(--border-color);
-    padding-right: 24px;
 }
 
 @media (max-width: 768px) {
     .hero-main {
-        border-right: none;
-        border-bottom: 1px solid var(--border-color);
         padding-right: 0;
         padding-bottom: 24px;
     }
@@ -1940,6 +1937,8 @@ h1 .title-icon {
         justify-content: center;
         width: 100%;
         gap: 10px;
+        margin: 0 auto 16px auto;
+        max-width: 800px;
     }
 
     .tabs-nav {
@@ -3359,5 +3358,180 @@ video {
 
     .wealth-total-amount {
         font-size: 1.8rem;
+    }
+}
+
+/* ── App Identity & Settings Modal Styles ── */
+.icon-preview-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.icon-preview-box:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-md);
+}
+
+#identityColorValue {
+    background: var(--bg-secondary);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+}
+
+.icon-preview-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@media (max-width: 450px) {
+    #identityModalOverlay .modal {
+        margin: 10px;
+        padding: 16px;
+    }
+}
+
+/* ── Analysis Tab Refinement ── */
+.analysis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 16px;
+}
+
+.analysis-title-group h2 {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.analysis-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.analysis-hero-card,
+.life-hero-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    margin: 0 auto 28px auto;
+    box-shadow: var(--shadow-sm);
+    max-width: 800px;
+    position: relative;
+    overflow: hidden;
+}
+
+
+.hero-main {
+    flex: 1.2;
+    padding-right: 0;
+}
+
+.hero-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.hero-amount {
+    font-family: var(--font-serif);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 16px;
+}
+
+.progress-wrap-hero {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-color);
+    max-width: 250px;
+}
+
+.progress-wrap-hero .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+
+.hero-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hero-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detail-label {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.detail-value {
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* Mobile Analysis Adjustments */
+@media (max-width: 768px) {
+    .analysis-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .analysis-hero-card,
+    .life-hero-card {
+        flex-direction: column;
+        padding: 20px;
+        gap: 20px;
+        max-width: 100%;
+    }
+
+    .hero-main {
+        padding-right: 0;
+        width: 100%;
+    }
+
+    .hero-amount {
+        font-size: 2.4rem;
+    }
+
+
+    .hero-details {
+        width: 100%;
+        border-top: none;
+        padding-top: 0;
     }
 }

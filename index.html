@@ -17,7 +17,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="收支管理系統">
-    <link rel="apple-touch-icon" href="favicon.ico">
+    <link rel="icon" type="image/svg+xml"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23c17b2e' d='M448 80c8.8 0 16 7.2 16 16V416c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16V96c0-8.8 7.2-16 16-16H448zM0 96V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64C28.7 32 0 60.7 0 96zM192 256a64 64 0 1 0 128 0 64 64 0 1 0 -128 0zm64-32c17.7 0 32 14.3 32 32s-14.3 32-32 32s-32-14.3-32-32s14.3-32 32-32z'/%3E%3C/svg%3E">
+    <link rel="apple-touch-icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Cpath fill='%23c17b2e' d='M448 80c8.8 0 16 7.2 16 16V416c0 8.8-7.2 16-16 16H64c-8.8 0-16-7.2-16-16V96c0-8.8 7.2-16 16-16H448zM0 96V416c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V96c0-35.3-28.7-64-64-64H64C28.7 32 0 60.7 0 96zM192 256a64 64 0 1 0 128 0 64 64 0 1 0 -128 0zm64-32c17.7 0 32 14.3 32 32s-14.3 32-32 32s-32-14.3-32-32s14.3-32 32-32z'/%3E%3C/svg%3E">
     <meta name="theme-color" content="#c17b2e">
 </head>
 
@@ -42,6 +45,9 @@
                         </button>
                         <button class="icon-btn theme-toggle" onclick="toggleTheme()" title="切換深色/淺色模式">
                             <i class="fa-regular fa-moon" id="themeIcon"></i>
+                        </button>
+                        <button class="icon-btn" onclick="openIdentityModal()" title="系統設置" style="font-size: 1.2rem;">
+                            <i class="fa-solid fa-palette"></i>
                         </button>
                     </div>
                 </div>
@@ -125,7 +131,7 @@
 
 
         <!-- Tab: Life Expenses -->
-        <div id="tab-life" class="tab-content active">
+        <div id="tab-life" class="tab-content">
             <!-- Month Navigator -->
             <div class="month-nav">
                 <button class="icon-btn" onclick="changeLifeMonth(-1)" title="上個月"><i
@@ -136,41 +142,45 @@
                 <button class="icon-btn" onclick="openLifeCatModal()" title="管理分類" style="margin-left:8px;"><i
                         class="fa-solid fa-sliders"></i></button>
             </div>
+            <!-- Tab Header with Title (Standardized) -->
+            <div class="analysis-header">
+                <div class="analysis-title-group">
+                    <h2><i class="fa-solid fa-wallet"></i> 生活費記帳</h2>
+                    <div class="analysis-subtitle">管理並分析您的日常開支與收入</div>
+                </div>
+            </div>
 
-            <!-- Removed redundant export/import buttons from here -->
-
-            <!-- Overview Banner -->
-            <div class="overview-banner">
-                <div class="overview-stats">
-                    <div class="overview-stat">
-                        <div class="stat-title" style="display:flex;align-items:center;justify-content:space-between;">
-                            本月實際收入
+            <!-- Premium Life Hero Card -->
+            <div class="life-hero-card">
+                <div class="hero-main">
+                    <div class="hero-label">生活費結餘</div>
+                    <div class="hero-amount" id="lifeMonthRemain">NT$ 0</div>
+                    <div class="progress-wrap-hero">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="lifeOverallProgress" style="width:0%"></div>
+                        </div>
+                        <span class="progress-pct" id="lifeOverallPct">支出 0%</span>
+                    </div>
+                </div>
+                <div class="hero-details">
+                    <div class="hero-detail-item">
+                        <div class="detail-label">
+                            <i class="fa-solid fa-hand-holding-dollar"></i> 本月實際收入
                             <button class="icon-btn" onclick="openSalarySettingModal()" title="設定預設薪資"
-                                style="font-size:0.85rem;padding:2px 4px;margin-left:4px;">
+                                style="font-size:0.8rem;padding:2px 4px;margin-left:4px;">
                                 <i class="fa-solid fa-gear"></i>
                             </button>
                         </div>
-                        <div class="stat-value stat-positive" id="lifeMonthBudget">NT$ 0</div>
-
+                        <div class="detail-value stat-positive" id="lifeMonthBudget">NT$ 0</div>
                     </div>
-                    <div class="overview-stat">
-                        <div class="stat-title">本月固定支出</div>
-                        <div class="stat-value stat-monthly" id="lifeMonthFixed">NT$ 0</div>
+                    <div class="hero-detail-item">
+                        <div class="detail-label"><i class="fa-solid fa-lock"></i> 本月固定支出</div>
+                        <div class="detail-value stat-monthly" id="lifeMonthFixed">NT$ 0</div>
                     </div>
-                    <div class="overview-stat">
-                        <div class="stat-title">本月生活支出</div>
-                        <div class="stat-value stat-monthly" id="lifeMonthSpent">NT$ 0</div>
+                    <div class="hero-detail-item">
+                        <div class="detail-label"><i class="fa-solid fa-leaf"></i> 本月生活支出</div>
+                        <div class="detail-value stat-monthly" id="lifeMonthSpent">NT$ 0</div>
                     </div>
-                    <div class="overview-stat">
-                        <div class="stat-title">生活費結餘</div>
-                        <div class="stat-value" id="lifeMonthRemain">NT$ 0</div>
-                    </div>
-                </div>
-                <div class="progress-bar-wrap">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="lifeOverallProgress" style="width:0%"></div>
-                    </div>
-                    <span class="progress-pct" id="lifeOverallPct">支出 0%</span>
                 </div>
             </div>
 
@@ -208,35 +218,38 @@
 
         <!-- Tab: Analysis -->
         <div id="tab-analysis" class="tab-content">
-            <div class="overview-banner">
-                <div class="overview-stats">
-                    <div class="overview-stat">
-                        <div class="stat-title"
-                            style="display:flex; justify-content:space-between; align-items:center;">
-                            每月總結餘
-                            <input type="month" id="analysisOverviewMonth" class="form-input chart-select"
-                                onchange="updateBudgetCalc()" style="width:auto; padding: 2px 8px; font-size: 0.85rem;">
-                        </div>
-                        <div class="stat-value" id="remainingBudget">NT$ 0</div>
-                        <div class="hero-options">
-                            <label style="cursor:pointer; display:flex; align-items:center; gap:6px;">
-                                <input type="checkbox" id="deductProjectSavings" checked onchange="updateBudgetCalc()">
-                                扣除專案預定金
-                            </label>
-                        </div>
+            <!-- Unified Analysis Header -->
+            <div class="analysis-header">
+                <div class="analysis-title-group">
+                    <h2><i class="fa-solid fa-chart-line"></i> 收支分析概覽</h2>
+                    <span class="analysis-subtitle">檢視您選定月份的財務健康狀況</span>
+                </div>
+                <div class="analysis-month-nav">
+                    <input type="month" id="analysisGlobalMonth" class="form-input" onchange="syncAnalysisMonth()">
+                </div>
+            </div>
+
+            <!-- Hero Section: Balance & Subtotals -->
+            <div class="analysis-hero-card">
+                <div class="hero-main">
+                    <div class="hero-label">每月預估結餘</div>
+                    <div class="hero-amount" id="remainingBudget">NT$ 0</div>
+                    <div class="hero-options">
+                        <label>
+                            <input type="checkbox" id="deductProjectSavings" checked onchange="updateBudgetCalc()">
+                            <span class="checkbox-custom"></span>
+                            扣除專案預定金
+                        </label>
                     </div>
-                    <div class="overview-stat">
-                        <div class="stat-title">支出小計</div>
-                        <div id="statTotalExp" class="stat-sub-group">
-                            <div class="stat-sub-item">
-                                <span class="label"><i class="fa-solid fa-lock"></i>固定:</span>
-                                <span id="totalMonthly" class="value">0</span>
-                            </div>
-                            <div class="stat-sub-item">
-                                <span class="label"><i class="fa-solid fa-leaf"></i>生活:</span>
-                                <span id="totalLifeMonthly" class="value">0</span>
-                            </div>
-                        </div>
+                </div>
+                <div class="hero-details">
+                    <div class="hero-detail-item">
+                        <div class="detail-label"><i class="fa-solid fa-lock"></i> 固定支出</div>
+                        <div class="detail-value" id="totalMonthly">NT$ 0</div>
+                    </div>
+                    <div class="hero-detail-item">
+                        <div class="detail-label"><i class="fa-solid fa-leaf"></i> 生活開銷</div>
+                        <div class="detail-value" id="totalLifeMonthly">NT$ 0</div>
                     </div>
                 </div>
             </div>
@@ -276,8 +289,7 @@
                 <div class="chart-section">
                     <div class="chart-header">
                         <h3 style="margin:0;"><i class="fa-solid fa-bars"></i> 生活費分類分析</h3>
-                        <input type="month" id="lifeChartMonth" class="form-input chart-select"
-                            onchange="renderLifeCategoryChart()">
+                        <!-- Month picker removed: now unified -->
                     </div>
                     <div class="chart-container"><canvas id="lifeCategoryChart"></canvas></div>
                 </div>
@@ -1108,6 +1120,62 @@
             <span>報表</span>
         </a>
     </nav>
+
+    <!-- Modal: App Identity / Settings -->
+    <div class="modal-overlay" id="identityModalOverlay">
+        <div class="modal" style="max-width: 450px;">
+            <div class="modal-header">
+                <span>系統設置 / 應用程式個性化</span>
+                <span class="close-modal" onclick="closeIdentityModal()">&times;</span>
+            </div>
+            <div style="padding:10px 0;">
+                <div class="form-group">
+                    <label class="form-label">應用程式主題色 (PWA/網頁)</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="color" id="identityThemeColor" class="form-input"
+                            style="width:50px; height:42px; padding:2px; cursor:pointer;"
+                            onchange="updateIdentityPreview()">
+                        <span id="identityColorValue" style="font-family:monospace; font-size:0.9rem;">#c17b2e</span>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top:20px;">
+                    <label class="form-label">應用程式圖示 (PWA/Favicon)</label>
+                    <div style="display:flex; gap:15px; align-items:flex-start;">
+                        <div id="iconPreview" class="icon-preview-box"
+                            style="width:80px; height:80px; background:var(--bg-secondary); border-radius:16px; display:flex; align-items:center; justify-content:center; flex-shrink:0; overflow:hidden; border:2px solid var(--border-color);">
+                            <!-- Preview Icon or Image -->
+                            <i class="fa-solid fa-vault" style="font-size:40px; color:#c17b2e;"></i>
+                        </div>
+                        <div style="flex:1;">
+                            <p style="font-size:0.75rem; color:var(--text-muted); margin-bottom:10px;">
+                                自定義您的標誌。您可以選擇顏色或上傳圖片。
+                            </p>
+                            <div style="display:flex; gap:8px;">
+                                <label class="btn btn-outline btn-sm" style="cursor:pointer; margin:0;">
+                                    <i class="fa-solid fa-upload"></i> 上傳圖片
+                                    <input type="file" id="identityIconUpload" hidden accept="image/*"
+                                        onchange="handleIconUpload(event)">
+                                </label>
+                                <button class="btn btn-secondary btn-sm" onclick="resetIdentity()">重置</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div
+                    style="margin-top:20px; padding:12px; background:rgba(193,123,46,0.1); border-radius:8px; border:1px dashed var(--primary-color);">
+                    <p style="font-size:0.75rem; color:var(--text-color); margin:0;" id="pwaStatusText">
+                        💡 <strong>小提示：</strong> 更改圖示後，建議重新啟動或重新整理網頁。
+                    </p>
+                </div>
+
+                <button class="btn btn-primary" style="width: 100%; margin-top: 25px;" onclick="saveIdentitySettings()">
+                    <i class="fa-solid fa-check"></i> 儲存並套用系統設置
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Global FAB (shown on mobile, floating above nav) -->
     <button class="fab-global" onclick="openLifeExpModal()" title="快速記帳">

@@ -60,7 +60,7 @@ function calculateStats() {
 }
 
 function updateBudgetCalc() {
-    var monthInput = document.getElementById('analysisOverviewMonth');
+    var monthInput = document.getElementById('analysisGlobalMonth');
     if (monthInput && !monthInput.value) {
         monthInput.value = lifeCurrentMonth || new Date().toISOString().slice(0, 7);
     }
@@ -116,10 +116,24 @@ function updateBudgetCalc() {
     var remainEl = document.getElementById('remainingBudget');
     if (remainEl) {
         remainEl.textContent = 'NT$ ' + Math.round(remaining).toLocaleString();
-        remainEl.className = 'stat-value ' + (remaining >= 0 ? 'stat-positive' : 'stat-negative');
+        remainEl.className = 'hero-amount ' + (remaining >= 0 ? 'stat-positive' : 'stat-negative');
     }
 
     renderProjectSavingsInfo();
+}
+
+/**
+ * 統一分析分頁的月份同步函數
+ */
+function syncAnalysisMonth() {
+    // 1. 更新結餘與小計
+    updateBudgetCalc();
+    // 2. 更新生活費分類分析圖表
+    renderLifeCategoryChart();
+    // 3. 如果固定支出圖表目前是「按月」，則同步更新
+    if (typeof _subChartType !== 'undefined' && _subChartType === 'month') {
+        renderChart();
+    }
 }
 
 function renderProjectSavingsInfo() {
@@ -346,7 +360,11 @@ function renderChart() {
         });
         chartTitle = `${currentChartYear} 年度支出`;
     } else {
-        const ym = selectMonth && selectMonth.value ? selectMonth.value : new Date().toISOString().slice(0, 7);
+        const globalMonthInput = document.getElementById('analysisGlobalMonth');
+        const ym = (globalMonthInput && globalMonthInput.value)
+            ? globalMonthInput.value
+            : (selectMonth && selectMonth.value ? selectMonth.value : new Date().toISOString().slice(0, 7));
+
         const [yearStr, monthStr] = ym.split('-');
         const y = parseInt(yearStr);
         const m = parseInt(monthStr);
@@ -503,7 +521,7 @@ function renderTimeline() {
 function renderLifeCategoryChart() {
     var ctx = document.getElementById('lifeCategoryChart');
     if (!ctx) return;
-    var mi = document.getElementById('lifeChartMonth');
+    var mi = document.getElementById('analysisGlobalMonth');
     var ym = (mi && mi.value) ? mi.value : lifeCurrentMonth;
 
     var labels = [], data = [], colors = [];
