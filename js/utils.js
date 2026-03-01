@@ -89,3 +89,20 @@ async function fetchWithCache(url, cacheKey, ttlHours = 6, forceRefresh = false)
         throw error;
     }
 }
+/**
+ * Helper to handle privacy masking based on amount type
+ * @param {number|string} val - The value to format
+ * @param {'income'|'asset'|'expense'|'fixed'|'other'} type - Category of the amount
+ */
+function formatAmount(val, type = 'other') {
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) return val;
+
+    if (window.isPrivacyMode) {
+        // Only hide income and assets
+        if (type === 'income' || type === 'asset') {
+            return '****';
+        }
+    }
+    return num.toLocaleString();
+}

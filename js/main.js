@@ -3,14 +3,6 @@
 // --- Privacy Mode ---
 window.isPrivacyMode = localStorage.getItem('privacy_mode') === 'true';
 
-const originalToLocaleString = Number.prototype.toLocaleString;
-Number.prototype.toLocaleString = function (locales, options) {
-    if (window.isPrivacyMode) {
-        return '****';
-    }
-    return originalToLocaleString.call(this, locales, options);
-};
-
 function togglePrivacy() {
     window.isPrivacyMode = !window.isPrivacyMode;
     localStorage.setItem('privacy_mode', window.isPrivacyMode);
@@ -20,8 +12,12 @@ function togglePrivacy() {
         icon.className = window.isPrivacyMode ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
     }
 
-    // Refresh the UI to apply masking (skip fetching cloud data)
-    init(true);
+    // Refresh current tab
+    const activeTab = document.querySelector('.tab-content.active');
+    if (activeTab) {
+        const id = activeTab.id.replace('tab-', '');
+        switchTab(id);
+    }
 }
 
 function initTheme() {
@@ -320,8 +316,9 @@ function openIdentityModal() {
         currentAppIdentity = JSON.parse(stored);
     }
 
+    const colorValue = (currentAppIdentity.themeColor || '#c17b2e').toUpperCase();
     document.getElementById('identityThemeColor').value = currentAppIdentity.themeColor || '#c17b2e';
-    document.getElementById('identityColorValue').textContent = currentAppIdentity.themeColor.toUpperCase();
+    document.getElementById('identityColorValue').textContent = colorValue;
 
     updateIdentityPreview();
     document.getElementById('identityModalOverlay').classList.add('active');

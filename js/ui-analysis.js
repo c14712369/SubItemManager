@@ -74,10 +74,10 @@ function updateBudgetCalc() {
     var income = actualIncome;
 
     var lifeEl = document.getElementById('totalLifeMonthly');
-    if (lifeEl) lifeEl.textContent = 'NT$ ' + Math.round(lifeExpense).toLocaleString();
+    if (lifeEl) lifeEl.textContent = 'NT$ ' + formatAmount(Math.round(lifeExpense), 'expense');
 
     var fixedEl = document.getElementById('totalMonthly');
-    if (fixedEl) fixedEl.textContent = 'NT$ ' + Math.round(fixedExpense).toLocaleString();
+    if (fixedEl) fixedEl.textContent = 'NT$ ' + formatAmount(Math.round(fixedExpense), 'fixed');
 
     var remaining = income - fixedExpense - lifeExpense;
 
@@ -115,7 +115,7 @@ function updateBudgetCalc() {
 
     var remainEl = document.getElementById('remainingBudget');
     if (remainEl) {
-        remainEl.textContent = 'NT$ ' + Math.round(remaining).toLocaleString();
+        remainEl.textContent = 'NT$ ' + formatAmount(Math.round(remaining), 'asset');
         remainEl.className = 'hero-amount ' + (remaining >= 0 ? 'stat-positive' : 'stat-negative');
     }
 

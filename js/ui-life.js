@@ -119,11 +119,11 @@ function renderLifeTab() {
     var pctEl = document.getElementById('lifeOverallPct');
     var actualEl = document.getElementById('lifeActualIncome');
 
-    if (incomeEl) incomeEl.textContent = 'NT$ ' + totalIncome.toLocaleString();
-    if (fixedEl) fixedEl.textContent = 'NT$ ' + Math.round(totalFixed).toLocaleString();
-    if (spentEl) spentEl.textContent = 'NT$ ' + totalExpense.toLocaleString();
+    if (incomeEl) incomeEl.textContent = 'NT$ ' + formatAmount(totalIncome, 'income');
+    if (fixedEl) fixedEl.textContent = 'NT$ ' + formatAmount(Math.round(totalFixed), 'fixed');
+    if (spentEl) spentEl.textContent = 'NT$ ' + formatAmount(totalExpense, 'expense');
     if (remainEl) {
-        remainEl.textContent = 'NT$ ' + Math.abs(Math.round(remain)).toLocaleString() + (remain < 0 ? ' (超支)' : '');
+        remainEl.textContent = 'NT$ ' + formatAmount(Math.abs(Math.round(remain)), 'asset') + (remain < 0 ? ' (超支)' : '');
         // Preserve 'hero-amount' class while adding status colors
         remainEl.className = 'hero-amount ' + (remain < 0 ? 'stat-negative' : 'stat-positive');
     }
@@ -135,7 +135,7 @@ function renderLifeTab() {
         pctEl.textContent = totalIncome > 0 ? '支出 ' + rawPct + '%' : '—';
         pctEl.className = 'progress-pct' + (isOver ? ' over-budget' : '');
     }
-    if (actualEl) actualEl.textContent = 'NT$ ' + totalIncome.toLocaleString();
+    if (actualEl) actualEl.textContent = 'NT$ ' + formatAmount(totalIncome, 'income');
 
     renderBudgetCards();
     renderLifeExpenseList();
