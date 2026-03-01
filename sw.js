@@ -1,5 +1,5 @@
-// Service Worker for SubItemManager PWA
-const CACHE_NAME = 'submanager-cache-v2'; // Bumped version
+const CACHE_NAME = 'submanager-cache-v3'; // Bumped version to force fetch of new JS files
+
 const urlsToCache = [
     './',
     './index.html',
