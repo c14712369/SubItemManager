@@ -70,6 +70,7 @@ const STOCK_LIST = [
     { symbol: '00881', name: '國泰台灣5G+', suffix: '.TW' },
     { symbol: '00830', name: '國泰費城半導體', suffix: '.TW' },
     { symbol: '00757', name: '統一FANG+', suffix: '.TW' },
+    { symbol: '00662', name: '富邦 NASDAQ', suffix: '.TW' },
     // ── 美股 — 個股 ──
     { symbol: 'AAPL', name: 'Apple', suffix: '' },
     { symbol: 'MSFT', name: 'Microsoft', suffix: '' },
@@ -363,16 +364,15 @@ async function refreshCAGR() {
     }
 }
 
-async function fetchCAGR(symbol, years) {
+async function fetchCAGR(symbol, years, forceRefresh = false) {
     // 使用 corsproxy.io
     const range = years + 'y';
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1mo&range=${range}`;
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
     try {
-        const res = await fetch(proxyUrl);
-        if (!res.ok) return null;
-        const data = await res.json();
+        const data = await fetchWithCache(proxyUrl, `cagr_${symbol}_${range}`, 24, forceRefresh); // CAGR can be cached longer (24h)
+        if (!data) return null;
 
         const indicators = data?.chart?.result?.[0]?.indicators?.quote?.[0]?.close;
         if (!indicators || indicators.length < 2) return null;
@@ -409,6 +409,7 @@ const BANK_LIST = [
     '中國信託 — 活存', '中國信託 — 定存',
     '玉山銀行 — 活存', '玉山銀行 — 定存',
     '台新銀行 — 活存', '台新銀行 — 定存',
+    '新光銀行 — 活存', '新光銀行 — 定存',
     '富邦銀行 — 活存',
     '永豐銀行 — 活存', '永豐銀行 — 定存',
     '遠東銀行 — 活存',
@@ -592,7 +593,7 @@ function openAddHoldingModal() {
     document.getElementById('holdingSymbolInput').value = '';
     document.getElementById('holdingNameInput').value = '';
     document.getElementById('holdingSharesInput').value = '';
-    document.getElementById('holdingPriceInput').value = '';
+    // document.getElementById('holdingPriceInput').value = ''; // Element removed/not present
     document.getElementById('holdingSelectedInfo').style.display = 'none';
     const dd = document.getElementById('stockDropdown');
     if (dd) dd.style.display = 'none';
@@ -665,7 +666,7 @@ async function fetchSinglePrice(id) {
     if (btn) btn.classList.add('fa-spin');
 
     try {
-        const price = await fetchStockPrice(h.symbol);
+        const price = await fetchStockPrice(h.symbol, true); // Force refresh on manual button click
         if (price !== null) {
             h.lastPrice = price;
             h.lastUpdated = new Date().toISOString();
@@ -688,7 +689,7 @@ async function refreshAllPrices() {
     showToast('更新中...');
     for (const h of wealthHoldings) {
         try {
-            const price = await fetchStockPrice(h.symbol);
+            const price = await fetchStockPrice(h.symbol, true); // Force refresh
             if (price !== null) {
                 h.lastPrice = price;
                 h.lastUpdated = new Date().toISOString();
@@ -702,17 +703,15 @@ async function refreshAllPrices() {
 }
 
 // Yahoo Finance API — 台股加 .TW 後綴，美股直接用代號
-async function fetchStockPrice(rawSymbol) {
-    // 如果是純數字且 4 碼，判斷為台股
-    const symbol = /^\d{4,5}$/.test(rawSymbol) ? rawSymbol + '.TW' : rawSymbol;
+async function fetchStockPrice(rawSymbol, forceRefresh = false) {
+    // 如果是純數字且 4-6 碼，判斷為台股
+    const symbol = /^\d{4,6}$/.test(rawSymbol) ? rawSymbol + '.TW' : rawSymbol;
     // 使用 CORS 代理伺服器
     const targetUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=1d`;
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
 
     try {
-        const res = await fetch(proxyUrl);
-        if (!res.ok) return null;
-        const data = await res.json();
+        const data = await fetchWithCache(proxyUrl, `stock_${symbol}`, 6, forceRefresh);
         const meta = data?.chart?.result?.[0]?.meta;
         if (!meta) return null;
         // 優先用 regularMarketPrice（盤中），否則用 previousClose
@@ -846,20 +845,32 @@ function calculateWealth() {
 
 function _doCalculateWealth() {
     // 從持股和銀行帳戶自動帶入現有資產
-    var invCurrent = getTotalInvestmentValue();
-    var cashCurrent = getTotalCashBalance();
+    var invCurrent = getTotalInvestmentValue() || 0;
+    var cashCurrent = getTotalCashBalance() || 0;
 
-    // 更新顯示
-    const invCurrentEl = document.getElementById('wealthInvestCurrentDisplay');
-    const cashCurrentEl = document.getElementById('wealthCashCurrentDisplay');
-    if (invCurrentEl) invCurrentEl.textContent = 'NT$ ' + Math.round(invCurrent).toLocaleString();
-    if (cashCurrentEl) cashCurrentEl.textContent = 'NT$ ' + Math.round(cashCurrent).toLocaleString();
+    // 更新各處顯示 (防禦性檢查)
+    const setDisplay = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
 
-    var invMonthly = parseFloat(document.getElementById('wealthInvestMonthlyInput').value) || 0;
-    var invRate = parseFloat(document.getElementById('wealthInvestRateInput').value) || 0;
+    const fmt = (val) => 'NT$ ' + Math.round(val || 0).toLocaleString();
+
+    setDisplay('wealthInvestCurrentDisplay', fmt(invCurrent));
+    setDisplay('wealthCashCurrentDisplay', fmt(cashCurrent));
+    setDisplay('wealthTotalAssetsDisplay', fmt(invCurrent + cashCurrent));
+    setDisplay('wealthTotalInvestSub', fmt(invCurrent));
+    setDisplay('wealthTotalCashSub', fmt(cashCurrent));
+
+    const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
+
+    var invMonthly = getVal('wealthInvestMonthlyInput');
+    var invRate = getVal('wealthInvestRateInput');
     var invMonthlyRate = (invRate / 100) / 12;
 
-    var autoSync = document.getElementById('autoSyncWealthToggle').checked;
+    const autoSyncEl = document.getElementById('autoSyncWealthToggle');
+    var autoSync = autoSyncEl ? autoSyncEl.checked : false;
+
     if (autoSync) {
         var stats = typeof calculateStats === 'function' ? calculateStats() : { monthly: 0 };
         var incomeInput = document.getElementById('monthlyIncomeInput');
@@ -868,29 +879,35 @@ function _doCalculateWealth() {
         var lifeExpense = typeof getLifeOnlyExpForMonth === 'function' ? getLifeOnlyExpForMonth(lifeCurrentMonth) : 0;
 
         var income = actualIncome > 0 ? actualIncome : estimated;
-        var remaining = income - stats.monthly - lifeExpense;
+        var remaining = income - (stats.monthly || 0) - lifeExpense;
         var cashAvailable = Math.max(0, Math.round(remaining - invMonthly));
-        document.getElementById('wealthCashMonthlyInput').value = cashAvailable;
+        const cashMonthlyInput = document.getElementById('wealthCashMonthlyInput');
+        if (cashMonthlyInput) cashMonthlyInput.value = cashAvailable;
     }
 
-    var cashMonthly = parseFloat(document.getElementById('wealthCashMonthlyInput').value) || 0;
-    var cashRate = parseFloat(document.getElementById('wealthCashRateInput').value) || 0;
+    var cashMonthly = getVal('wealthCashMonthlyInput');
+    var cashRate = getVal('wealthCashRateInput');
     var cashMonthlyRate = (cashRate / 100) / 12;
 
-    var targetFV = parseFloat(document.getElementById('wealthTargetInput').value) || 0;
+    var targetFV = getVal('wealthTargetInput');
 
-    localStorage.setItem(WEALTH_PARAMS_KEY, JSON.stringify({
-        invRate: document.getElementById('wealthInvestRateInput').value,
-        invMonthly: document.getElementById('wealthInvestMonthlyInput').value,
-        cashRate: document.getElementById('wealthCashRateInput').value,
-        cashMonthly: document.getElementById('wealthCashMonthlyInput').value,
-        target: document.getElementById('wealthTargetInput').value,
-        autoSync: autoSync
-    }));
-    if (typeof triggerCloudSync === 'function') triggerCloudSync();
+    // 儲存參數
+    try {
+        const params = {
+            invRate: document.getElementById('wealthInvestRateInput')?.value || "0",
+            invMonthly: document.getElementById('wealthInvestMonthlyInput')?.value || "0",
+            cashRate: document.getElementById('wealthCashRateInput')?.value || "0",
+            cashMonthly: document.getElementById('wealthCashMonthlyInput')?.value || "0",
+            target: document.getElementById('wealthTargetInput')?.value || "10000000",
+            autoSync: autoSync
+        };
+        localStorage.setItem(WEALTH_PARAMS_KEY, JSON.stringify(params));
+        if (typeof triggerCloudSync === 'function') triggerCloudSync();
+    } catch (e) { }
 
     var resultEl = document.getElementById('wealthResultText');
     var summaryEl = document.getElementById('wealthSummaryText');
+    if (!resultEl || !summaryEl) return;
 
     if (targetFV <= 0) {
         resultEl.textContent = '請輸入有效的目標金額';
@@ -1032,7 +1049,17 @@ function renderWealthChart(labels, cashData, investData, totalData, targetFV) {
             maintainAspectRatio: false,
             interaction: { mode: 'index', intersect: false },
             plugins: {
-                legend: { position: 'bottom', labels: { color: textColor } },
+                legend: {
+                    position: 'bottom',
+                    align: 'center',
+                    labels: {
+                        color: textColor,
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'rectRounded',
+                        font: { size: 12 }
+                    }
+                },
                 tooltip: {
                     callbacks: {
                         label: function (context) {

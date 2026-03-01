@@ -287,6 +287,53 @@ h1 .title-icon {
     }
 }
 
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-4px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(4px);
+    }
+}
+
+.shake {
+    animation: shake 0.4s ease-in-out;
+}
+
+/* Micro-animations */
+.btn,
+.icon-btn,
+.tab-btn,
+.item-row,
+.stat-card,
+.wealth-row {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:hover,
+.icon-btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn:active,
+.icon-btn:active {
+    transform: translateY(0) scale(0.96);
+}
+
 /* ?�?� Toolbar ?�?� */
 .toolbar {
     display: flex;
@@ -542,12 +589,13 @@ h1 .title-icon {
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     overflow: hidden;
-    transition: box-shadow 0.15s, border-color 0.15s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .item-row:hover {
     border-color: var(--primary-color);
     box-shadow: var(--shadow-sm);
+    transform: translateX(4px);
 }
 
 .item-row--ended {
@@ -2502,7 +2550,21 @@ video {
     }
 }
 
-/* ?�?� Wealth Tab ?�?� */
+/* ====== js/ui-wealth.js ====== */
+.wealth-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: stretch;
+}
+
+@media (max-width: 900px) {
+    .wealth-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ?? Wealth Tab ?? */
 .wealth-panels {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -2517,6 +2579,9 @@ video {
 
 .wealth-panel {
     margin-bottom: 0 !important;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .wealth-panel-header {
@@ -3204,5 +3269,95 @@ video {
 
     .wealth-result-summary {
         font-size: 0.82rem;
+    }
+}
+
+/* Wealth Total Assets Card */
+.wealth-total-card {
+    grid-column: span 2;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 30px !important;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border-radius: var(--radius);
+}
+
+.wealth-total-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary-color);
+}
+
+.wealth-total-label {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wealth-total-amount {
+    font-size: 2.2rem;
+    font-weight: 800;
+    font-family: var(--font-serif);
+    color: var(--primary-color);
+    letter-spacing: -0.02em;
+}
+
+.wealth-total-stats {
+    display: flex;
+    gap: 32px;
+}
+
+.wealth-total-sub {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.sub-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
+.sub-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+}
+
+@media (max-width: 600px) {
+    .wealth-total-card {
+        grid-column: span 1;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px !important;
+    }
+
+    .wealth-total-stats {
+        width: 100%;
+        justify-content: space-between;
+        gap: 16px;
+        padding-top: 16px;
+        border-top: 1px dashed var(--border-color);
+    }
+
+    .wealth-total-amount {
+        font-size: 1.8rem;
     }
 }
