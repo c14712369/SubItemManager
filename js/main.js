@@ -125,7 +125,12 @@ function init(skipCloudFetch = false) {
 
     initChartYearSelect();
     initWealthTab();
-    switchTab('life');
+
+    // Only default to 'life' tab if no tab is active (initial load)
+    const activeTab = document.querySelector('.tab-content.active');
+    if (!activeTab) {
+        switchTab('life');
+    }
 
     render();
 

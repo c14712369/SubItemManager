@@ -223,7 +223,7 @@ async function fetchFromServer() {
 
         } else {
             // First log in, no cloud data. Push current local data to cloud to initialize.
-            showToast('首次登入，將本地資料同步至雲端...');
+            console.log('首次登入，將本地資料同步至雲端...');
             await syncToServer(true);
         }
     } catch (err) {

@@ -337,10 +337,21 @@ function handleLifeExpSubmit(e) {
     e.preventDefault();
     var id = document.getElementById('lifeExpId').value;
     var type = document.getElementById('lifeExpType').value || 'expense';
-    var amount = parseInt(document.getElementById('lifeExpAmount').value);
+    var amountInput = document.getElementById('lifeExpAmount');
+    var amount = parseInt(amountInput.value);
     var date = document.getElementById('lifeExpDate').value;
     var note = document.getElementById('lifeExpNote').value.trim();
-    if (!amount || !date) return;
+
+    if (!amount || amount <= 0 || !date) {
+        const modal = document.querySelector('#lifeExpModalOverlay .modal');
+        if (modal) {
+            modal.classList.remove('shake');
+            void modal.offsetWidth; // trigger reflow
+            modal.classList.add('shake');
+        }
+        showToast('請輸入有效金額與日期');
+        return;
+    }
 
     var entry;
     if (type === 'income') {

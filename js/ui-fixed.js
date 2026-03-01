@@ -204,7 +204,7 @@ function closeModal() {
     if (modalOverlay) modalOverlay.classList.remove('active');
 }
 
-async function handleCurrencyChange() {
+async function handleCurrencyChange(forceRefresh = false) {
     const curr = document.getElementById('itemCurrency').value;
     const rateRow = document.getElementById('exchangeRateRow');
     const rateInput = document.getElementById('itemExchangeRate');
@@ -221,21 +221,20 @@ async function handleCurrencyChange() {
         rateInput.placeholder = '抓取即時匯率中...';
 
         try {
-            // Fetch live exchange rates against TWD
-            const response = await fetch('https://open.er-api.com/v6/latest/' + curr);
-            if (response.ok) {
-                const data = await response.json();
-                if (data && data.rates && data.rates.TWD) {
-                    // Pre-fill with the fetched rate, but do not override if the modal is in edit mode and rate already exists
-                    const currentModalTitle = document.getElementById('modalTitle').textContent;
-                    if (currentModalTitle === '新增項目' || !rateInput.value || rateInput.value == "1") {
-                        rateInput.value = data.rates.TWD.toFixed(4);
-                    }
+            // Use cached fetch
+            const url = 'https://open.er-api.com/v6/latest/' + curr;
+            const data = await fetchWithCache(url, `rate_${curr}`, 6, forceRefresh);
+
+            if (data && data.rates && data.rates.TWD) {
+                // Pre-fill with the fetched rate, but do not override if the modal is in edit mode and rate already exists
+                const currentModalTitle = document.getElementById('modalTitle').textContent;
+                if (currentModalTitle === '新增項目' || !rateInput.value || rateInput.value == "1" || forceRefresh) {
+                    rateInput.value = data.rates.TWD.toFixed(4);
                 }
             }
         } catch (error) {
             console.error('匯率 API 抓取失敗:', error);
-            showToast('即時匯率抓取失敗，請手動輸入');
+            showToast('匯率抓取失敗，請手動輸入');
         } finally {
             rateInput.placeholder = '請手動輸入';
             calculateTWD();
@@ -277,6 +276,22 @@ function editItem(id) {
 
 function handleFormSubmit(e) {
     e.preventDefault();
+
+    // Validation
+    const nameInput = document.getElementById('itemName');
+    const amountInput = document.getElementById('itemOriginalAmount');
+
+    if (!nameInput.value.trim() || !amountInput.value || parseFloat(amountInput.value) <= 0) {
+        const modal = document.querySelector('#modalOverlay .modal');
+        if (modal) {
+            modal.classList.remove('shake');
+            void modal.offsetWidth; // trigger reflow
+            modal.classList.add('shake');
+        }
+        showToast('請填寫完整名稱與正確金額');
+        return;
+    }
+
     calculateTWD();
     const data = {
         name: document.getElementById('itemName').value,
@@ -469,4 +484,40 @@ function handleDrop(e) {
 function handleDragEnd(e) {
     this.classList.remove('dragging');
     document.querySelectorAll('.item-card').forEach(col => col.classList.remove('over'));
+}
+
+// --- CSV Export ---
+function exportToCSV() {
+    if (items.length === 0) {
+        showToast('目前沒有資料可匯出');
+        return;
+    }
+
+    const headers = ['名稱', '分類', '幣別', '原幣金額', '匯率', '台幣金額', '週期', '開始日期', '結束日期', '備註'];
+    const rows = items.map(item => {
+        const cat = categories.find(c => c.id === item.categoryId) || { name: '其他' };
+        return [
+            `"${item.name}"`,
+            `"${cat.name}"`,
+            item.currency || 'TWD',
+            item.originalAmount || item.amount,
+            item.exchangeRate || 1,
+            item.amount,
+            `"${getCycleLabel(item.cycle)}"`,
+            item.startDate,
+            item.endDate || '',
+            `"${(item.note || '').replace(/"/g, '""')}"`
+        ];
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `固定支出匯出_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('CSV 已匯出');
 }
