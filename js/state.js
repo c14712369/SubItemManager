@@ -68,3 +68,7 @@ const DEFAULT_PROJECT_CATS = [
 
 let dragSrcEl = null;
 let _currentCatManageType = 'expense';
+
+// Fixed tab sort preference: 'category' | 'amount-desc' | 'amount-asc' | 'date-desc'
+const FIXED_SORT_KEY = 'sub_mgr_fixed_sort';
+let _fixedSortMode = localStorage.getItem(FIXED_SORT_KEY) || 'category';

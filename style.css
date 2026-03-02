@@ -2491,6 +2491,42 @@ video {
     color: var(--danger-color);
 }
 
+/* Budget progress bar under category row */
+.cat-budget-bar-wrap {
+    width: 100%;
+    padding: 0 14px 6px;
+}
+.cat-budget-bar {
+    height: 3px;
+    background: var(--border-color);
+    border-radius: 2px;
+    overflow: hidden;
+    width: 100%;
+}
+.cat-budget-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+.cat-budget-fill.over {
+    background: var(--danger-color);
+}
+.life-cat-row-budget-hint {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+.life-cat-row-amt.text-danger {
+    color: var(--danger-color);
+}
+.over-budget-row {
+    border-left-color: var(--danger-color) !important;
+}
+.life-cat-row.over-budget-row:hover {
+    background: rgba(193, 50, 50, 0.04);
+}
+
 .life-cat-action {
     opacity: 0;
     font-size: 0.78rem;
@@ -3553,5 +3589,43 @@ video {
         width: 100%;
         border-top: none;
         padding-top: 0;
+    }
+}
+
+/* ── Mobile touch target optimization ── */
+@media (max-width: 600px) {
+    /* Ensure minimum 44px touch targets on mobile */
+    .icon-btn {
+        min-width: 36px;
+        min-height: 36px;
+        padding: 8px;
+        justify-content: center;
+    }
+
+    .month-nav .icon-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .analysis-month-nav .icon-btn {
+        width: 36px;
+        height: 36px;
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-sm {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+        min-height: 36px;
+    }
+
+    .life-cat-action {
+        opacity: 1; /* Always visible on mobile */
+        min-width: 36px;
+        min-height: 36px;
     }
 }

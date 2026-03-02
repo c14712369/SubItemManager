@@ -13,11 +13,16 @@ function getMonthlyRate(item) {
 /** 與 getMonthlyRate 相同，但套用指定月份的歷史匯率（需先呼叫 prefetchFXRates） */
 function getMonthlyRateForMonth(item, year, month) {
     const amt = getItemAmountForMonth(item, year, month);
+    const daysInMonth = new Date(year, month, 0).getDate();
     switch (item.cycle) {
         case 'monthly': return amt;
         case 'yearly': return amt / 12;
         case 'quarterly': return amt / 3;
-        case 'half-yearly': return amt / 6;
+        case 'half-yearly':
+        case 'halfyear': return amt / 6;
+        case 'bimonthly': return amt / 2;
+        case 'daily': return amt * daysInMonth;
+        case 'weekly': return amt * (daysInMonth / 7);
         default: return 0;
     }
 }
@@ -135,6 +140,18 @@ async function updateBudgetCalc() {
     }
 
     renderProjectSavingsInfo();
+}
+
+/**
+ * 分析分頁：前後月導航
+ */
+function changeAnalysisMonth(delta) {
+    const input = document.getElementById('analysisGlobalMonth');
+    if (!input || !input.value) return;
+    const [y, m] = input.value.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    input.value = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+    syncAnalysisMonth();
 }
 
 /**
@@ -563,10 +580,27 @@ function renderLifeCategoryChart() {
             responsive: true, maintainAspectRatio: false,
             plugins: {
                 legend: { display: false },
-                title: { display: true, text: ym + ' 分類支出統計', color: tc, font: { size: 14 } },
+                title: { display: true, text: ym + ' 分類支出統計（點擊篩選明細）', color: tc, font: { size: 14 } },
                 tooltip: { callbacks: { label: function (c) { return 'NT$ ' + c.raw.toLocaleString(); } } }
             },
-            scales: { y: { ticks: { color: tc, callback: function (v) { return 'NT$' + v.toLocaleString(); } }, grid: { color: gc } }, x: { ticks: { color: tc }, grid: { display: false } } }
+            scales: { y: { ticks: { color: tc, callback: function (v) { return 'NT$' + v.toLocaleString(); } }, grid: { color: gc } }, x: { ticks: { color: tc }, grid: { display: false } } },
+            onClick: function (evt, elements) {
+                if (!elements || elements.length === 0) return;
+                var idx = elements[0].index;
+                var catName = labels[idx];
+                var cat = lifeCategories.find(function (c) { return c.name === catName; });
+                if (!cat) return;
+                // Switch to life tab and filter by this category
+                switchTab('life');
+                // Sync life month to analysis month
+                var mi = document.getElementById('analysisGlobalMonth');
+                if (mi && mi.value) lifeCurrentMonth = mi.value;
+                requestAnimationFrame(function () {
+                    renderLifeTab().then(function () {
+                        selectLifeCat(cat.id);
+                    });
+                });
+            }
         }
     });
 }
