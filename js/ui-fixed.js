@@ -227,8 +227,8 @@ async function handleCurrencyChange(forceRefresh = false) {
         rateInput.placeholder = '抓取即時匯率中...';
 
         try {
-            // Use cached fetch
-            const url = 'https://open.er-api.com/v6/latest/' + curr;
+            // Use Frankfurter API (open source, no quota)
+            const url = `https://api.frankfurter.app/latest?from=${curr}&to=TWD`;
             const data = await fetchWithCache(url, `rate_${curr}`, 6, forceRefresh);
 
             if (data && data.rates && data.rates.TWD) {
