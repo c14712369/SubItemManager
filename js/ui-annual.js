@@ -41,9 +41,12 @@ function initAnnualYearSelect() {
     select.value = currentYear;
 }
 
-function renderAnnualReport() {
+async function renderAnnualReport() {
     const year = document.getElementById('annualReportYear').value;
     if (!year) return;
+    // 預取該年度所有12個月的外幣歷史匯率
+    const yearInt = parseInt(year);
+    await prefetchFXRates(items, Array.from({length: 12}, (_, i) => [yearInt, i + 1]));
 
     // 準備12個月的數據容器
     let monthlyData = Array.from({ length: 12 }, () => ({
@@ -119,7 +122,7 @@ function renderAnnualReport() {
     const totalExpAll = totalYearFixed + totalYearLife + totalYearProject;
     const totalBalanceAll = totalYearIncome - totalExpAll;
 
-    document.getElementById('annualTotalIncome').textContent = `NT$ ${totalYearIncome.toLocaleString()}`;
+    document.getElementById('annualTotalIncome').textContent = `NT$ ${formatAmount(totalYearIncome, 'income')}`;
     document.getElementById('annualTotalExpense').textContent = `NT$ ${totalExpAll.toLocaleString()}`;
     document.getElementById('annualTotalBalance').textContent = `NT$ ${totalBalanceAll.toLocaleString()}`;
 

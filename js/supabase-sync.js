@@ -1,6 +1,7 @@
 // ====== js/supabase-sync.js ======
 let currentUser = null;
 let lastSyncTime = 0;
+let isFetchingFromServer = false; // Guard: block local→cloud sync while downloading
 
 // Listen for auth state changes (login, logout, refresh)
 supabaseClient.auth.onAuthStateChange((event, session) => {
@@ -16,12 +17,22 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
 
 // Check initial session on load
 async function checkSession(skipFetch = false) {
+    // Immediately block any pending local→cloud sync that may have been
+    // scheduled by initWealthTab() or other init code, before we even know
+    // whether there's a session. This prevents the race where a 1500ms
+    // debounced sync fires and overwrites the cloud before we download.
+    isFetchingFromServer = true;
+    if (syncTimeout) { clearTimeout(syncTimeout); syncTimeout = null; }
+
     const { data: { session } } = await supabaseClient.auth.getSession();
     currentUser = session?.user || null;
     updateAuthUI();
     if (currentUser && !skipFetch) {
         // Automatically fetch latest on fresh reload if logged in
+        // fetchFromServer() will release isFetchingFromServer in its finally block
         await fetchFromServer();
+    } else {
+        isFetchingFromServer = false; // No fetch needed, release the guard
     }
 }
 
@@ -44,35 +55,105 @@ function updateAuthUI() {
     }
 }
 
+// Auth Mode: 'login' | 'register'
+window._authMode = 'login';
+
+function switchAuthMode(mode) {
+    window._authMode = mode;
+
+    const tabLogin = document.getElementById('authTabLogin');
+    const tabRegister = document.getElementById('authTabRegister');
+    const submitBtn = document.getElementById('authSubmitBtn');
+    const modalTitle = document.getElementById('authModalTitle');
+    const pwdInput = document.getElementById('authPassword');
+    const bar = document.getElementById('passwordStrengthBar');
+
+    tabLogin.classList.toggle('active', mode === 'login');
+    tabRegister.classList.toggle('active', mode === 'register');
+
+    if (mode === 'login') {
+        if (modalTitle) modalTitle.textContent = '登入';
+        if (submitBtn) submitBtn.textContent = '登入';
+        if (pwdInput) pwdInput.setAttribute('autocomplete', 'current-password');
+    } else {
+        if (modalTitle) modalTitle.textContent = '註冊新帳號';
+        if (submitBtn) submitBtn.textContent = '建立帳號';
+        if (pwdInput) pwdInput.setAttribute('autocomplete', 'new-password');
+    }
+
+    // 切換模式時清空密碼與強度條
+    if (pwdInput) pwdInput.value = '';
+    if (bar) bar.style.display = 'none';
+}
+
+// Password Strength Checker（僅在註冊模式顯示）
+function checkPasswordStrength(pwd) {
+    if (window._authMode !== 'register') return; // 登入時不顯示
+
+    const bar = document.getElementById('passwordStrengthBar');
+    const fill = document.getElementById('passwordStrengthFill');
+    const label = document.getElementById('passwordStrengthLabel');
+    if (!bar || !fill || !label) return;
+
+    if (!pwd) { bar.style.display = 'none'; return; }
+    bar.style.display = 'block';
+
+    let score = 0;
+    if (pwd.length >= 8) score++;
+    if (pwd.length >= 12) score++;
+    if (/[A-Z]/.test(pwd)) score++;
+    if (/[0-9]/.test(pwd)) score++;
+    if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+    const levels = [
+        { pct: '20%', color: '#ef4444', text: '非常弱' },
+        { pct: '40%', color: '#f97316', text: '弱' },
+        { pct: '60%', color: '#eab308', text: '中等' },
+        { pct: '80%', color: '#22c55e', text: '強' },
+        { pct: '100%', color: '#10b981', text: '非常強' }
+    ];
+    const lv = levels[Math.min(score, 4)];
+    fill.style.width = lv.pct;
+    fill.style.background = lv.color;
+    label.textContent = `密碼強度：${lv.text}`;
+    label.style.color = lv.color;
+}
+
 // Auth Actions
 async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
 
-    // First try login
-    let { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-
-    // If user not found or invalid, maybe they want to sign up? (Simplified for now)
-    if (error && error.message.includes('Invalid login credentials')) {
-        if (confirm('找不到帳號或密碼錯誤。請問您要用這個信箱與密碼直接「註冊」一個新帳號嗎？')) {
-            const { data: signUpData, error: signUpError } = await supabaseClient.auth.signUp({ email, password });
-            if (signUpError) {
-                alert('註冊失敗：' + signUpError.message);
-                return;
-            }
-            alert('註冊成功！請檢查您的信箱以驗證帳號，或直接登入（視 Supabase 設定而定）。');
-            closeAuthModal();
-            return;
-        } else {
-            alert('登入失敗：' + error.message);
+    if (window._authMode === 'register') {
+        // ── 註冊流程 ──
+        if (password.length < 8) {
+            alert('密碼至少需要 8 個字元，建議包含大小寫英文、數字及特殊符號。');
             return;
         }
-    } else if (error) {
-        alert('登入發生錯誤：' + error.message);
+        const { error: signUpError } = await supabaseClient.auth.signUp({ email, password });
+        if (signUpError) {
+            alert('註冊失敗：' + signUpError.message);
+            return;
+        }
+        alert('註冊成功！請檢查您的信箱以驗證帳號，或直接登入（視 Supabase 設定而定）。');
+        closeAuthModal();
         return;
     }
 
+    // ── 登入流程 ──
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+        if (error.message.includes('Invalid login credentials')) {
+            alert('帳號或密碼錯誤，請確認後再試。\n\n尚未有帳號？請切換至「註冊」頁面。');
+        } else {
+            alert('登入發生錯誤：' + error.message);
+        }
+        return;
+    }
+
+    // Save email for next time
+    localStorage.setItem('last_login_email', email);
     closeAuthModal();
 }
 
@@ -114,6 +195,7 @@ function exportStateAsJSON() {
 // Upload current state to Supabase matching `user_backups` table schema
 async function syncToServer(force = false) {
     if (!currentUser) return; // Only sync if logged in (Offline mode fallback)
+    if (isFetchingFromServer) return; // Never overwrite cloud while we're downloading from it
 
     // Prevent spamming the server
     const now = Date.now();
@@ -151,6 +233,10 @@ function triggerCloudSync() {
 async function fetchFromServer() {
     if (!currentUser) return;
 
+    // Block any pending local→cloud sync so it can't overwrite cloud before we download
+    isFetchingFromServer = true;
+    if (syncTimeout) { clearTimeout(syncTimeout); syncTimeout = null; }
+
     const loadingOverlay = document.getElementById('syncLoading');
     if (loadingOverlay) loadingOverlay.classList.add('active');
 
@@ -173,14 +259,16 @@ async function fetchFromServer() {
             const localTimestamp = localTimestampRaw ? parseInt(localTimestampRaw, 10) : 0;
 
             // Conflict Resolution:
-            // Only push local over cloud if the user actually has real fixed subscription data locally.
-            // A single auto-applied salary entry (lifeExpenses=1, items=0) does NOT count as real local data
-            // and should never override what's in the cloud.
-            var localHasRealData = (items && items.length > 0) || (projects && projects.length > 0);
+            // Local wins only if: it has real user data AND its timestamp is strictly newer than cloud.
+            // lifeExpenses > 1 (exclude the single auto-applied salary stub) counts as real data.
+            var localHasRealData = (items && items.length > 0) ||
+                                   (projects && projects.length > 0) ||
+                                   (lifeExpenses && lifeExpenses.length > 1);
 
-            if (localHasRealData && localTimestamp > cloudTimestamp) {
-                console.log('本地資料較新，將本地資料推上雲端覆蓋');
+            if (localHasRealData && localTimestamp > 0 && localTimestamp > cloudTimestamp) {
+                console.log('本地資料較新，將本地資料推上雲端覆蓋', { localTimestamp, cloudTimestamp });
                 if (loadingOverlay) loadingOverlay.classList.remove('active');
+                isFetchingFromServer = false; // Allow sync before returning
                 await syncToServer(true); // Force push local to cloud
                 return;
             }
@@ -247,11 +335,13 @@ async function fetchFromServer() {
         } else {
             // First log in, no cloud data. Push current local data to cloud to initialize.
             console.log('首次登入，將本地資料同步至雲端...');
+            isFetchingFromServer = false; // Release guard so upload is allowed
             await syncToServer(true);
         }
     } catch (err) {
         console.error('Fetch error:', err);
     } finally {
+        isFetchingFromServer = false;
         if (loadingOverlay) loadingOverlay.classList.remove('active');
     }
 }
@@ -259,6 +349,20 @@ async function fetchFromServer() {
 // Modal UI Controls
 function openAuthModal() {
     document.getElementById('authModalOverlay').classList.add('active');
+
+    // 每次開啟都從登入模式開始
+    switchAuthMode('login');
+
+    // Pre-fill last used email
+    const lastEmail = localStorage.getItem('last_login_email');
+    const emailInput = document.getElementById('authEmail');
+    if (lastEmail && emailInput) {
+        emailInput.value = lastEmail;
+        const pwdInput = document.getElementById('authPassword');
+        if (pwdInput) pwdInput.focus();
+    } else if (emailInput) {
+        emailInput.focus();
+    }
 }
 function closeAuthModal() {
     document.getElementById('authModalOverlay').classList.remove('active');

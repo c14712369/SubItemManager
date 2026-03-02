@@ -69,32 +69,36 @@ function getMonthlyFixedTotal(ym) {
     });
 
     return activeItems.reduce((total, item) => {
-        let monthly = item.amount;
+        const baseAmt = getItemAmountForMonth(item, viewYear, viewMonth);
         // For fixed one-time items, only count if it specifically falls in this month
         if (item.cycle === 'fixed') {
             const startD = new Date(item.startDate);
             if (startD.getFullYear() === viewYear && (startD.getMonth() + 1) === viewMonth) {
-                return total + item.amount;
+                return total + baseAmt;
             }
             return total;
         }
 
+        let monthly = baseAmt;
         switch (item.cycle) {
-            case 'daily': monthly = item.amount * 30; break;
-            case 'weekly': monthly = item.amount * 4.33; break;
-            case 'bimonthly': monthly = item.amount / 2; break;
-            case 'quarterly': monthly = item.amount / 3; break;
-            case 'halfyear': monthly = item.amount / 6; break;
-            case 'yearly': monthly = item.amount / 12; break;
+            case 'daily': monthly = baseAmt * 30; break;
+            case 'weekly': monthly = baseAmt * 4.33; break;
+            case 'bimonthly': monthly = baseAmt / 2; break;
+            case 'quarterly': monthly = baseAmt / 3; break;
+            case 'halfyear': monthly = baseAmt / 6; break;
+            case 'yearly': monthly = baseAmt / 12; break;
         }
         return total + monthly;
     }, 0);
 }
 
-function renderLifeTab() {
+async function renderLifeTab() {
     // Auto-apply salary if setting exists and no income recorded yet
     // Do this BEFORE calculating totals so the current render picks up the new entry
     autoApplySalary(lifeCurrentMonth);
+    // 預取當月外幣固定支出的歷史匯率
+    const [ly, lm] = lifeCurrentMonth.split('-').map(Number);
+    await prefetchFXRates(items, [[ly, lm]]);
 
     var label = document.getElementById('lifeMonthDisplay');
     if (label) label.textContent = lifeMonthLabel(lifeCurrentMonth);

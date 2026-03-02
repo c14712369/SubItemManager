@@ -9,6 +9,18 @@ function getMonthlyRate(item) {
         default: return 0;
     }
 }
+
+/** 與 getMonthlyRate 相同，但套用指定月份的歷史匯率（需先呼叫 prefetchFXRates） */
+function getMonthlyRateForMonth(item, year, month) {
+    const amt = getItemAmountForMonth(item, year, month);
+    switch (item.cycle) {
+        case 'monthly': return amt;
+        case 'yearly': return amt / 12;
+        case 'quarterly': return amt / 3;
+        case 'half-yearly': return amt / 6;
+        default: return 0;
+    }
+}
 function getYearlyRate(item) {
     const amt = item.amount;
     switch (item.cycle) {
@@ -37,10 +49,10 @@ function calculateStats() {
             // For fixed items, check if it's the current month/year exactly
             if (item.cycle === 'fixed') {
                 if (startD.getFullYear() === currentYearNum && (startD.getMonth() + 1) === currentMonthNum) {
-                    monthly += item.amount;
+                    monthly += getItemAmountForMonth(item, currentYearNum, currentMonthNum);
                 }
                 if (startD.getFullYear() === currentYearNum) {
-                    yearly += item.amount;
+                    yearly += getItemAmountForMonth(item, currentYearNum, currentMonthNum);
                 }
             }
             return; // Skip recurring future stuff
@@ -49,7 +61,7 @@ function calculateStats() {
         if (item.endDate && new Date(item.endDate) < now) return;
 
         if (item.cycle !== 'fixed') {
-            monthly += getMonthlyRate(item);
+            monthly += getMonthlyRateForMonth(item, currentYearNum, currentMonthNum);
             yearly += getYearlyRate(item);
         } else {
             // It's a past/present fixed, if it explicitly matches this month/year it theoretically already happened? 
@@ -59,12 +71,15 @@ function calculateStats() {
     return { monthly, yearly };
 }
 
-function updateBudgetCalc() {
+async function updateBudgetCalc() {
     var monthInput = document.getElementById('analysisGlobalMonth');
     if (monthInput && !monthInput.value) {
         monthInput.value = lifeCurrentMonth || new Date().toISOString().slice(0, 7);
     }
     var ym = monthInput && monthInput.value ? monthInput.value : lifeCurrentMonth;
+    // 預取當月所有外幣項目的歷史匯率
+    const [ymYear, ymMonth] = ym.split('-').map(Number);
+    await prefetchFXRates(items, [[ymYear, ymMonth]]);
 
     var actualIncome = getLifeIncomeForMonth(ym);
     var lifeExpense = getLifeOnlyExpForMonth(ym);
@@ -231,7 +246,7 @@ function calculateExpenseForMonth(item, year, month) {
     const activeEnd = end < monthEnd ? end : monthEnd;
 
     if (activeStart <= activeEnd) {
-        return getMonthlyRate(item);
+        return getMonthlyRateForMonth(item, year, month);
     }
 
     return 0;
@@ -335,7 +350,7 @@ function initChartYearSelect() {
     currentChartYear = parseInt(select.value);
 }
 
-function renderChart() {
+async function renderChart() {
     const ctx = document.getElementById('expenseChart');
     if (!ctx) return;
     const select = document.getElementById('chartYearSelect');
@@ -349,6 +364,8 @@ function renderChart() {
     let detailedItems = []; // To store items mapping to cost
 
     if (_subChartType === 'year') {
+        // 年度視圖：預取所有12個月的匯率
+        await prefetchFXRates(items, Array.from({length: 12}, (_, i) => [currentChartYear, i + 1]));
         items.forEach(item => {
             const cost = calculateExpenseForYear(item, currentChartYear);
             if (cost > 0) {
@@ -368,6 +385,8 @@ function renderChart() {
         const [yearStr, monthStr] = ym.split('-');
         const y = parseInt(yearStr);
         const m = parseInt(monthStr);
+        // 月度視圖：預取該月匯率
+        await prefetchFXRates(items, [[y, m]]);
 
         items.forEach(item => {
             const cost = calculateExpenseForMonth(item, y, m);
@@ -552,7 +571,7 @@ function renderLifeCategoryChart() {
     });
 }
 
-function renderTrendChart() {
+async function renderTrendChart() {
     var ctx = document.getElementById('trendChart');
     if (!ctx) return;
 
@@ -564,6 +583,10 @@ function renderTrendChart() {
         var t = new Date(now.getFullYear(), now.getMonth() - i, 1);
         months.push(t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0'));
     }
+
+    // 預取趨勢期間所有月份的外幣匯率
+    const yearMonthPairs = months.map(ym => ym.split('-').map(Number));
+    await prefetchFXRates(items, yearMonthPairs);
 
     var labels = months.map(function (ym) { return ym.split('-')[1] + '月'; });
     var subData = months.map(function (ym) { return Math.round(getMonthlyFixedTotal(ym)); });
