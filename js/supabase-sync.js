@@ -353,16 +353,20 @@ function openAuthModal() {
     // 每次開啟都從登入模式開始
     switchAuthMode('login');
 
-    // Pre-fill last used email
-    const lastEmail = localStorage.getItem('last_login_email');
-    const emailInput = document.getElementById('authEmail');
-    if (lastEmail && emailInput) {
-        emailInput.value = lastEmail;
-        const pwdInput = document.getElementById('authPassword');
-        if (pwdInput) pwdInput.focus();
-    } else if (emailInput) {
-        emailInput.focus();
-    }
+    // 延遲一幀後再填入，確保 modal 已完全渲染（mobile 尤其需要）
+    requestAnimationFrame(() => {
+        const lastEmail = localStorage.getItem('last_login_email');
+        const emailInput = document.getElementById('authEmail');
+        if (lastEmail && emailInput) {
+            emailInput.value = lastEmail;
+            // 觸發 input 事件讓瀏覽器密碼管理器感知
+            emailInput.dispatchEvent(new Event('input', { bubbles: true }));
+            const pwdInput = document.getElementById('authPassword');
+            if (pwdInput) pwdInput.focus();
+        } else if (emailInput) {
+            emailInput.focus();
+        }
+    });
 }
 function closeAuthModal() {
     document.getElementById('authModalOverlay').classList.remove('active');
