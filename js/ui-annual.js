@@ -7,6 +7,18 @@ function initAnnualReport() {
     initAnnualYearSelect();
 }
 
+function changeAnnualYear(delta) {
+    const select = document.getElementById('annualReportYear');
+    if (!select) return;
+    const currentVal = parseInt(select.value);
+    const newVal = currentVal + delta;
+    const opt = select.querySelector(`option[value="${newVal}"]`);
+    if (opt) {
+        select.value = newVal;
+        renderAnnualReport();
+    }
+}
+
 function initAnnualYearSelect() {
     const select = document.getElementById('annualReportYear');
     if (!select) return;

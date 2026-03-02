@@ -68,6 +68,8 @@ function getMonthlyFixedTotal(ym) {
         return true;
     });
 
+    const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
+
     return activeItems.reduce((total, item) => {
         const baseAmt = getItemAmountForMonth(item, viewYear, viewMonth);
         // For fixed one-time items, only count if it specifically falls in this month
@@ -81,10 +83,12 @@ function getMonthlyFixedTotal(ym) {
 
         let monthly = baseAmt;
         switch (item.cycle) {
-            case 'daily': monthly = baseAmt * 30; break;
-            case 'weekly': monthly = baseAmt * 4.33; break;
+            case 'daily': monthly = baseAmt * daysInMonth; break;
+            case 'weekly': monthly = baseAmt * (daysInMonth / 7); break;
+            case 'monthly': monthly = baseAmt; break;
             case 'bimonthly': monthly = baseAmt / 2; break;
             case 'quarterly': monthly = baseAmt / 3; break;
+            case 'half-yearly':
             case 'halfyear': monthly = baseAmt / 6; break;
             case 'yearly': monthly = baseAmt / 12; break;
         }
@@ -105,12 +109,22 @@ async function renderLifeTab() {
 
     var totalIncome = getLifeIncomeForMonth(lifeCurrentMonth);
     var totalExpense = getLifeOnlyExpForMonth(lifeCurrentMonth);
-    var totalFixed = getMonthlyFixedTotal(lifeCurrentMonth); // Fetch fixed expenses for the specific month
+    var totalFixed = getMonthlyFixedTotal(lifeCurrentMonth);
 
-    var remain = totalIncome - totalExpense - totalFixed; // Deduct fixed as well
+    // Calculate project expenses for the current month
+    var totalProject = 0;
+    if (typeof projectExpenses !== 'undefined' && projectExpenses) {
+        projectExpenses.forEach(function (e) {
+            if (e.date && e.date.startsWith(lifeCurrentMonth)) {
+                totalProject += (e.amount || 0);
+            }
+        });
+    }
+
+    var remain = totalIncome - totalExpense - totalFixed - totalProject;
 
     // For progress bar: Total outgoing vs income
-    var totalOutgoing = totalExpense + totalFixed;
+    var totalOutgoing = totalExpense + totalFixed + totalProject;
     var isOver = totalOutgoing > totalIncome && totalIncome > 0;
     var pct = totalIncome > 0 ? Math.min(Math.round((totalOutgoing / totalIncome) * 100), 100) : 0;
     var rawPct = totalIncome > 0 ? Math.round((totalOutgoing / totalIncome) * 100) : 0;
@@ -123,9 +137,14 @@ async function renderLifeTab() {
     var pctEl = document.getElementById('lifeOverallPct');
     var actualEl = document.getElementById('lifeActualIncome');
 
+    var projectEl = document.getElementById('lifeMonthProject');
+    var projectRowEl = document.getElementById('lifeMonthProjectRow');
+
     if (incomeEl) incomeEl.textContent = 'NT$ ' + formatAmount(totalIncome, 'income');
     if (fixedEl) fixedEl.textContent = 'NT$ ' + formatAmount(Math.round(totalFixed), 'fixed');
     if (spentEl) spentEl.textContent = 'NT$ ' + formatAmount(totalExpense, 'expense');
+    if (projectEl) projectEl.textContent = 'NT$ ' + formatAmount(Math.round(totalProject), 'expense');
+    if (projectRowEl) projectRowEl.style.display = totalProject > 0 ? '' : 'none';
     if (remainEl) {
         remainEl.textContent = 'NT$ ' + formatAmount(Math.abs(Math.round(remain)), 'asset') + (remain < 0 ? ' (超支)' : '');
         // Preserve 'hero-amount' class while adding status colors
@@ -179,20 +198,33 @@ function renderBudgetCards() {
         var spent = getLifeSpentByCat(cat.id, lifeCurrentMonth);
         if (spent <= 0) return; // 只顯示有支出的分類
 
+        var budget = getLifeBudget(cat.id, lifeCurrentMonth);
+        var isOverBudget = budget > 0 && spent > budget;
+        var budgetPct = budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0;
+
         var row = document.createElement('div');
-        row.className = 'life-cat-row' + (_lifeSelectedCatId === cat.id ? ' active' : '');
+        row.className = 'life-cat-row' + (_lifeSelectedCatId === cat.id ? ' active' : '') + (isOverBudget ? ' over-budget-row' : '');
         var catId = cat.id;
         row.onclick = function () { selectLifeCat(catId); };
+
+        var budgetBar = budget > 0
+            ? '<div class="cat-budget-bar"><div class="cat-budget-fill' + (isOverBudget ? ' over' : '') + '" style="width:' + budgetPct + '%"></div></div>'
+            : '';
+        var overIcon = isOverBudget ? '<i class="fa-solid fa-triangle-exclamation" style="color:var(--danger-color);font-size:0.75rem;margin-left:4px;" title="已超出預算"></i>' : '';
 
         row.innerHTML =
             '<div class="life-cat-row-left">' +
             '<span class="life-cat-dot" style="background:' + cat.color + '"></span>' +
-            '<span class="life-cat-row-name">' + cat.name + '</span>' +
+            '<span class="life-cat-row-name">' + cat.name + overIcon + '</span>' +
             '</div>' +
             '<div class="life-cat-row-right">' +
-            '<span class="life-cat-row-amt">NT$ ' + spent.toLocaleString() + '</span>' +
+            '<div style="text-align:right">' +
+            '<span class="life-cat-row-amt' + (isOverBudget ? ' text-danger' : '') + '">NT$ ' + spent.toLocaleString() + '</span>' +
+            (budget > 0 ? '<div class="life-cat-row-budget-hint">/ NT$ ' + budget.toLocaleString() + '</div>' : '') +
+            '</div>' +
             '<button class="icon-btn life-cat-action" onclick="event.stopPropagation();openLifeExpModalWithCat(\'' + cat.id + '\')" title="新增支出"><i class="fa-solid fa-plus"></i></button>' +
-            '</div>';
+            '</div>' +
+            (budgetBar ? '<div class="cat-budget-bar-wrap">' + budgetBar + '</div>' : '');
 
         container.appendChild(row);
     });
@@ -718,11 +750,22 @@ function getAdjustedPaydate(ym, payday) {
 }
 
 function autoApplySalary(ym) {
-    // Check if we have default salary
+    // Only auto-apply for the current month — not past months
+    var today = new Date().toISOString().slice(0, 7);
+    if (ym < today) return;
+
     var setting = getDefaultSalary();
     if (!setting) return;
 
-    // Check if any income exists for this month
+    // Check if a salary stub was already auto-applied for this month
+    var alreadyApplied = lifeExpenses.some(function (e) {
+        return e.type === 'income' &&
+            e.date && e.date.startsWith(ym) &&
+            (e._autoSalary === true || e._salaryDefault === true);
+    });
+    if (alreadyApplied) return;
+
+    // Also skip if the user has manually recorded any income this month
     var existingIncome = getLifeIncomeForMonth(ym);
     if (existingIncome > 0) return;
 
@@ -732,20 +775,17 @@ function autoApplySalary(ym) {
     var salaryNote = (setting.note || '薪資').replace(/[（\(\[].*?([預設|自動]|[帶入|入帳]).*?[）\)\]]/g, '').trim();
     if (salaryNote === '') salaryNote = '薪資';
 
-    // Create new income entry
     var newExp = {
-        id: Date.now() + Math.random().toString(36).substr(2, 5),
+        id: crypto.randomUUID(),
         type: 'income',
         categoryId: setting.catId,
         amount: setting.amount,
         date: dateStr,
-        note: salaryNote
+        note: salaryNote,
+        _autoSalary: true
     };
 
     lifeExpenses.push(newExp);
     saveLifeData();
-
-    // Re-render is no longer needed here because autoApplySalary is now 
-    // called as the first step of renderLifeTab().
     if (typeof triggerCloudSync === 'function') triggerCloudSync();
 }

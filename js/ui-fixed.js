@@ -1,4 +1,10 @@
 // ====== js/ui-fixed.js ======
+function setFixedSort(mode) {
+    _fixedSortMode = mode;
+    localStorage.setItem(FIXED_SORT_KEY, mode);
+    render();
+}
+
 function addItem(item) {
     items.push({ ...item, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
     saveData();
@@ -346,11 +352,13 @@ function render() {
     }
 
     filtered.sort((a, b) => {
+        if (_fixedSortMode === 'amount-desc') return b.amount - a.amount;
+        if (_fixedSortMode === 'amount-asc') return a.amount - b.amount;
+        if (_fixedSortMode === 'date-desc') return new Date(b.startDate) - new Date(a.startDate);
+        // default: category order
         const catIndexA = categories.findIndex(c => c.id === a.categoryId);
         const catIndexB = categories.findIndex(c => c.id === b.categoryId);
-        const idxA = catIndexA === -1 ? 999 : catIndexA;
-        const idxB = catIndexB === -1 ? 999 : catIndexB;
-        return idxA - idxB;
+        return (catIndexA === -1 ? 999 : catIndexA) - (catIndexB === -1 ? 999 : catIndexB);
     });
 
     filtered.forEach((item, index) => {
@@ -445,14 +453,15 @@ function renderFixedSummary() {
     `;
 }
 
-// Helper: convert any cycle amount to monthly
+// Helper: convert any cycle amount to monthly (uses 365-day year average)
 function toMonthlyAmount(amount, cycle) {
     switch (cycle) {
-        case 'daily': return amount * 30;
-        case 'weekly': return amount * 4.33;
+        case 'daily': return amount * (365 / 12);
+        case 'weekly': return amount * (52 / 12);
         case 'monthly': return amount;
         case 'bimonthly': return amount / 2;
         case 'quarterly': return amount / 3;
+        case 'half-yearly':
         case 'halfyear': return amount / 6;
         case 'yearly': return amount / 12;
         default: return amount;

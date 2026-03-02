@@ -97,6 +97,12 @@
                     </div>
                 </div>
                 <div class="toolbar-row secondary">
+                    <select class="form-select" style="font-size:0.82rem;" onchange="setFixedSort(this.value)" id="fixedSortSelect">
+                        <option value="category">依分類排序</option>
+                        <option value="amount-desc">金額（高到低）</option>
+                        <option value="amount-asc">金額（低到高）</option>
+                        <option value="date-desc">最新建立</option>
+                    </select>
                     <button class="btn btn-secondary btn-sm" onclick="exportToCSV()"><i
                             class="fa-solid fa-file-csv"></i> 匯出 CSV</button>
                     <button class="btn btn-danger btn-sm" onclick="clearAllData()"><i class="fa-solid fa-trash-can"></i>
@@ -181,6 +187,10 @@
                         <div class="detail-label"><i class="fa-solid fa-leaf"></i> 本月生活支出</div>
                         <div class="detail-value stat-monthly" id="lifeMonthSpent">NT$ 0</div>
                     </div>
+                    <div class="hero-detail-item" id="lifeMonthProjectRow" style="display:none;">
+                        <div class="detail-label"><i class="fa-solid fa-folder-open"></i> 本月企劃支出</div>
+                        <div class="detail-value stat-monthly" id="lifeMonthProject">NT$ 0</div>
+                    </div>
                 </div>
             </div>
 
@@ -225,7 +235,9 @@
                     <span class="analysis-subtitle">檢視您選定月份的財務健康狀況</span>
                 </div>
                 <div class="analysis-month-nav">
+                    <button class="icon-btn" onclick="changeAnalysisMonth(-1)" title="上個月"><i class="fa-solid fa-chevron-left"></i></button>
                     <input type="month" id="analysisGlobalMonth" class="form-input" onchange="syncAnalysisMonth()">
+                    <button class="icon-btn" onclick="changeAnalysisMonth(1)" title="下個月"><i class="fa-solid fa-chevron-right"></i></button>
                 </div>
             </div>
 
@@ -520,9 +532,11 @@
                         <h3><i class="fa-solid fa-chart-bar"></i> 全年度各月收支總覽</h3>
                     </div>
                     <div class="chart-controls">
+                        <button class="icon-btn" onclick="changeAnnualYear(-1)" title="上一年"><i class="fa-solid fa-chevron-left"></i></button>
                         <select id="annualReportYear" class="form-select chart-select" onchange="renderAnnualReport()">
                             <!-- options populated by js -->
                         </select>
+                        <button class="icon-btn" onclick="changeAnnualYear(1)" title="下一年"><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
                 <div class="dashboard" style="margin-bottom: 16px;">

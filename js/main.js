@@ -12,20 +12,28 @@ function togglePrivacy() {
         icon.className = window.isPrivacyMode ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
     }
 
-    // Explicitly re-render all relevant UI sections to apply masking instantly
-    if (typeof renderLifeTab === 'function') renderLifeTab();
-    if (typeof renderChart === 'function') renderChart();
-    if (typeof renderTimeline === 'function') renderTimeline();
-    if (typeof renderLifeCategoryChart === 'function') renderLifeCategoryChart();
-    if (typeof renderTrendChart === 'function') renderTrendChart();
-    if (typeof updateBudgetCalc === 'function') updateBudgetCalc();
-    if (typeof initAnnualReport === 'function') initAnnualReport();
-    if (typeof renderAnnualReport === 'function') renderAnnualReport();
-    if (typeof render === 'function') render();
-    if (typeof renderProjects === 'function') renderProjects();
-    if (typeof renderHoldings === 'function') renderHoldings();
-    if (typeof renderBankAccounts === 'function') renderBankAccounts();
-    if (typeof calculateWealth === 'function') calculateWealth();
+    // Only re-render the currently active tab to avoid unnecessary work
+    const activeTabEl = document.querySelector('.tab-content.active');
+    const activeTabId = activeTabEl ? activeTabEl.id.replace('tab-', '') : null;
+
+    if (activeTabId === 'life') {
+        if (typeof renderLifeTab === 'function') renderLifeTab();
+    } else if (activeTabId === 'analysis') {
+        if (typeof renderChart === 'function') renderChart();
+        if (typeof renderLifeCategoryChart === 'function') renderLifeCategoryChart();
+        if (typeof renderTrendChart === 'function') renderTrendChart();
+        if (typeof updateBudgetCalc === 'function') updateBudgetCalc();
+    } else if (activeTabId === 'annual') {
+        if (typeof renderAnnualReport === 'function') renderAnnualReport();
+    } else if (activeTabId === 'fixed') {
+        if (typeof render === 'function') render();
+    } else if (activeTabId === 'projects') {
+        if (typeof renderProjects === 'function') renderProjects();
+    } else if (activeTabId === 'wealth') {
+        if (typeof renderHoldings === 'function') renderHoldings();
+        if (typeof renderBankAccounts === 'function') renderBankAccounts();
+        if (typeof calculateWealth === 'function') calculateWealth();
+    }
 }
 
 function initTheme() {
@@ -138,6 +146,12 @@ function init(skipCloudFetch = false) {
     const activeTab = document.querySelector('.tab-content.active');
     if (!activeTab) {
         switchTab('life');
+    }
+
+    // Restore fixed sort select state
+    const fixedSortSelect = document.getElementById('fixedSortSelect');
+    if (fixedSortSelect && typeof _fixedSortMode !== 'undefined') {
+        fixedSortSelect.value = _fixedSortMode;
     }
 
     render();
