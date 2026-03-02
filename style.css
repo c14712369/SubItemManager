@@ -1004,6 +1004,29 @@ h1 .title-icon {
     border-bottom: 1px solid var(--border-color);
 }
 
+/* Auth Modal Tabs */
+.auth-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border-color);
+    margin: -10px 0 20px;
+}
+.auth-tab {
+    flex: 1;
+    padding: 9px 0;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    transition: color 0.2s, border-color 0.2s;
+}
+.auth-tab.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+}
+
 .close-modal {
     cursor: pointer;
     color: var(--text-muted);
@@ -3326,6 +3349,14 @@ video {
     font-weight: 600;
     color: var(--text-main);
     font-family: var(--font-serif);
+}
+
+.sub-pct {
+    font-size: 0.7rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-top: 2px;
+    min-height: 1em;
 }
 
 @media (max-width: 600px) {

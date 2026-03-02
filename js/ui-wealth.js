@@ -855,13 +855,24 @@ function _doCalculateWealth() {
         if (el) el.textContent = text;
     };
 
-    const fmt = (val) => 'NT$ ' + Math.round(val || 0).toLocaleString();
+    const fmt = (val) => 'NT$ ' + formatAmount(Math.round(val || 0), 'asset');
 
     setDisplay('wealthInvestCurrentDisplay', fmt(invCurrent));
     setDisplay('wealthCashCurrentDisplay', fmt(cashCurrent));
     setDisplay('wealthTotalAssetsDisplay', fmt(invCurrent + cashCurrent));
     setDisplay('wealthTotalInvestSub', fmt(invCurrent));
     setDisplay('wealthTotalCashSub', fmt(cashCurrent));
+
+    // Show percentage of each part relative to total assets
+    const totalAssets = invCurrent + cashCurrent;
+    const investPctEl = document.getElementById('wealthTotalInvestPct');
+    const cashPctEl = document.getElementById('wealthTotalCashPct');
+    if (investPctEl) {
+        investPctEl.textContent = totalAssets > 0 ? Math.round((invCurrent / totalAssets) * 100) + '%' : '';
+    }
+    if (cashPctEl) {
+        cashPctEl.textContent = totalAssets > 0 ? Math.round((cashCurrent / totalAssets) * 100) + '%' : '';
+    }
 
     const getVal = (id) => parseFloat(document.getElementById(id)?.value) || 0;
 
@@ -970,14 +981,14 @@ function _doCalculateWealth() {
         summaryEl.innerHTML = `
             <div class="wealth-summary-line">
                 <span class="wealth-summary-label">總結累積：</span>
-                <span class="wealth-summary-value">NT$ ${Math.round(total).toLocaleString()}</span>
+                <span class="wealth-summary-value">NT$ ${formatAmount(Math.round(total), 'asset')}</span>
             </div>
             <div class="wealth-summary-line" style="font-size: 0.82rem; margin-top: 4px; border-top: 1px dashed var(--border-color); padding-top: 4px;">
                 <span class="wealth-summary-label">現金：</span>
-                <span class="wealth-summary-value">NT$ ${Math.round(curCash).toLocaleString()}</span>
+                <span class="wealth-summary-value">NT$ ${formatAmount(Math.round(curCash), 'asset')}</span>
                 <span style="margin: 0 4px; color: var(--border-color);">|</span>
                 <span class="wealth-summary-label">投資：</span>
-                <span class="wealth-summary-value">NT$ ${Math.round(curInv).toLocaleString()}</span>
+                <span class="wealth-summary-value">NT$ ${formatAmount(Math.round(curInv), 'asset')}</span>
             </div>
         `;
     }

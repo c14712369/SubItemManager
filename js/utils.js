@@ -89,6 +89,80 @@ async function fetchWithCache(url, cacheKey, ttlHours = 6, forceRefresh = false)
         throw error;
     }
 }
+// ─────────────────────────────────────────
+// ── 外幣歷史匯率 (Frankfurter API) ──
+// ─────────────────────────────────────────
+
+/** 在 session 期間存放已拉取的匯率，key: 'USD_2025-03-02' → 33.12 */
+window._fxRateCache = window._fxRateCache || {};
+
+/**
+ * 計算外幣項目在指定年月的實際扣款日 (yyyy-mm-dd)
+ * 扣款日 = startDate 的「日」；若超出當月天數則取當月最後一天
+ */
+function getBillingDateForMonth(item, year, month) {
+    const startDay = item.startDate ? new Date(item.startDate).getDate() : 1;
+    const lastDay = new Date(year, month, 0).getDate();
+    const day = Math.min(startDay, lastDay);
+    return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+/**
+ * 從 Frankfurter API 取得指定日期的 currency→TWD 匯率
+ * 未來日期自動以今日匯率代替
+ */
+async function fetchHistoricalRate(currency, dateStr) {
+    if (!currency || currency === 'TWD') return 1;
+    const today = new Date().toISOString().split('T')[0];
+    const queryDate = dateStr > today ? today : dateStr;
+    const cacheKey = `fxhist_${currency}_${queryDate}`;
+    const ttl = queryDate < today ? 8760 : 6; // 歷史:快取1年；今日:6小時
+    try {
+        const url = `https://api.frankfurter.app/${queryDate}?from=${currency}&to=TWD`;
+        const data = await fetchWithCache(url, cacheKey, ttl);
+        return data?.rates?.TWD || null;
+    } catch (e) {
+        return null;
+    }
+}
+
+/**
+ * 批次預取所有外幣項目在指定年月清單的歷史匯率，存入 window._fxRateCache
+ * @param {Array} itemsList   固定支出項目陣列
+ * @param {Array} yearMonthPairs  [[year, month], ...]
+ */
+async function prefetchFXRates(itemsList, yearMonthPairs) {
+    const promises = [];
+    for (const item of itemsList) {
+        if (!item.currency || item.currency === 'TWD' || !item.startDate) continue;
+        for (const [year, month] of yearMonthPairs) {
+            const dateStr = getBillingDateForMonth(item, year, month);
+            const key = `${item.currency}_${dateStr}`;
+            if (window._fxRateCache[key] !== undefined) continue; // 已快取
+            promises.push(
+                fetchHistoricalRate(item.currency, dateStr).then(rate => {
+                    if (rate !== null) window._fxRateCache[key] = rate;
+                })
+            );
+        }
+    }
+    if (promises.length > 0) await Promise.all(promises);
+}
+
+/**
+ * 取得某項目在指定月份的 TWD 金額（套用歷史匯率）
+ * 同步讀取，需先呼叫 prefetchFXRates() 填入快取
+ */
+function getItemAmountForMonth(item, year, month) {
+    if (!item.currency || item.currency === 'TWD') return item.amount;
+    if (!item.originalAmount || !item.startDate) return item.amount;
+    const dateStr = getBillingDateForMonth(item, year, month);
+    const key = `${item.currency}_${dateStr}`;
+    const rate = window._fxRateCache[key];
+    if (rate !== undefined) return Math.round(item.originalAmount * rate);
+    return item.amount; // fallback：使用儲存的快照金額
+}
+
 /**
  * Helper to handle privacy masking based on amount type
  * @param {number|string} val - The value to format

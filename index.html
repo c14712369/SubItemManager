@@ -325,10 +325,12 @@
                     <div class="wealth-total-sub">
                         <span class="sub-label">投資市值</span>
                         <span class="sub-value" id="wealthTotalInvestSub">NT$ 0</span>
+                        <span class="sub-pct" id="wealthTotalInvestPct"></span>
                     </div>
                     <div class="wealth-total-sub">
                         <span class="sub-label">現金存款</span>
                         <span class="sub-value" id="wealthTotalCashSub">NT$ 0</span>
+                        <span class="sub-pct" id="wealthTotalCashPct"></span>
                     </div>
                 </div>
             </div>
@@ -964,23 +966,30 @@
     <div class="modal-overlay" id="authModalOverlay">
         <div class="modal" style="max-width: 400px;">
             <div class="modal-header">
-                <span>登入 / 註冊</span>
+                <span id="authModalTitle">登入</span>
                 <span class="close-modal" onclick="closeAuthModal()">&times;</span>
             </div>
-            <form id="authForm" onsubmit="handleLogin(event)">
+            <!-- 登入 / 註冊 Tab -->
+            <div class="auth-tabs">
+                <button id="authTabLogin" type="button" class="auth-tab active" onclick="switchAuthMode('login')">登入</button>
+                <button id="authTabRegister" type="button" class="auth-tab" onclick="switchAuthMode('register')">註冊</button>
+            </div>
+            <form id="authForm" onsubmit="handleLogin(event)" autocomplete="on">
                 <div class="form-group">
                     <label class="form-label">Email 信箱</label>
-                    <input type="email" id="authEmail" class="form-input" required placeholder="your@email.com">
+                    <input type="email" id="authEmail" class="form-input" required placeholder="your@email.com" autocomplete="email">
                 </div>
                 <div class="form-group">
                     <label class="form-label">密碼</label>
-                    <input type="password" id="authPassword" class="form-input" required placeholder="請輸入密碼">
+                    <input type="password" id="authPassword" class="form-input" required placeholder="請輸入密碼" autocomplete="current-password" oninput="checkPasswordStrength(this.value)">
+                    <div id="passwordStrengthBar" style="display:none; margin-top:6px;">
+                        <div style="height:4px; border-radius:2px; background:var(--border-color); overflow:hidden;">
+                            <div id="passwordStrengthFill" style="height:100%; width:0%; transition:width 0.3s, background 0.3s;"></div>
+                        </div>
+                        <div id="passwordStrengthLabel" style="font-size:0.75rem; margin-top:4px; color:var(--text-muted);"></div>
+                    </div>
                 </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">登入 /
-                    註冊</button>
-                <div style="margin-top: 12px; font-size: 0.85rem; color: var(--text-muted); text-align: center;">
-                    若系統找不到帳號，將提示您直接註冊
-                </div>
+                <button type="submit" id="authSubmitBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">登入</button>
             </form>
         </div>
     </div>
