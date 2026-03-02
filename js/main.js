@@ -405,46 +405,59 @@ function applyAppIdentity() {
 }
 
 function generateDynamicIcon(identity) {
+    const SIZE = 192;
     const canvas = document.createElement('canvas');
-    canvas.width = 192;
-    canvas.height = 192;
+    canvas.width = SIZE;
+    canvas.height = SIZE;
     const ctx = canvas.getContext('2d');
 
     if (identity.customIcon) {
         const img = new Image();
         img.onload = () => {
-            ctx.clearRect(0, 0, 192, 192);
-            // Draw a rounded rectangle mask if desired
+            ctx.clearRect(0, 0, SIZE, SIZE);
             ctx.beginPath();
-            ctx.roundRect(0, 0, 192, 192, 40);
+            ctx.roundRect(0, 0, SIZE, SIZE, 40);
             ctx.clip();
-            ctx.drawImage(img, 0, 0, 192, 192);
+
+            // "cover" 模式：等比縮放填滿畫布，多餘部分裁切（不拉伸）
+            const scale = Math.max(SIZE / img.width, SIZE / img.height);
+            const w = img.width * scale;
+            const h = img.height * scale;
+            const dx = (SIZE - w) / 2;
+            const dy = (SIZE - h) / 2;
+            ctx.drawImage(img, dx, dy, w, h);
+
             const dataUrl = canvas.toDataURL('image/png');
             updateIconLinks(dataUrl);
+            _updateManifestWithIcon(dataUrl);
         };
         img.src = identity.customIcon;
     } else {
-        // Draw standard icon with chosen color
-        ctx.clearRect(0, 0, 192, 192);
-
-        // Background (optional)
-        // ctx.fillStyle = '#ffffff';
-        // ctx.beginPath();
-        // ctx.roundRect(0, 0, 192, 192, 40);
-        // ctx.fill();
-
-        // Draw fontAwesome vault symbol manually or use unicode
-        ctx.fillStyle = identity.themeColor;
-        ctx.font = 'bold 120px "Font Awesome 6 Free"';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        // Unicode for vault is f83c (must use real font if loaded)
-        // Since font might not be loaded in canvas immediately, let's use a path
-        drawVaultPath(ctx, 96, 96, 110, identity.themeColor);
-
+        ctx.clearRect(0, 0, SIZE, SIZE);
+        drawVaultPath(ctx, SIZE / 2, SIZE / 2, 110, identity.themeColor);
         const dataUrl = canvas.toDataURL('image/png');
         updateIconLinks(dataUrl);
+        _updateManifestWithIcon(dataUrl);
     }
+}
+
+/** 將動態產生的圖示寫入 manifest icons，確保 Android 主畫面也使用正確圖示 */
+function _updateManifestWithIcon(dataUrl) {
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    if (!manifestLink) return;
+    try {
+        fetch(manifestLink.href)
+            .then(r => r.json())
+            .then(manifest => {
+                manifest.icons = [
+                    { src: dataUrl, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+                    { src: dataUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+                ];
+                const blob = new Blob([JSON.stringify(manifest)], { type: 'application/json' });
+                manifestLink.setAttribute('href', URL.createObjectURL(blob));
+            })
+            .catch(() => {});
+    } catch (e) {}
 }
 
 function drawVaultPath(ctx, x, y, size, color) {
