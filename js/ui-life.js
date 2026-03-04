@@ -364,13 +364,34 @@ function openLifeExpModal(typeOrPreset) {
     lifeCalcReset();
     setLifeExpType(type);
     if (_lifeExpModal2) _lifeExpModal2.classList.add('active');
+    document.body.classList.add('modal-open');
 }
 function openLifeExpModalWithCat(catId) { openLifeExpModal(catId); }
 function closeLifeExpModal() {
+    closeCalcPopup();
     var _lifeExpModal = document.getElementById('lifeExpModalOverlay');
     if (_lifeExpModal) _lifeExpModal.classList.remove('active');
+    document.body.classList.remove('modal-open');
     if (typeof resetViewport === 'function') resetViewport();
     lifeCalcReset();
+}
+
+function openCalcPopup() {
+    var overlay = document.getElementById('calcPopupOverlay');
+    if (overlay) overlay.classList.add('active');
+}
+
+function closeCalcPopup() {
+    var overlay = document.getElementById('calcPopupOverlay');
+    if (overlay) overlay.classList.remove('active');
+    // Sync the amount display in the parent modal
+    var displayEl = document.getElementById('lifeCalcAmountDisplay');
+    var cur = parseFloat(_calcCurrent);
+    if (displayEl) displayEl.textContent = isNaN(cur) ? '0' : cur.toLocaleString('zh-TW');
+}
+
+function calcPopupBgClick(e) {
+    if (e.target === document.getElementById('calcPopupOverlay')) closeCalcPopup();
 }
 
 function handleLifeExpSubmit(e) {

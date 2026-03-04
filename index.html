@@ -856,58 +856,71 @@
                     </select>
                 </div>
 
-                <!-- Date row stays at top -->
                 <div class="form-row">
+                    <!-- Clickable amount display — tapping opens the calc popup -->
+                    <div class="form-group">
+                        <label class="form-label">金額 (TWD)</label>
+                        <div class="calc-amount-field" id="lifeCalcAmountField" onclick="openCalcPopup()"
+                            title="點擊開啟計算機">
+                            <span id="lifeCalcAmountDisplay">0</span>
+                            <i class="fa-solid fa-calculator"
+                                style="font-size:0.85rem;opacity:0.5;margin-left:6px;"></i>
+                        </div>
+                        <!-- Hidden field used by form submit -->
+                        <input type="number" id="lifeExpAmount" required min="1" style="display:none;">
+                    </div>
                     <div class="form-group">
                         <label class="form-label">日期</label>
                         <input type="date" id="lifeExpDate" class="form-input" required>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">備註 (選填)</label>
-                        <input type="text" id="lifeExpNote" class="form-input" placeholder="例如：超市採購...">
-                    </div>
                 </div>
-
-                <!-- Full Calculator -->
-                <div class="calc-wrap">
-                    <!-- Display -->
-                    <div class="calc-display-wrap">
-                        <div class="calc-expr-line" id="lifeCalcExpr"></div>
-                        <!-- Hidden real amount field used by form submit -->
-                        <input type="number" id="lifeExpAmount" required min="1" style="display:none;">
-                        <div class="calc-display-val" id="lifeCalcDisplay">0</div>
-                    </div>
-                    <!-- Keypad grid: 4 columns -->
-                    <div class="calc-pad">
-                        <button type="button" class="cpb cpb-fn" onclick="lifeCalcClear()">C</button>
-                        <button type="button" class="cpb cpb-fn" onclick="lifeCalcToggleSign()">+/−</button>
-                        <button type="button" class="cpb cpb-fn" onclick="lifeCalcBack()">⌫</button>
-                        <button type="button" class="cpb cpb-op" onclick="lifeCalcOp('÷')">÷</button>
-
-                        <button type="button" class="cpb" onclick="lifeCalcDigit('7')">7</button>
-                        <button type="button" class="cpb" onclick="lifeCalcDigit('8')">8</button>
-                        <button type="button" class="cpb" onclick="lifeCalcDigit('9')">9</button>
-                        <button type="button" class="cpb cpb-op" onclick="lifeCalcOp('×')">×</button>
-
-                        <button type="button" class="cpb" onclick="lifeCalcDigit('4')">4</button>
-                        <button type="button" class="cpb" onclick="lifeCalcDigit('5')">5</button>
-                        <button type="button" class="cpb" onclick="lifeCalcDigit('6')">6</button>
-                        <button type="button" class="cpb cpb-op" onclick="lifeCalcOp('−')">−</button>
-
-                        <button type="button" class="cpb" onclick="lifeCalcDigit('1')">1</button>
-                        <button type="button" class="cpb" onclick="lifeCalcDigit('2')">2</button>
-                        <button type="button" class="cpb" onclick="lifeCalcDigit('3')">3</button>
-                        <button type="button" class="cpb cpb-op cpb-op-tall" onclick="lifeCalcOp('+')">+</button>
-
-                        <button type="button" class="cpb cpb-zero" onclick="lifeCalcDigit('0')">0</button>
-                        <button type="button" class="cpb" onclick="lifeCalcDigit('.')">.</button>
-                        <button type="button" class="cpb cpb-eq" onclick="lifeCalcEqual()">=</button>
-                    </div>
+                <div class="form-group">
+                    <label class="form-label">備註 (選填)</label>
+                    <input type="text" id="lifeExpNote" class="form-input" placeholder="例如：超市採購...">
                 </div>
-
                 <button type="submit" class="btn btn-primary" id="lifeExpSubmitBtn"
                     style="width:100%;margin-top:10px;">儲存支出</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Calculator Popup (separate overlay, above life expense modal) -->
+    <div class="calc-popup-overlay" id="calcPopupOverlay" onclick="calcPopupBgClick(event)">
+        <div class="calc-popup">
+            <div class="calc-popup-header">
+                <span style="font-size:0.82rem;color:var(--text-muted);">金額計算機</span>
+                <button type="button" class="btn btn-primary btn-sm" onclick="closeCalcPopup()"
+                    style="padding:4px 14px;">確定</button>
+            </div>
+            <div class="calc-display-wrap">
+                <div class="calc-expr-line" id="lifeCalcExpr"></div>
+                <div class="calc-display-val" id="lifeCalcDisplay">0</div>
+            </div>
+            <div class="calc-pad">
+                <button type="button" class="cpb cpb-fn" onclick="lifeCalcClear()">C</button>
+                <button type="button" class="cpb cpb-fn" onclick="lifeCalcToggleSign()">+/−</button>
+                <button type="button" class="cpb cpb-fn" onclick="lifeCalcBack()">⌫</button>
+                <button type="button" class="cpb cpb-op" onclick="lifeCalcOp('÷')">÷</button>
+
+                <button type="button" class="cpb" onclick="lifeCalcDigit('7')">7</button>
+                <button type="button" class="cpb" onclick="lifeCalcDigit('8')">8</button>
+                <button type="button" class="cpb" onclick="lifeCalcDigit('9')">9</button>
+                <button type="button" class="cpb cpb-op" onclick="lifeCalcOp('×')">×</button>
+
+                <button type="button" class="cpb" onclick="lifeCalcDigit('4')">4</button>
+                <button type="button" class="cpb" onclick="lifeCalcDigit('5')">5</button>
+                <button type="button" class="cpb" onclick="lifeCalcDigit('6')">6</button>
+                <button type="button" class="cpb cpb-op" onclick="lifeCalcOp('−')">−</button>
+
+                <button type="button" class="cpb" onclick="lifeCalcDigit('1')">1</button>
+                <button type="button" class="cpb" onclick="lifeCalcDigit('2')">2</button>
+                <button type="button" class="cpb" onclick="lifeCalcDigit('3')">3</button>
+                <button type="button" class="cpb cpb-op" onclick="lifeCalcOp('+')">+</button>
+
+                <button type="button" class="cpb cpb-zero" onclick="lifeCalcDigit('0')">0</button>
+                <button type="button" class="cpb" onclick="lifeCalcDigit('.')">.</button>
+                <button type="button" class="cpb cpb-eq" onclick="lifeCalcEqual()">=</button>
+            </div>
         </div>
     </div>
 

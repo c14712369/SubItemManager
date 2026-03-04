@@ -1712,13 +1712,85 @@ h1 .title-icon {
     }
 }
 
-/* ── Full Calculator Numpad ── */
-.calc-wrap {
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
+/* ── Body Scroll Lock ── */
+body.modal-open {
     overflow: hidden;
-    margin-top: 10px;
+}
+
+/* ── Calculator Amount Field (Faux Input) ── */
+.calc-amount-field {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    color: var(--text-main);
+    background-color: var(--bg-color);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 42px;
+}
+
+.calc-amount-field:active {
+    background-color: var(--hover-bg);
+}
+
+#lifeCalcAmountDisplay {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* ── Calculator Popup Overlay ── */
+.calc-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 20000;
+    display: none;
+    align-items: flex-end;
+    /* Slide up from bottom */
+    justify-content: center;
+}
+
+.calc-popup-overlay.active {
+    display: flex;
+}
+
+.calc-popup {
     background: var(--card-bg);
+    width: 100%;
+    max-width: 440px;
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.calc-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-color);
 }
 
 /* Display area */
