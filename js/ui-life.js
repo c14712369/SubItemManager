@@ -292,7 +292,7 @@ function renderLifeExpenseList() {
                 '<div class="life-income-src">' + incCat.name + '</div>' +
                 '<div class="life-income-note">' + note + '</div>' +
                 '</div>' +
-                '<div class="life-income-amount">+ NT$ ' + e.amount.toLocaleString() + '</div>' +
+                '<div class="life-income-amount">+ NT$ ' + formatAmount(e.amount, 'income') + '</div>' +
                 editBtn + delBtn +
                 '</div>';
         } else {
@@ -361,6 +361,7 @@ function openLifeExpModal(typeOrPreset) {
     document.getElementById('lifeExpDate').value = lifeCurrentMonth + '-' + String(new Date().getDate()).padStart(2, '0');
     document.getElementById('lifeExpNote').value = '';
 
+    lifeCalcReset();
     setLifeExpType(type);
     if (_lifeExpModal2) _lifeExpModal2.classList.add('active');
 }
@@ -368,6 +369,8 @@ function openLifeExpModalWithCat(catId) { openLifeExpModal(catId); }
 function closeLifeExpModal() {
     var _lifeExpModal = document.getElementById('lifeExpModalOverlay');
     if (_lifeExpModal) _lifeExpModal.classList.remove('active');
+    if (typeof resetViewport === 'function') resetViewport();
+    lifeCalcReset();
 }
 
 function handleLifeExpSubmit(e) {
@@ -444,8 +447,8 @@ function editLifeExp(id) {
     // Restore the hidden id so submit knows it's an update
     document.getElementById('lifeExpId').value = e.id;
 
-    // Fill amount, date, note
-    document.getElementById('lifeExpAmount').value = e.amount;
+    // Fill amount into calculator display
+    lifeCalcDisplaySet(e.amount);
     document.getElementById('lifeExpDate').value = e.date;
     document.getElementById('lifeExpNote').value = e.note || '';
 
@@ -789,3 +792,145 @@ function autoApplySalary(ym) {
     saveLifeData();
     if (typeof triggerCloudSync === 'function') triggerCloudSync();
 }
+
+// ── Full Numpad Calculator (Life Expense Modal) ──
+var _calcCurrent = '0';      // current display string
+var _calcFirstNum = null;    // stored first operand (number)
+var _calcOp = null;          // pending operator symbol
+var _calcFreshEntry = false; // next digit starts a new number
+
+/** Update the display element + sync hidden amount field */
+function _lifeCalcRefresh() {
+    var disp = document.getElementById('lifeCalcDisplay');
+    if (disp) disp.textContent = parseFloat(_calcCurrent).toLocaleString('zh-TW') || _calcCurrent;
+    // Sync the hidden #lifeExpAmount so form submit always reads correct value
+    var hidden = document.getElementById('lifeExpAmount');
+    if (hidden) hidden.value = parseFloat(_calcCurrent) || '';
+}
+
+/** Reset entire calculator to zero state */
+function lifeCalcReset() {
+    _calcCurrent = '0';
+    _calcFirstNum = null;
+    _calcOp = null;
+    _calcFreshEntry = false;
+    var exprEl = document.getElementById('lifeCalcExpr');
+    if (exprEl) exprEl.textContent = '';
+    _lifeCalcRefresh();
+}
+
+/** Set display to a specific value (used when editing an entry) */
+function lifeCalcDisplaySet(val) {
+    _calcCurrent = String(val || 0);
+    _calcFirstNum = null;
+    _calcOp = null;
+    _calcFreshEntry = false;
+    var exprEl = document.getElementById('lifeCalcExpr');
+    if (exprEl) exprEl.textContent = '';
+    _lifeCalcRefresh();
+}
+
+/** Digit / decimal button pressed */
+function lifeCalcDigit(d) {
+    if (_calcFreshEntry) {
+        _calcCurrent = (d === '.') ? '0.' : d;
+        _calcFreshEntry = false;
+    } else {
+        if (d === '.' && _calcCurrent.includes('.')) return; // already has decimal
+        if (_calcCurrent === '0' && d !== '.') {
+            _calcCurrent = d; // replace leading zero
+        } else {
+            if (_calcCurrent.replace('-', '').replace('.', '').length >= 12) return; // max digits
+            _calcCurrent += d;
+        }
+    }
+    _lifeCalcRefresh();
+}
+
+/** Operator button (+, −, ×, ÷) pressed */
+function lifeCalcOp(op) {
+    var cur = parseFloat(_calcCurrent);
+    if (isNaN(cur)) return;
+
+    // Chain: if pending op, evaluate first
+    if (_calcOp !== null && _calcFirstNum !== null && !_calcFreshEntry) {
+        var res = _lifeCalcCompute(_calcFirstNum, cur, _calcOp);
+        if (res === null) { lifeCalcReset(); return; }
+        cur = res;
+        _calcCurrent = String(Math.round(cur * 100) / 100);
+    }
+
+    _calcFirstNum = cur;
+    _calcOp = op;
+    _calcFreshEntry = true;
+
+    var exprEl = document.getElementById('lifeCalcExpr');
+    if (exprEl) exprEl.textContent = parseFloat(_calcCurrent).toLocaleString('zh-TW') + ' ' + op;
+    _lifeCalcRefresh();
+    // Highlight active op button
+    document.querySelectorAll('.cpb-op').forEach(function (b) {
+        b.classList.toggle('cpb-op-active', b.textContent.trim() === op);
+    });
+}
+
+/** Equals button */
+function lifeCalcEqual() {
+    if (_calcOp === null || _calcFirstNum === null) return;
+    var second = parseFloat(_calcCurrent);
+    if (isNaN(second)) return;
+
+    var result = _lifeCalcCompute(_calcFirstNum, second, _calcOp);
+    if (result === null) { lifeCalcReset(); return; }
+
+    var exprEl = document.getElementById('lifeCalcExpr');
+    if (exprEl) exprEl.textContent =
+        _calcFirstNum.toLocaleString('zh-TW') + ' ' + _calcOp + ' ' +
+        second.toLocaleString('zh-TW') + ' =';
+
+    _calcCurrent = String(Math.round(result * 100) / 100);
+    _calcFirstNum = null;
+    _calcOp = null;
+    _calcFreshEntry = false;
+    // Clear op highlight
+    document.querySelectorAll('.cpb-op').forEach(function (b) { b.classList.remove('cpb-op-active'); });
+    _lifeCalcRefresh();
+}
+
+/** Backspace */
+function lifeCalcBack() {
+    if (_calcFreshEntry) { return; }
+    if (_calcCurrent.length <= 1 || (_calcCurrent.length === 2 && _calcCurrent[0] === '-')) {
+        _calcCurrent = '0';
+    } else {
+        _calcCurrent = _calcCurrent.slice(0, -1);
+        if (_calcCurrent === '-') _calcCurrent = '0';
+    }
+    _lifeCalcRefresh();
+}
+
+/** Toggle sign */
+function lifeCalcToggleSign() {
+    var v = parseFloat(_calcCurrent);
+    if (isNaN(v) || v === 0) return;
+    _calcCurrent = String(-v);
+    _lifeCalcRefresh();
+}
+
+/** Clear (C) */
+function lifeCalcClear() {
+    lifeCalcReset();
+}
+
+/** Internal compute */
+function _lifeCalcCompute(a, b, op) {
+    switch (op) {
+        case '+': return a + b;
+        case '−': return a - b;
+        case '×': return a * b;
+        case '÷': return b === 0 ? null : a / b;
+    }
+    return null;
+}
+
+// Old compat stub (lifeCalcSyncFromInput was used by old oninput — no-op now)
+function lifeCalcSyncFromInput() { }
