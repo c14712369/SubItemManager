@@ -164,6 +164,20 @@ function getItemAmountForMonth(item, year, month) {
 }
 
 /**
+ * Reset viewport scale to 1.0 — prevents iOS PWA zoom-in after modal input focus.
+ * Call this after any modal close to snap the page back to normal zoom.
+ */
+function resetViewport() {
+    const vp = document.querySelector('meta[name="viewport"]');
+    if (!vp) return;
+    // Temporarily restrict scale to force iOS to reset zoom
+    vp.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+    setTimeout(function () {
+        vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
+    }, 300);
+}
+
+/**
  * Helper to handle privacy masking based on amount type
  * @param {number|string} val - The value to format
  * @param {'income'|'asset'|'expense'|'fixed'|'other'} type - Category of the amount

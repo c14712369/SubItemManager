@@ -1010,6 +1010,7 @@ h1 .title-icon {
     border-bottom: 1px solid var(--border-color);
     margin: -10px 0 20px;
 }
+
 .auth-tab {
     flex: 1;
     padding: 9px 0;
@@ -1022,6 +1023,7 @@ h1 .title-icon {
     color: var(--text-muted);
     transition: color 0.2s, border-color 0.2s;
 }
+
 .auth-tab.active {
     color: var(--primary-color);
     border-bottom-color: var(--primary-color);
@@ -1709,6 +1711,125 @@ h1 .title-icon {
         min-width: 70px;
     }
 }
+
+/* ── Full Calculator Numpad ── */
+.calc-wrap {
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-top: 10px;
+    background: var(--card-bg);
+}
+
+/* Display area */
+.calc-display-wrap {
+    background: var(--bg-color);
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.calc-expr-line {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    min-height: 1.2em;
+    text-align: right;
+    font-family: var(--font-sans);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.calc-display-val {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    text-align: right;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Keypad grid */
+.calc-pad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border-color);
+    /* gap color */
+}
+
+/* Base button */
+.cpb {
+    min-height: 52px;
+    border: none;
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-size: 1.15rem;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: background 0.1s, transform 0.08s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.cpb:active {
+    background: var(--hover-bg);
+    transform: scale(0.93);
+}
+
+/* Function buttons (C, +/−, ⌫) */
+.cpb-fn {
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 700;
+    background: var(--bg-color);
+}
+
+/* Operator buttons (÷, ×, −, +) */
+.cpb-op {
+    background: color-mix(in srgb, var(--primary-color) 12%, var(--card-bg));
+    color: var(--primary-color);
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.cpb-op-active {
+    background: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+/* = button */
+.cpb-eq {
+    background: var(--primary-color);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.cpb-eq:active {
+    filter: brightness(1.1);
+    background: var(--primary-color);
+}
+
+/* 0 spans 2 columns */
+.cpb-zero {
+    grid-column: span 2;
+    justify-content: flex-start;
+    padding-left: 20px;
+}
+
+/* Dark mode tweaks */
+.dark .cpb-fn {
+    background: color-mix(in srgb, var(--text-muted) 8%, var(--card-bg));
+}
+
 
 /* ?�?� Hero Panel (Dashboard A) ?�?� */
 .hero-panel {
@@ -2496,6 +2617,7 @@ video {
     width: 100%;
     padding: 0 14px 6px;
 }
+
 .cat-budget-bar {
     height: 3px;
     background: var(--border-color);
@@ -2503,26 +2625,32 @@ video {
     overflow: hidden;
     width: 100%;
 }
+
 .cat-budget-fill {
     height: 100%;
     background: var(--primary-color);
     border-radius: 2px;
     transition: width 0.3s ease;
 }
+
 .cat-budget-fill.over {
     background: var(--danger-color);
 }
+
 .life-cat-row-budget-hint {
     font-size: 0.72rem;
     color: var(--text-muted);
     white-space: nowrap;
 }
+
 .life-cat-row-amt.text-danger {
     color: var(--danger-color);
 }
+
 .over-budget-row {
     border-left-color: var(--danger-color) !important;
 }
+
 .life-cat-row.over-budget-row:hover {
     background: rgba(193, 50, 50, 0.04);
 }
@@ -3617,6 +3745,7 @@ video {
 
 /* ── Mobile touch target optimization ── */
 @media (max-width: 600px) {
+
     /* Ensure minimum 44px touch targets on mobile */
     .icon-btn {
         min-width: 36px;
@@ -3647,7 +3776,8 @@ video {
     }
 
     .life-cat-action {
-        opacity: 1; /* Always visible on mobile */
+        opacity: 1;
+        /* Always visible on mobile */
         min-width: 36px;
         min-height: 36px;
     }

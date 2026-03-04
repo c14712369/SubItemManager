@@ -97,7 +97,8 @@
                     </div>
                 </div>
                 <div class="toolbar-row secondary">
-                    <select class="form-select" style="font-size:0.82rem;" onchange="setFixedSort(this.value)" id="fixedSortSelect">
+                    <select class="form-select" style="font-size:0.82rem;" onchange="setFixedSort(this.value)"
+                        id="fixedSortSelect">
                         <option value="category">依分類排序</option>
                         <option value="amount-desc">金額（高到低）</option>
                         <option value="amount-asc">金額（低到高）</option>
@@ -235,9 +236,11 @@
                     <span class="analysis-subtitle">檢視您選定月份的財務健康狀況</span>
                 </div>
                 <div class="analysis-month-nav">
-                    <button class="icon-btn" onclick="changeAnalysisMonth(-1)" title="上個月"><i class="fa-solid fa-chevron-left"></i></button>
+                    <button class="icon-btn" onclick="changeAnalysisMonth(-1)" title="上個月"><i
+                            class="fa-solid fa-chevron-left"></i></button>
                     <input type="month" id="analysisGlobalMonth" class="form-input" onchange="syncAnalysisMonth()">
-                    <button class="icon-btn" onclick="changeAnalysisMonth(1)" title="下個月"><i class="fa-solid fa-chevron-right"></i></button>
+                    <button class="icon-btn" onclick="changeAnalysisMonth(1)" title="下個月"><i
+                            class="fa-solid fa-chevron-right"></i></button>
                 </div>
             </div>
 
@@ -532,11 +535,13 @@
                         <h3><i class="fa-solid fa-chart-bar"></i> 全年度各月收支總覽</h3>
                     </div>
                     <div class="chart-controls">
-                        <button class="icon-btn" onclick="changeAnnualYear(-1)" title="上一年"><i class="fa-solid fa-chevron-left"></i></button>
+                        <button class="icon-btn" onclick="changeAnnualYear(-1)" title="上一年"><i
+                                class="fa-solid fa-chevron-left"></i></button>
                         <select id="annualReportYear" class="form-select chart-select" onchange="renderAnnualReport()">
                             <!-- options populated by js -->
                         </select>
-                        <button class="icon-btn" onclick="changeAnnualYear(1)" title="下一年"><i class="fa-solid fa-chevron-right"></i></button>
+                        <button class="icon-btn" onclick="changeAnnualYear(1)" title="下一年"><i
+                                class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
                 <div class="dashboard" style="margin-bottom: 16px;">
@@ -851,21 +856,55 @@
                     </select>
                 </div>
 
+                <!-- Date row stays at top -->
                 <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">金額 (TWD)</label>
-                        <input type="number" id="lifeExpAmount" class="form-input" required min="1" step="1"
-                            placeholder="0">
-                    </div>
                     <div class="form-group">
                         <label class="form-label">日期</label>
                         <input type="date" id="lifeExpDate" class="form-input" required>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">備註 (選填)</label>
+                        <input type="text" id="lifeExpNote" class="form-input" placeholder="例如：超市採購...">
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">備註 (選填)</label>
-                    <input type="text" id="lifeExpNote" class="form-input" placeholder="例如：超市採購...">
+
+                <!-- Full Calculator -->
+                <div class="calc-wrap">
+                    <!-- Display -->
+                    <div class="calc-display-wrap">
+                        <div class="calc-expr-line" id="lifeCalcExpr"></div>
+                        <!-- Hidden real amount field used by form submit -->
+                        <input type="number" id="lifeExpAmount" required min="1" style="display:none;">
+                        <div class="calc-display-val" id="lifeCalcDisplay">0</div>
+                    </div>
+                    <!-- Keypad grid: 4 columns -->
+                    <div class="calc-pad">
+                        <button type="button" class="cpb cpb-fn" onclick="lifeCalcClear()">C</button>
+                        <button type="button" class="cpb cpb-fn" onclick="lifeCalcToggleSign()">+/−</button>
+                        <button type="button" class="cpb cpb-fn" onclick="lifeCalcBack()">⌫</button>
+                        <button type="button" class="cpb cpb-op" onclick="lifeCalcOp('÷')">÷</button>
+
+                        <button type="button" class="cpb" onclick="lifeCalcDigit('7')">7</button>
+                        <button type="button" class="cpb" onclick="lifeCalcDigit('8')">8</button>
+                        <button type="button" class="cpb" onclick="lifeCalcDigit('9')">9</button>
+                        <button type="button" class="cpb cpb-op" onclick="lifeCalcOp('×')">×</button>
+
+                        <button type="button" class="cpb" onclick="lifeCalcDigit('4')">4</button>
+                        <button type="button" class="cpb" onclick="lifeCalcDigit('5')">5</button>
+                        <button type="button" class="cpb" onclick="lifeCalcDigit('6')">6</button>
+                        <button type="button" class="cpb cpb-op" onclick="lifeCalcOp('−')">−</button>
+
+                        <button type="button" class="cpb" onclick="lifeCalcDigit('1')">1</button>
+                        <button type="button" class="cpb" onclick="lifeCalcDigit('2')">2</button>
+                        <button type="button" class="cpb" onclick="lifeCalcDigit('3')">3</button>
+                        <button type="button" class="cpb cpb-op cpb-op-tall" onclick="lifeCalcOp('+')">+</button>
+
+                        <button type="button" class="cpb cpb-zero" onclick="lifeCalcDigit('0')">0</button>
+                        <button type="button" class="cpb" onclick="lifeCalcDigit('.')">.</button>
+                        <button type="button" class="cpb cpb-eq" onclick="lifeCalcEqual()">=</button>
+                    </div>
                 </div>
+
                 <button type="submit" class="btn btn-primary" id="lifeExpSubmitBtn"
                     style="width:100%;margin-top:10px;">儲存支出</button>
             </form>
@@ -985,25 +1024,32 @@
             </div>
             <!-- 登入 / 註冊 Tab -->
             <div class="auth-tabs">
-                <button id="authTabLogin" type="button" class="auth-tab active" onclick="switchAuthMode('login')">登入</button>
-                <button id="authTabRegister" type="button" class="auth-tab" onclick="switchAuthMode('register')">註冊</button>
+                <button id="authTabLogin" type="button" class="auth-tab active"
+                    onclick="switchAuthMode('login')">登入</button>
+                <button id="authTabRegister" type="button" class="auth-tab"
+                    onclick="switchAuthMode('register')">註冊</button>
             </div>
             <form id="authForm" onsubmit="handleLogin(event)" autocomplete="on">
                 <div class="form-group">
                     <label class="form-label">Email 信箱</label>
-                    <input type="email" id="authEmail" class="form-input" required placeholder="your@email.com" autocomplete="email">
+                    <input type="email" id="authEmail" class="form-input" required placeholder="your@email.com"
+                        autocomplete="email">
                 </div>
                 <div class="form-group">
                     <label class="form-label">密碼</label>
-                    <input type="password" id="authPassword" class="form-input" required placeholder="請輸入密碼" autocomplete="current-password" oninput="checkPasswordStrength(this.value)">
+                    <input type="password" id="authPassword" class="form-input" required placeholder="請輸入密碼"
+                        autocomplete="current-password" oninput="checkPasswordStrength(this.value)">
                     <div id="passwordStrengthBar" style="display:none; margin-top:6px;">
                         <div style="height:4px; border-radius:2px; background:var(--border-color); overflow:hidden;">
-                            <div id="passwordStrengthFill" style="height:100%; width:0%; transition:width 0.3s, background 0.3s;"></div>
+                            <div id="passwordStrengthFill"
+                                style="height:100%; width:0%; transition:width 0.3s, background 0.3s;"></div>
                         </div>
-                        <div id="passwordStrengthLabel" style="font-size:0.75rem; margin-top:4px; color:var(--text-muted);"></div>
+                        <div id="passwordStrengthLabel"
+                            style="font-size:0.75rem; margin-top:4px; color:var(--text-muted);"></div>
                     </div>
                 </div>
-                <button type="submit" id="authSubmitBtn" class="btn btn-primary" style="width: 100%; margin-top: 10px;">登入</button>
+                <button type="submit" id="authSubmitBtn" class="btn btn-primary"
+                    style="width: 100%; margin-top: 10px;">登入</button>
             </form>
         </div>
     </div>
