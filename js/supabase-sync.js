@@ -24,13 +24,30 @@ async function checkSession(skipFetch = false) {
     isFetchingFromServer = true;
     if (syncTimeout) { clearTimeout(syncTimeout); syncTimeout = null; }
 
-    const { data: { session } } = await supabaseClient.auth.getSession();
-    currentUser = session?.user || null;
+    try {
+        const sessionPromise = supabaseClient.auth.getSession();
+        const { data: { session } } = await Promise.race([
+            sessionPromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 5000))
+        ]);
+        currentUser = session?.user || null;
+    } catch (err) {
+        console.warn('檢查登入狀態超時或失敗 (可能是網路不佳):', err);
+        // Keep existing currentUser state if it was already set, or null if first load
+        // We assume we are offline or network is spotty.
+    }
+
     updateAuthUI();
     if (currentUser && !skipFetch) {
-        // Automatically fetch latest on fresh reload if logged in
-        // fetchFromServer() will release isFetchingFromServer in its finally block
-        await fetchFromServer();
+        if (!navigator.onLine) {
+            console.log('目前離線，跳過啟動時的資料同步');
+            isFetchingFromServer = false;
+            showToast('目前為離線模式');
+        } else {
+            // Automatically fetch latest on fresh reload if logged in
+            // fetchFromServer() will release isFetchingFromServer in its finally block
+            await fetchFromServer();
+        }
     } else {
         isFetchingFromServer = false; // No fetch needed, release the guard
     }
@@ -184,6 +201,7 @@ function exportStateAsJSON() {
             estimatedIncome: storedIncome,
             wealthParams: storedWealth ? JSON.parse(storedWealth) : null,
             defaultSalary: localStorage.getItem(SALARY_DEFAULT_KEY) ? JSON.parse(localStorage.getItem(SALARY_DEFAULT_KEY)) : null,
+            dailyExpenses: localStorage.getItem(DAILY_EXP_DEFAULT_KEY) ? JSON.parse(localStorage.getItem(DAILY_EXP_DEFAULT_KEY)) : [],
             appIdentity: localStorage.getItem(APP_IDENTITY_KEY) ? JSON.parse(localStorage.getItem(APP_IDENTITY_KEY)) : null,
             theme: localStorage.getItem(THEME_KEY) || 'light'
         },
@@ -197,6 +215,11 @@ async function syncToServer(force = false) {
     if (!currentUser) return; // Only sync if logged in (Offline mode fallback)
     if (isFetchingFromServer) return; // Never overwrite cloud while we're downloading from it
 
+    if (!navigator.onLine) {
+        console.log('目前離線，暫緩雲端同步');
+        return;
+    }
+
     // Prevent spamming the server
     const now = Date.now();
     if (!force && now - lastSyncTime < 2000) return;
@@ -204,19 +227,28 @@ async function syncToServer(force = false) {
 
     const exportData = exportStateAsJSON();
 
-    const { error } = await supabaseClient
-        .from('user_backups')
-        .upsert({
-            user_id: currentUser.id,
-            app_data: exportData,
-            updated_at: new Date().toISOString()
-        });
+    try {
+        const syncPromise = supabaseClient
+            .from('user_backups')
+            .upsert({
+                user_id: currentUser.id,
+                app_data: exportData,
+                updated_at: new Date().toISOString()
+            });
 
-    if (error) {
-        console.error('雲端同步失敗:', error.message);
-        // showToast('雲端同步失敗', 'error'); // Optional
-    } else {
-        console.log('雲端同步成功', new Date().toLocaleTimeString());
+        const { error } = await Promise.race([
+            syncPromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000))
+        ]);
+
+        if (error) {
+            console.error('雲端同步失敗:', error.message);
+            // showToast('雲端同步失敗', 'error'); // Optional
+        } else {
+            console.log('雲端同步成功', new Date().toLocaleTimeString());
+        }
+    } catch (err) {
+        console.error('Sync error:', err);
     }
 }
 
@@ -229,9 +261,31 @@ function triggerCloudSync() {
     }, 1500); // Wait 1.5 seconds of inactivity before syncing
 }
 
+// Network state listeners for auto-sync
+window.addEventListener('online', () => {
+    console.log('網路已恢復，嘗試重新連線與同步');
+    if (currentUser) {
+        // When coming online, fetchFromServer will naturally handle conflict resolution
+        // (pushing local up if localTimestamp > cloudTimestamp)
+        fetchFromServer();
+    } else {
+        checkSession();
+    }
+});
+
+window.addEventListener('offline', () => {
+    showToast('網路已斷開，目前為離線模式');
+});
+
 // Download state from Supabase and overwrite localStorage
 async function fetchFromServer() {
     if (!currentUser) return;
+    if (!navigator.onLine) {
+        console.log('目前離線，取消拉取資料');
+        showToast('目前為離線模式，使用本地資料');
+        isFetchingFromServer = false;
+        return;
+    }
 
     // Block any pending local→cloud sync so it can't overwrite cloud before we download
     isFetchingFromServer = true;
@@ -241,11 +295,16 @@ async function fetchFromServer() {
     if (loadingOverlay) loadingOverlay.classList.add('active');
 
     try {
-        const { data, error } = await supabaseClient
+        const fetchPromise = supabaseClient
             .from('user_backups')
             .select('app_data, updated_at')
             .eq('user_id', currentUser.id)
             .single();
+
+        const { data, error } = await Promise.race([
+            fetchPromise,
+            new Promise((_, reject) => setTimeout(() => reject(new Error('TIMEOUT')), 8000))
+        ]);
 
         if (error && error.code !== 'PGRST116') { // PGRST116 is "No rows found"
             console.error('讀取雲端資料失敗:', error.message);
@@ -309,6 +368,9 @@ async function fetchFromServer() {
                 }
                 if (appData.settings.defaultSalary) {
                     localStorage.setItem(SALARY_DEFAULT_KEY, JSON.stringify(appData.settings.defaultSalary));
+                }
+                if (appData.settings.dailyExpenses) {
+                    localStorage.setItem(DAILY_EXP_DEFAULT_KEY, JSON.stringify(appData.settings.dailyExpenses));
                 }
                 if (appData.settings.appIdentity) {
                     localStorage.setItem(APP_IDENTITY_KEY, JSON.stringify(appData.settings.appIdentity));

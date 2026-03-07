@@ -100,6 +100,9 @@ async function renderLifeTab() {
     // Auto-apply salary if setting exists and no income recorded yet
     // Do this BEFORE calculating totals so the current render picks up the new entry
     autoApplySalary(lifeCurrentMonth);
+    // Auto-apply daily expenses for the current month
+    autoApplyDailyExpenses(lifeCurrentMonth);
+    
     // 預取當月外幣固定支出的歷史匯率
     const [ly, lm] = lifeCurrentMonth.split('-').map(Number);
     await prefetchFXRates(items, [[ly, lm]]);
@@ -167,6 +170,29 @@ async function renderLifeTab() {
 
 // Track selected category filter
 var _lifeSelectedCatId = null;
+var _lifeExpCurrentPage = 1;
+var _lifeExpPerPage = 10;
+
+function switchLifeView(viewType) {
+    document.getElementById('lifeTabBtnCat').classList.toggle('active', viewType === 'cat');
+    document.getElementById('lifeTabBtnExp').classList.toggle('active', viewType === 'exp');
+    
+    document.getElementById('lifeViewCat').classList.toggle('active', viewType === 'cat');
+    document.getElementById('lifeViewExp').classList.toggle('active', viewType === 'exp');
+    
+    if (viewType === 'cat') {
+        document.getElementById('lifeViewExp').style.display = 'none';
+        document.getElementById('lifeViewCat').style.display = 'block';
+    } else {
+        document.getElementById('lifeViewCat').style.display = 'none';
+        document.getElementById('lifeViewExp').style.display = 'block';
+    }
+}
+
+function changeLifeExpPage(delta) {
+    _lifeExpCurrentPage += delta;
+    renderLifeExpenseList();
+}
 
 function renderBudgetCards() {
     var container = document.getElementById('budgetCards');
@@ -253,6 +279,7 @@ function clearLifeFilter() {
 
 function renderLifeExpenseList() {
     var container = document.getElementById('lifeExpList');
+    var paginationContainer = document.getElementById('lifeExpPagination');
     if (!container) return;
 
     var all = lifeExpenses
@@ -263,7 +290,7 @@ function renderLifeExpenseList() {
             }
             return true;
         })
-        .sort(function (a, b) { return a.date.localeCompare(b.date); });
+        .sort(function (a, b) { return a.date.localeCompare(b.date) || b.id.localeCompare(a.id); }); // Sort by date ascending
 
     if (all.length === 0) {
         container.innerHTML =
@@ -272,10 +299,22 @@ function renderLifeExpenseList() {
             '<strong>本月尚無記錄</strong>' +
             '<p>點擊「支出」按鈕開始記帳</p>' +
             '</div>';
+        if (paginationContainer) paginationContainer.innerHTML = '';
         return;
     }
+    
+    // Pagination logic
+    // Sort descending for display (newest first)
+    all.reverse();
+    var totalPages = Math.ceil(all.length / _lifeExpPerPage);
+    if (_lifeExpCurrentPage > totalPages) _lifeExpCurrentPage = totalPages;
+    if (_lifeExpCurrentPage < 1) _lifeExpCurrentPage = 1;
+    
+    var startIdx = (_lifeExpCurrentPage - 1) * _lifeExpPerPage;
+    var endIdx = startIdx + _lifeExpPerPage;
+    var pageItems = all.slice(startIdx, endIdx);
 
-    container.innerHTML = all.map(function (e) {
+    container.innerHTML = pageItems.map(function (e) {
         var day = parseInt(e.date.split('-')[2]);
         var editBtn = '<button class="icon-btn" onclick="editLifeExp(\'' + e.id + '\')" title="編輯"><i class="fa-solid fa-pen"></i></button>';
         var delBtn = '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>';
@@ -310,6 +349,17 @@ function renderLifeExpenseList() {
                 '</div>';
         }
     }).join('');
+    
+    if (paginationContainer) {
+        if (totalPages > 1) {
+            var prevBtn = '<button class="icon-btn" onclick="changeLifeExpPage(-1)" ' + (_lifeExpCurrentPage === 1 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-left"></i></button>';
+            var pageInfo = '<span style="font-size:0.85rem; color:var(--text-muted); align-self:center; font-weight:500;">' + _lifeExpCurrentPage + ' / ' + totalPages + '</span>';
+            var nextBtn = '<button class="icon-btn" onclick="changeLifeExpPage(1)" ' + (_lifeExpCurrentPage === totalPages ? 'disabled' : '') + '><i class="fa-solid fa-chevron-right"></i></button>';
+            paginationContainer.innerHTML = prevBtn + pageInfo + nextBtn;
+        } else {
+            paginationContainer.innerHTML = '';
+        }
+    }
 }
 
 function setLifeExpType(type) {
@@ -955,3 +1005,198 @@ function _lifeCalcCompute(a, b, op) {
 
 // Old compat stub (lifeCalcSyncFromInput was used by old oninput — no-op now)
 function lifeCalcSyncFromInput() { }
+
+// ── 常態支出功能 (Daily Expenses) ──
+function getDailyExpenses() {
+    var raw = localStorage.getItem(DAILY_EXP_DEFAULT_KEY);
+    return raw ? JSON.parse(raw) : [];
+}
+
+function saveDailyExpenses(data) {
+    localStorage.setItem(DAILY_EXP_DEFAULT_KEY, JSON.stringify(data));
+    if (typeof triggerCloudSync === 'function') triggerCloudSync();
+}
+
+function openDailyExpModal() {
+    var sel = document.getElementById('dailyExpCat');
+    if (sel) {
+        sel.innerHTML = lifeCategories.map(function (c) {
+            return '<option value="' + c.id + '">' + c.name + '</option>';
+        }).join('');
+    }
+    document.getElementById('dailyExpId').value = '';
+    document.getElementById('dailyExpName').value = '';
+    document.getElementById('dailyExpAmount').value = '';
+    document.getElementById('dailyExpFreq').value = 'everyday';
+    document.getElementById('dailyExpCancelBtn').style.display = 'none';
+    
+    renderDailyExpList();
+    
+    var overlay = document.getElementById('dailyExpModalOverlay');
+    if (overlay) overlay.classList.add('active');
+}
+
+function closeDailyExpModal() {
+    var overlay = document.getElementById('dailyExpModalOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
+
+function cancelDailyExpEdit() {
+    document.getElementById('dailyExpId').value = '';
+    document.getElementById('dailyExpName').value = '';
+    document.getElementById('dailyExpAmount').value = '';
+    document.getElementById('dailyExpFreq').value = 'everyday';
+    document.getElementById('dailyExpCancelBtn').style.display = 'none';
+}
+
+function renderDailyExpList() {
+    var list = getDailyExpenses();
+    var container = document.getElementById('dailyExpList');
+    if (!container) return;
+    
+    if (list.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.9rem;">尚未設定常態支出</div>';
+        return;
+    }
+    
+    container.innerHTML = list.map(function(item) {
+        var cat = getLifeCat(item.catId);
+        var freqText = item.freq === 'weekdays' ? '平日' : (item.freq === 'weekends' ? '假日' : '每天');
+        return '<div class="expense-list-row" style="margin-bottom:8px;">' +
+            '<div class="expense-list-info">' +
+            '<div class="expense-list-color" style="background:' + (cat ? cat.color : '#ccc') + '"></div>' +
+            '<div>' +
+            '<div style="font-weight:600; font-size:0.95rem; color:var(--text-main);">' + item.name + ' <span style="font-size:0.75rem; background:var(--border-color); padding:2px 6px; border-radius:4px; font-weight:normal; margin-left:4px;">' + freqText + '</span></div>' +
+            '<div style="font-size:0.75rem; color:var(--text-muted);">' + (cat ? cat.name : '未知分類') + '</div>' +
+            '</div></div>' +
+            '<div style="display:flex; align-items:center; gap:12px;">' +
+            '<div class="expense-list-amount">NT$ ' + item.amount.toLocaleString() + '</div>' +
+            '<div style="display:flex; gap:4px;">' +
+            '<button class="icon-btn" onclick="editDailyExp(\'' + item.id + '\')" title="編輯"><i class="fa-solid fa-pen"></i></button>' +
+            '<button class="icon-btn delete" onclick="deleteDailyExp(\'' + item.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>' +
+            '</div></div></div>';
+    }).join('');
+}
+
+function handleDailyExpSubmit(e) {
+    e.preventDefault();
+    var id = document.getElementById('dailyExpId').value;
+    var name = document.getElementById('dailyExpName').value.trim();
+    var catId = document.getElementById('dailyExpCat').value;
+    var amount = parseInt(document.getElementById('dailyExpAmount').value);
+    var freq = document.getElementById('dailyExpFreq').value;
+    
+    if (!name || !amount || amount <= 0) {
+        showToast('請輸入有效名稱與金額');
+        return;
+    }
+    
+    var list = getDailyExpenses();
+    if (id) {
+        var idx = list.findIndex(function(x) { return x.id === id; });
+        if (idx !== -1) {
+            list[idx] = { id: id, name: name, catId: catId, amount: amount, freq: freq };
+        }
+        showToast('常態支出已更新');
+    } else {
+        list.push({ id: crypto.randomUUID(), name: name, catId: catId, amount: amount, freq: freq });
+        showToast('常態支出已新增');
+    }
+    
+    saveDailyExpenses(list);
+    cancelDailyExpEdit();
+    renderDailyExpList();
+    
+    // Auto apply immediately for the current month up to today
+    autoApplyDailyExpenses(lifeCurrentMonth);
+    renderLifeTab();
+}
+
+function deleteDailyExp(id) {
+    if (!confirm('確定刪除此常態支出？(已產生的明細不會被刪除)')) return;
+    var list = getDailyExpenses();
+    list = list.filter(function(x) { return x.id !== id; });
+    saveDailyExpenses(list);
+    renderDailyExpList();
+    showToast('常態支出已刪除');
+}
+
+function editDailyExp(id) {
+    var list = getDailyExpenses();
+    var item = list.find(function(x) { return x.id === id; });
+    if (!item) return;
+    
+    document.getElementById('dailyExpId').value = item.id;
+    document.getElementById('dailyExpName').value = item.name;
+    document.getElementById('dailyExpCat').value = item.catId;
+    document.getElementById('dailyExpAmount').value = item.amount;
+    document.getElementById('dailyExpFreq').value = item.freq || 'everyday';
+    document.getElementById('dailyExpCancelBtn').style.display = 'inline-flex';
+}
+
+function autoApplyDailyExpenses(ym) {
+    var list = getDailyExpenses();
+    if (!list || list.length === 0) return;
+    
+    // Only process for the current viewing month if it's past or present
+    var today = new Date();
+    var currentViewDate = new Date(ym + '-01');
+    
+    var year = currentViewDate.getFullYear();
+    var month = currentViewDate.getMonth();
+    
+    var maxDate = new Date(year, month + 1, 0).getDate(); // last day of month
+    
+    // If viewing current month, only apply up to today
+    if (year === today.getFullYear() && month === today.getMonth()) {
+        maxDate = today.getDate();
+    } else if (currentViewDate > today) {
+        // Future month, don't apply
+        return;
+    }
+    
+    var changed = false;
+    
+    // For each rule, check each day
+    list.forEach(function(rule) {
+        for (var d = 1; d <= maxDate; d++) {
+            var targetDate = new Date(year, month, d);
+            var dow = targetDate.getDay(); // 0=Sun, 6=Sat
+            
+            // Check frequency
+            if (rule.freq === 'weekdays' && (dow === 0 || dow === 6)) continue;
+            if (rule.freq === 'weekends' && (dow !== 0 && dow !== 6)) continue;
+            
+            var dateStr = targetDate.toISOString().split('T')[0];
+            
+            // Check if already applied (we use _autoDailyId to track)
+            var alreadyApplied = lifeExpenses.some(function (e) {
+                return e._autoDailyId === rule.id && e.date === dateStr;
+            });
+            
+            if (!alreadyApplied) {
+                lifeExpenses.push({
+                    id: crypto.randomUUID(),
+                    type: 'expense',
+                    categoryId: rule.catId,
+                    amount: rule.amount,
+                    date: dateStr,
+                    note: rule.name,
+                    _autoDailyId: rule.id // Track so we don't duplicate
+                });
+                changed = true;
+            }
+        }
+    });
+    
+    if (changed) {
+        saveLifeData();
+    }
+}
+
+function forceApplyDailyExpenses() {
+    autoApplyDailyExpenses(lifeCurrentMonth);
+    renderLifeTab();
+    closeDailyExpModal();
+    showToast('已檢查並套用本月常態支出');
+}

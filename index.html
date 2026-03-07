@@ -196,33 +196,47 @@
             </div>
 
             <!-- Sidebar + Detail Layout -->
-            <div class="life-layout">
-                <!-- Left: Category Sidebar -->
-                <div class="life-sidebar">
-                    <div class="life-sidebar-header">
-                        <span class="life-sidebar-title">分類</span>
-                        <div class="life-sidebar-actions">
-                            <button class="btn btn-primary btn-sm" onclick="openLifeExpModal('expense')" title="新增支出">
-                                <i class="fa-solid fa-plus"></i> 支出
-                            </button>
-                            <button class="btn btn-secondary btn-sm" onclick="openLifeExpModal('income')" title="新增收入">
-                                <i class="fa-solid fa-plus"></i> 收入
-                            </button>
+            <!-- Shared Container Layout -->
+            <div class="life-shared-container">
+                <div class="life-tabs-header">
+                    <button id="lifeTabBtnExp" class="life-subtab-btn active" onclick="switchLifeView('exp')"><i class="fa-solid fa-list-ul"></i> 收支明細</button>
+                    <button id="lifeTabBtnCat" class="life-subtab-btn" onclick="switchLifeView('cat')"><i class="fa-solid fa-shapes"></i> 預算分類</button>
+                </div>
+                
+                <div id="lifeViewExp" class="life-view-content active">
+                    <div class="life-detail-panel" style="width: 100%;">
+                        <div class="life-detail-header" style="display: flex; align-items: center; position: relative; padding: 10px 0;">
+                            <h3 id="lifeDetailTitle" style="margin: 0; min-width: 100px;"><i class="fa-solid fa-book"></i> 全部明細</h3>
+                            <div id="lifeExpPagination" class="pagination-container" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 8px;"></div>
+                            <div style="flex: 1; display: flex; justify-content: flex-end;">
+                                <button class="icon-btn" id="lifeClearFilter" onclick="clearLifeFilter()" title="清除篩選"
+                                    style="display:none;">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </div>
                         </div>
+                        <div id="lifeExpList"></div>
                     </div>
-                    <div id="budgetCards" class="life-cat-list"></div>
                 </div>
 
-                <!-- Right: Expense Detail Panel -->
-                <div class="life-detail-panel">
-                    <div class="life-detail-header">
-                        <h3 id="lifeDetailTitle"><i class="fa-solid fa-book"></i> 全部明細</h3>
-                        <button class="icon-btn" id="lifeClearFilter" onclick="clearLifeFilter()" title="清除篩選"
-                            style="display:none;">
-                            <i class="fa-solid fa-xmark"></i>
-                        </button>
+                <div id="lifeViewCat" class="life-view-content" style="display:none;">
+                    <div class="life-sidebar" style="width: 100%;">
+                        <div class="life-sidebar-header">
+                            <span class="life-sidebar-title">分類</span>
+                            <div class="life-sidebar-actions">
+                                <button class="btn btn-primary btn-sm" onclick="openLifeExpModal('expense')" title="新增支出">
+                                    <i class="fa-solid fa-plus"></i> 支出
+                                </button>
+                                <button class="btn btn-secondary btn-sm" onclick="openLifeExpModal('income')" title="新增收入">
+                                    <i class="fa-solid fa-plus"></i> 收入
+                                </button>
+                                <button class="btn btn-outline btn-sm" onclick="openDailyExpModal()" title="常態支出設定">
+                                    <i class="fa-solid fa-rotate-right"></i> 常態支出
+                                </button>
+                            </div>
+                        </div>
+                        <div id="budgetCards" class="life-cat-list"></div>
                     </div>
-                    <div id="lifeExpList"></div>
                 </div>
             </div>
         </div>
@@ -965,6 +979,59 @@
                     style="flex:0;display:none;" title="取消"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <div id="lifeCategoryList" class="category-list"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Manage Daily Expenses -->
+    <div class="modal-overlay" id="dailyExpModalOverlay">
+        <div class="modal" style="max-width:460px;">
+            <div class="modal-header">
+                <span>設定常態支出 (每日/平日)</span>
+                <span class="close-modal" onclick="closeDailyExpModal()">&times;</span>
+            </div>
+            <div style="margin-bottom:16px; font-size:0.8rem; color:var(--text-muted);">
+                設定後，系統會自動幫您將固定開銷加入到過去的每一天。如當日有變動，可直接在明細中編輯。
+            </div>
+            
+            <form id="dailyExpForm" onsubmit="handleDailyExpSubmit(event)" style="background:var(--bg-secondary); padding:12px; border-radius:8px; margin-bottom:16px;">
+                <input type="hidden" id="dailyExpId">
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label">名稱</label>
+                        <input type="text" id="dailyExpName" class="form-input" required placeholder="如: 早餐">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label">分類</label>
+                        <select id="dailyExpCat" class="form-select" required></select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label">金額</label>
+                        <input type="number" id="dailyExpAmount" class="form-input" required min="1" placeholder="45">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label">頻率</label>
+                        <select id="dailyExpFreq" class="form-select">
+                            <option value="everyday">每天</option>
+                            <option value="weekdays">僅平日 (一~五)</option>
+                            <option value="weekends">僅假日 (六~日)</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="submit" class="btn btn-primary" style="flex:1;"><i class="fa-solid fa-plus"></i> 新增/更新常態支出</button>
+                    <button type="button" class="btn btn-secondary" id="dailyExpCancelBtn" onclick="cancelDailyExpEdit()" style="display:none;"><i class="fa-solid fa-xmark"></i> 取消</button>
+                </div>
+            </form>
+            
+            <div id="dailyExpList" class="item-list" style="max-height: 250px; overflow-y: auto;">
+                <!-- JS populated -->
+            </div>
+            
+            <button class="btn btn-outline" style="width:100%; margin-top:16px;" onclick="forceApplyDailyExpenses()">
+                <i class="fa-solid fa-bolt"></i> 立即套用至本月明細
+            </button>
         </div>
     </div>
 
