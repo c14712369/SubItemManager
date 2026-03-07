@@ -170,8 +170,22 @@ async function renderLifeTab() {
 
 // Track selected category filter
 var _lifeSelectedCatId = null;
-var _lifeExpCurrentPage = 1;
-var _lifeExpPerPage = 10;
+var _lifeExpSortMode = 'date-desc';
+
+function toggleLifeExpSort() {
+    _lifeExpSortMode = (_lifeExpSortMode === 'date-desc') ? 'date-asc' : 'date-desc';
+    var btn = document.getElementById('lifeExpSortBtn');
+    if (btn) {
+        if (_lifeExpSortMode === 'date-desc') {
+            btn.innerHTML = '<i class="fa-solid fa-arrow-down-short-wide"></i>';
+            btn.title = '切換排序 (新到舊)';
+        } else {
+            btn.innerHTML = '<i class="fa-solid fa-arrow-up-wide-short"></i>';
+            btn.title = '切換排序 (舊到新)';
+        }
+    }
+    renderLifeExpenseList();
+}
 
 function switchLifeView(viewType) {
     document.getElementById('lifeTabBtnCat').classList.toggle('active', viewType === 'cat');
@@ -278,8 +292,10 @@ function clearLifeFilter() {
 
 function renderLifeExpenseList() {
     var container = document.getElementById('lifeExpList');
-    var paginationContainer = document.getElementById('lifeExpPagination');
     if (!container) return;
+
+    // Use global state variable instead of reading from removed select
+    var sortMode = _lifeExpSortMode || 'date-desc';
 
     var all = lifeExpenses
         .filter(function (e) {
@@ -289,7 +305,13 @@ function renderLifeExpenseList() {
             }
             return true;
         })
-        .sort(function (a, b) { return a.date.localeCompare(b.date) || b.id.localeCompare(a.id); }); // Sort by date ascending
+        .sort(function (a, b) { 
+            if (sortMode === 'date-desc') {
+                return b.date.localeCompare(a.date) || b.id.localeCompare(a.id); // New to old
+            } else {
+                return a.date.localeCompare(b.date) || a.id.localeCompare(b.id); // Old to new
+            }
+        });
 
     if (all.length === 0) {
         container.innerHTML =
@@ -298,13 +320,8 @@ function renderLifeExpenseList() {
             '<strong>本月尚無記錄</strong>' +
             '<p>點擊「支出」按鈕開始記帳</p>' +
             '</div>';
-        if (paginationContainer) paginationContainer.innerHTML = '';
         return;
     }
-    
-    // No pagination: show all items
-    // Sort descending for display (newest first)
-    all.reverse();
 
     container.innerHTML = all.map(function (e) {
         var day = parseInt(e.date.split('-')[2]);

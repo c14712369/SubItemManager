@@ -205,9 +205,12 @@
                 
                 <div id="lifeViewExp" class="life-view-content active">
                     <div class="life-detail-panel" style="width: 100%;">
-                        <div class="life-detail-header" style="display: flex; align-items: center; position: relative; padding: 10px 0;">
+                        <div class="life-detail-header" style="display: flex; align-items: center; justify-content: space-between; position: relative; padding: 10px 16px;">
                             <h3 id="lifeDetailTitle" style="margin: 0; min-width: 100px;"><i class="fa-solid fa-book"></i> 全部明細</h3>
-                            <div style="flex: 1; display: flex; justify-content: flex-end;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <button class="icon-btn" id="lifeExpSortBtn" onclick="toggleLifeExpSort()" title="切換排序 (新到舊)">
+                                    <i class="fa-solid fa-arrow-down-short-wide"></i>
+                                </button>
                                 <button class="icon-btn" id="lifeClearFilter" onclick="clearLifeFilter()" title="清除篩選"
                                     style="display:none;">
                                     <i class="fa-solid fa-xmark"></i>
