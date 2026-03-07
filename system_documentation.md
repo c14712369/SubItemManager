@@ -38,52 +38,43 @@ graph TD
 | **資料儲存 (地端)** | Web Storage API (LocalStorage) | 應用程式核心狀態，提供離線與快速存取體驗 |
 | **資料儲存 (雲端)** | [Supabase](https://supabase.com/) | 提供使用者認證 (Auth) 及 PostgreSQL (備份 JSON 狀態) |
 | **圖表繪製** | [Chart.js](https://www.chartjs.org/) | 繪製各分類支出圓餅圖、長條圖及近 6 個月趨勢圖 |
-| **字體與圖示** | Google Fonts, Font Awesome | 提供 Noto Sans TC / Noto Serif TC 字體與 SVG 圖示 |
+| **匯率/股市 API** | Frankfurter & ExchangeRate API | 支援多國匯率即時與歷史查詢，並內建 404 備援Fallback機制 |
 
 ---
 
 ## 3. 功能模組詳解 (Features)
 
-系統劃分為五大核心模組（分頁），涵蓋多面向的財務與生活管理：
-
-### 3.1 生活費記帳 (Life Expenses)
-*   **收支明細管理**：記錄每日支出與收入，依月份自由切換查看。
-*   **分類預算控制**：可自訂收入/支出分類，並對單一分類設定「月預算」。
-*   **月度總覽**：自動計算本月實際收入、支出與結餘，並透過進度條顯示花費比例。
+### 3.1 生活費記帳 (Life Expenses) - [2026/03 優化]
+*   **整合式容器 (Shared Container)**：將「預算分類」與「收支明細」整合於同一個卡片容器中，透過頁籤切換，大幅優化行動裝置的垂直滑動體驗。
+*   **常態支出 (Daily Expenses)**：支援設定固定頻率（每天、平日、假日）的自動化支出。系統會自動補齊過去日期的固定開銷，同時保留單次編輯的彈性。
+*   **靈活排序**：明細列表支援一鍵切換「日期升冪/降冪」排列，方便回溯或檢視最新花費。
+*   **分類預算控制**：可自訂分類顏色與月預算，並透過進度條直觀顯示各分類的消費佔比與剩餘額度。
+*   **行動體驗優化**：針對長列表使用 `overscroll-behavior: contain` 確保容器內滑動不與外層頁面衝突。
 
 ### 3.2 收支分析 (Analysis)
-*   **財務儀表板**：設定預估月收入，系統自動計算扣除固定與生活支出後的「每月結餘」。可選擇是否扣除專案預定金。
-*   **圖表視覺化**：
-    *   **訂閱分類分析**：包含年度預估總支出，圓餅圖/長條圖，支援按年/按月檢視固定支出。
-    *   **生活費分類分析**：依月份檢視生活費各分類的佔比圓餅圖。
-    *   **趨勢圖**：近 6 個月的總收支折線趨勢圖。
+*   **財務儀表板**：設定預估月收入，系統自動計算扣除固定與生活支出後的「每月結餘」。
+*   **趨勢圖**：近 6 個月的總收支折線趨勢圖，視覺化財務健康狀況。
 
-### 3.3 固定支出 (Fixed Expenses / Management)
-*   **訂閱與分期管理**：新增、編輯、刪除(CRUD)固定支出或訂閱項目。
-*   **多幣別與週期**：支援 TWD, USD, JPY 等自動轉換匯率，並可設定每月、每季、每半年、每年或單次繳費。狀態區分「進行中」或「已結束」。
-*   **資料備份/匯出**：提供手動匯出/匯入全站備份 JSON 檔及清除所有資料功能。
+### 3.3 固定支出 (Fixed Expenses)
+*   **訂閱管理**：管理循環扣款或分期項目，支援多幣別自動轉換。
+*   **匯率Fallback**：當主要匯率API服務異常或假日無資料時，自動切換至備援API確保資料正確性。
 
 ### 3.4 資產試算 (Wealth Calculator)
-*   **多部位試算模型**：將資產劃分為「投資(股市/標的)」與「現金(銀行存款)」兩大部位，支援個別設定月投入金額、年化報酬率與活定存利率。
-*   **動態報酬率搜尋 (CAGR)**：支援搜尋台美股標的並自動帶入過去 1Y/5Y/10Y 的年化報酬率作為試算基準。
-*   **自動連動月結餘**：可選擇自動帶入「生活費記帳」模組計算出的每月實際結餘作為現金存款投入額。
-*   **2x2 電腦版佈局**：在桌面環境提供緊湊的四格版面，可同時檢視持股細節、銀行帳戶、試算參數與圖表預測結果。
-*   **資產增長趨勢圖**：繪製資產成長曲線，並自動標註達成目標金額的預估時間。
+*   **複利試算模型**：劃分投資與現金部位，支援台美股歷史 CAGR 自動搜尋帶入。
+*   **實時同步**：可將生活費模組產生的實際月結餘自動帶入作為試算參數。
 
-### 3.5 專案預算 (Projects / Events)
-*   **獨立預算專案**：例如旅遊、購車等特定目標，可設定總預算與起訖日期。
-*   **專案明細記帳**：在專案內獨立記錄各項花費，支援子分類，並顯示已花費與剩餘預算百分比。
-*   **預備金扣除連動**：在分析看板中可連動扣除每月應存下的「專案預定金」，以反映真實的剩餘可用資金。
+### 3.5 專案預算 (Projects)
+*   **獨立專案管理**：針對特定事件（如旅遊）建立獨立帳本，預算不與日常支出混淆。
 
-### 3.6 雲端同步 (Cloud Sync)
-*   **簡單帳戶系統**：提供 Email 與密碼登入/註冊功能。
-*   **自動備份與還原**：有登入的狀態下，任何資料或設定變更皆會自動打包 LocalStorage JSON 並上傳至 Supabase `user_backups` 表；登入時自動載入最新備份覆蓋本地。
+### 3.6 雲端同步與離線優先 (Cloud Sync & Offline-First) - [核心強化]
+*   **超時防卡死 (Timeout Handling)**：在進行雲端 Auth 或資料拉取時加入 5-8 秒超時限制，確保在網路不佳或假性連線時，使用者仍能秒開 APP 使用本地資料。
+*   **離線記帳 (Local-First)**：所有儲存動作優先寫入 LocalStorage。在無網路狀態下，APP 功能完全正常。
+*   **衝突解決 (Conflict Resolution)**：系統會比對本地與雲端的 `last_local_update` 時間戳。若偵測到本地資料較新，系統會主動反向推播 (Push) 覆蓋雲端，確保離線記的帳不被抹除。
+*   **自動重連同步**：監聽瀏覽器 `online` 事件，當網路恢復時自動觸發背景同步。
 
 ---
 
 ## 4. 資料流流程圖 (Data Flow)
-
-以下展示 **「登入並同步雲端資料」** 時處理流程：
 
 ```mermaid
 sequenceDiagram
@@ -93,45 +84,33 @@ sequenceDiagram
     participant LS as 💾 LocalStorage
     participant DB as ☁️ Supabase DB
 
+    Note over JS, LS: 離線優先：優先讀取地端快照
     User->>UI: 輸入 Email / 密碼登入
-    UI->>JS: signInWithPassword()
+    UI->>JS: signInWithPassword() (帶有 Timeout 監控)
     JS->>DB: 驗證帳密並取得 Session (JWT)
     JS->>DB: 查詢 user_backups 資料表
-    DB-->>JS: 回傳最新的 JSONB (app_data)
-    JS->>LS: 將 app_data 解析並寫入 LocalStorage
-    JS->>UI: 觸發 renderAll() 重新渲染畫面
-    UI-->>User: 顯示雲端覆蓋後的最新資料並提示成功
+    Note right of JS: 比對 Timestamp (本地 vs 雲端)
+    alt 本地資料較新
+        JS->>DB: upsert() 強制推送本地至雲端
+    else 雲端資料較新
+        DB-->>JS: 回傳最新的 JSONB (app_data)
+        JS->>LS: 更新 LocalStorage
+    end
+    JS->>UI: 重新渲染畫面
 ```
 
 ---
 
 ## 5. 資料結構定義 (Data Schema)
 
-### 5.1 Supabase Schema (PostgreSQL)
-```sql
-CREATE TABLE user_backups (
-    user_id UUID REFERENCES auth.users(id) PRIMARY KEY,
-    app_data JSONB NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
--- 並設定 Row Level Security (RLS) 確保用戶只能存取自己的備份
-```
-
-### 5.2 LocalStorage 狀態結構 (State)
-系統的核心狀態 (即備份至雲端的 JSONB 內容) 大致包含以下結構：
+### 5.1 LocalStorage 狀態結構 (State)
 ```json
 {
-  "items": [ /* 固定支出項目陣列 (包含 name, category, amount, currency, cycle 等) */ ],
-  "categories": [ /* 固定支出分類陣列 */ ],
-  "lifeItems": [ /* 生活費收支紀錄陣列 (含 type: income/expense) */ ],
-  "lifeCategories": [ /* 生活費分類陣列 (含 type, budget(月預算上限)) */ ],
-  "projects": [ /* 獨立企劃專案陣列 (包含 budget, startDate, endDate, status) */ ],
-  "projectItems": [ /* 專案明細紀錄陣列 (對照 project.id) */ ],
-  "projectCategories": [ /* 專案明細分類陣列 */ ],
-  "wealthParams": { /* 資產試算參數: investRate, cashCurrent, target 等 */ },
-  "monthlyIncome": 50000, /* 預估月本薪/收入 */
-  "deductProjectSavings": true /* 分析看板是否扣除專案預定金 */
+  "items": [ /* 固定支出項目 */ ],
+  "lifeItems": [ /* 生活費紀錄，含 _autoDailyId 標記 */ ],
+  "dailyExpenses": [ /* 常態支出設定：freq (everyday/weekdays/weekends) */ ],
+  "wealthParams": { /* 投資參數 */ },
+  "last_local_update": 1741343841000 /* 關鍵同步時間戳 */
 }
 ```
 
@@ -139,29 +118,12 @@ CREATE TABLE user_backups (
 
 ## 6. 專案檔案結構 (File Structure)
 
-```text
-Project Root
-├── index.html               # 應用程式入口 (包含 UI 骨架、分頁導航、Modals)
-├── style.css                # 樣式機制 (包含 CSS 變數主題、RWD、組件樣式)
-└── js/                      # 拆分模組化 JavaScript
-    ├── state.js             # 應用程式狀態管理 (全域 state 物件宣告)
-    ├── data.js              # LocalStorage 讀取/儲存、CRUD 核心資料處理
-    ├── utils.js             # 共用工具函式 (UUID 生成、金額格式化)
-    ├── supabase-config.js   # Supabase 初始化設定
-    ├── supabase-sync.js     # Auth 認證與雲端備份同步邏輯
-    ├── ui-fixed.js          # 「固定支出」分頁邏輯
-    ├── ui-life.js           # 「生活費記帳」分頁邏輯
-    ├── ui-analysis.js       # 「收支分析」分頁邏輯與 Chart.js 圖表繪製
-    ├── ui-wealth.js         # 「資產試算」分頁邏輯
-    ├── ui-projects.js       # 「專案預算」分頁邏輯
-    ├── ui-annual.js         # 「年度結算」分頁邏輯
-    └── main.js              # 全域事件綁定、初始化 (Tab 切換、主題切換、快取檢查等)
-```
+與原架構一致，重點模組職責：
+*   `js/supabase-sync.js`：核心同步與離線邏輯。
+*   `js/ui-life.js`：生活費 UI 與常態支出自動帶入邏輯。
+*   `js/utils.js`：包含快取機制與匯率備援邏輯。
 
 ---
 
-## 7. 未來擴充建議 (Possible Enhancements)
-*   **PWA (Progressive Web App)**：已支援安裝為桌面/手機應用程式，配置 Service Worker 實施資源快取與離線啟動。
-*   **高效能快取機制**：針對匯率與股票搜尋提供 6-24 小時的快取機制，大幅減少 API 調用次數與載入延遲。
-*   **資料導出 (CSV)**：支援將固定支出與生活費明細匯出為標準 CSV 格式，方便用戶進行二次分析。
-*   **暗黑模式 (Dark Mode)**：全站支援原生深色模式，依據系統偏好或手動切換。
+## 7. 系統特色結語
+本系統旨在提供**極速且可靠**的記帳體驗。透過「離線優先」設計與「自動化帶入（薪資/常態支出）」功能，將繁瑣的記帳動作降至最低，同時透過雲端同步確保數據跨裝置的安全與一致。
