@@ -762,6 +762,23 @@ h1 .title-icon {
     text-transform: uppercase;
 }
 
+.stat-value,
+.item-amount,
+.wealth-row-value,
+.wealth-total-amount,
+.hero-amount,
+.life-exp-amount,
+.life-income-amount,
+.budget-spent,
+.budget-limit,
+.fixed-summary-amount,
+.wealth-result-main,
+.sub-value,
+.calc-display-val {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
 .stat-value {
     font-family: var(--font-serif);
     font-size: 1.9rem;

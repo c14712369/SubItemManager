@@ -430,12 +430,18 @@ function deleteLifeExp(id) {
 function editLifeExp(id) {
     var e = lifeExpenses.find(x => x.id === id);
     if (!e) return;
+    
+    // 必須先開啟 Modal 以執行內部的重置邏輯
     openLifeExpModal(e.type === 'income' ? 'income' : 'expense');
+    
+    // 然後才設定編輯項目的具體數值
     document.getElementById('lifeExpId').value = e.id;
     var batchWrap = document.getElementById('lifeExpBatchToggleWrap');
-    if (batchWrap) batchWrap.style.display = 'none'; // Hide batch for edit
+    if (batchWrap) batchWrap.style.display = 'none'; // 編輯模式隱藏批次面板
 
+    document.getElementById('lifeExpAmount').value = e.amount;
     lifeCalcDisplaySet(e.amount);
+    
     document.getElementById('lifeExpDate').value = e.date;
     document.getElementById('lifeExpNote').value = e.note || '';
     if (e.type === 'income') {
@@ -701,7 +707,7 @@ function autoApplySalary(ym) {
 // ── Calculator ──
 var _calcCurrent = '0', _calcFirstNum = null, _calcOp = null, _calcFreshEntry = false;
 function _lifeCalcRefresh() {
-    var disp = document.getElementById('lifeCalcDisplay');
+    var disp = document.getElementById('lifeCalcAmountDisplay');
     if (disp) disp.textContent = parseFloat(_calcCurrent).toLocaleString('zh-TW');
     var hidden = document.getElementById('lifeExpAmount');
     if (hidden) hidden.value = parseFloat(_calcCurrent) || '';
