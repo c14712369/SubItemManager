@@ -3,39 +3,51 @@
 ![PWA Support](https://img.shields.io/badge/PWA-Supported-green)
 ![Vanilla JS](https://img.shields.io/badge/Javascript-Vanilla-yellow)
 ![Supabase](https://img.shields.io/badge/Backend-Supabase-blue)
+![Offline First](https://img.shields.io/badge/Architecture-Offline--First-orange)
 
-一個專為個人財務規劃設計的輕量級 Web 應用。整合了固定支出管理、日常生活記帳、資產增長試算與專案預算管理，並支援雲端同步與離線使用 (PWA)。
+一個專為個人財務規劃設計的極速、可靠的 Web 應用程式。無須依賴笨重的前端框架，純原生 JavaScript 打造，整合固定支出、日常記帳、資產增長預測與專案預算管理。
 
 ## ✨ 核心特色
 
-- 📱 **PWA 支援**：可直接安裝於手機或桌面，支援離線啟動，存取速度快且穩定。
-- ☁️ **雲端同步**：串接 Supabase Auth 與 Database，資料即時備份與還原，更換裝置不間斷。
-- 📈 **資產試算**：強大的複利試算模組，支援台美股動態報酬率搜尋 (CAGR) 與成長曲線圖。
-- 🖼️ **現代介面**：全站支援原生深色/淺色模式切換，並針對電腦版提供 2x2 效能網格佈局。
-- 📁 **資料匯出**：完整記錄隨時可匯出為 CSV 格式進行後續處理。
+### 🚀 離線優先與自動同步 (Offline-First)
+- **極速啟動**：即使在網路不佳或假性連線環境下，透過「5秒超時監控」機制，確保應用程式能秒開並優先使用本地快照。
+- **無縫記帳**：支援完全離線使用，所有紀錄優先寫入 LocalStorage。
+- **衝突解決**：採用「時間戳比對 (Timestamp)」技術，當偵測到網路恢復時，自動根據本地與雲端的更新時間進行「反向推播」或「覆蓋還原」。
+
+### 📅 生活費自動化與優化
+- **常態支出 (Daily Expenses)**：支援設定固定頻率（每日/平日/假日）的自動化記帳，系統自動補齊過去日期的固定開銷。
+- **共享容器 UI**：全新的明細與分類整合容器，透過頁籤切換大幅優化行動裝置的垂直滑動體驗。
+- **智慧排序**：支援一鍵切換日期升/降冪排序，檢視明細更直覺。
+
+### 📈 資產試算與分析
+- **複利預測**：結合台美股 CAGR 動態搜尋，自動帶入歷史報酬率進行資產增長試算。
+- **實時分析**：自動連動日常生活費模組計算出的「月實際結餘」，提供最真實的財務健康數據。
+
+### 🖼️ 現代化介面
+- **原生深色模式**：全站原生支援 Dark Mode，並提供 2x2 或 1fr 的響應式佈局切換。
+- **手機體驗強化**：使用 `overscroll-behavior: contain` 解決行動裝置清單滾動衝突。
 
 ## 🚀 快速開始
 
-### 環境需求
-- 一個靜態網頁伺服器 (如 Live Server, Vercel, 或直接開啟 `index.html`)。
-- 若需使用雲端功能，需配置 Supabase 專案參數。
+### 1. 本地啟動
+直接使用任何靜態伺服器（如 VS Code 的 Live Server）開啟 `index.html` 即可。
 
-### 配置雲端同步 (選配)
-1. 在 Supabase 建立一個 `user_backups` 資料表 (JSONB 欄位)。
-2. 修改 `js/supabase-config.js` 填入您的 `SUPABASE_URL` 與 `SUPABASE_ANON_KEY`。
+### 2. 配置 Supabase 雲端備份 (選配)
+1. 於 Supabase 建立 `user_backups` 資料表 (結構詳見 `system_documentation.md`)。
+2. 於 `js/supabase-config.js` 填入您的專案 API 參數。
 
-## 📂 檔案結構
+## 📂 檔案架構
 
-- `/index.html`: 入口點與 UI 骨架。
-- `/style.css`: 主題變數與所有樣式。
-- `/js/`: 模組化邏輯。
-    - `state.js` & `data.js`: 核心狀態與 LocalStorage 處理。
-    - `ui-*.js`: 各分頁獨立邏輯。
-    - `supabase-sync.js`: Auth 與備份同步。
-- `/sw.js`: PWA Service Worker。
+- `/index.html`: UI 骨架與入口。
+- `/style.css`: 核心樣式、CSS 變數主題與 RWD。
+- `/js/*.js`: 模組化邏輯。
+    - `supabase-sync.js`: **核心同步與離線邏輯**。
+    - `ui-life.js`: 生活費與常態支出處理。
+    - `utils.js`: 快取控制與**匯率備援機制**。
+- `/sw.js`: PWA 離線支援與資源快取。
 
 ## 📝 系統文件
-更詳細的技術架構與功能說明，請參閱 [system_documentation.md](./system_documentation.md)。
+更深入的架構分析與資料流程說明，請參閱 [system_documentation.md](./system_documentation.md)。
 
 ---
 *Created by [c1471](https://github.com/c14712369)*
