@@ -193,7 +193,6 @@ function changeLifeExpPage(delta) {
     _lifeExpCurrentPage += delta;
     renderLifeExpenseList();
 }
-
 function renderBudgetCards() {
     var container = document.getElementById('budgetCards');
     if (!container) return;
@@ -303,18 +302,11 @@ function renderLifeExpenseList() {
         return;
     }
     
-    // Pagination logic
+    // No pagination: show all items
     // Sort descending for display (newest first)
     all.reverse();
-    var totalPages = Math.ceil(all.length / _lifeExpPerPage);
-    if (_lifeExpCurrentPage > totalPages) _lifeExpCurrentPage = totalPages;
-    if (_lifeExpCurrentPage < 1) _lifeExpCurrentPage = 1;
-    
-    var startIdx = (_lifeExpCurrentPage - 1) * _lifeExpPerPage;
-    var endIdx = startIdx + _lifeExpPerPage;
-    var pageItems = all.slice(startIdx, endIdx);
 
-    container.innerHTML = pageItems.map(function (e) {
+    container.innerHTML = all.map(function (e) {
         var day = parseInt(e.date.split('-')[2]);
         var editBtn = '<button class="icon-btn" onclick="editLifeExp(\'' + e.id + '\')" title="編輯"><i class="fa-solid fa-pen"></i></button>';
         var delBtn = '<button class="icon-btn delete" onclick="deleteLifeExp(\'' + e.id + '\')" title="刪除"><i class="fa-solid fa-trash"></i></button>';
@@ -349,17 +341,6 @@ function renderLifeExpenseList() {
                 '</div>';
         }
     }).join('');
-    
-    if (paginationContainer) {
-        if (totalPages > 1) {
-            var prevBtn = '<button class="icon-btn" onclick="changeLifeExpPage(-1)" ' + (_lifeExpCurrentPage === 1 ? 'disabled' : '') + '><i class="fa-solid fa-chevron-left"></i></button>';
-            var pageInfo = '<span style="font-size:0.85rem; color:var(--text-muted); align-self:center; font-weight:500;">' + _lifeExpCurrentPage + ' / ' + totalPages + '</span>';
-            var nextBtn = '<button class="icon-btn" onclick="changeLifeExpPage(1)" ' + (_lifeExpCurrentPage === totalPages ? 'disabled' : '') + '><i class="fa-solid fa-chevron-right"></i></button>';
-            paginationContainer.innerHTML = prevBtn + pageInfo + nextBtn;
-        } else {
-            paginationContainer.innerHTML = '';
-        }
-    }
 }
 
 function setLifeExpType(type) {

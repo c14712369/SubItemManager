@@ -207,7 +207,6 @@
                     <div class="life-detail-panel" style="width: 100%;">
                         <div class="life-detail-header" style="display: flex; align-items: center; position: relative; padding: 10px 0;">
                             <h3 id="lifeDetailTitle" style="margin: 0; min-width: 100px;"><i class="fa-solid fa-book"></i> 全部明細</h3>
-                            <div id="lifeExpPagination" class="pagination-container" style="position: absolute; left: 50%; transform: translateX(-50%); display: flex; gap: 8px;"></div>
                             <div style="flex: 1; display: flex; justify-content: flex-end;">
                                 <button class="icon-btn" id="lifeClearFilter" onclick="clearLifeFilter()" title="清除篩選"
                                     style="display:none;">
@@ -215,7 +214,7 @@
                                 </button>
                             </div>
                         </div>
-                        <div id="lifeExpList"></div>
+                        <div id="lifeExpList" style="max-height: 500px; overflow-y: auto; padding-right: 4px;"></div>
                     </div>
                 </div>
 
