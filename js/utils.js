@@ -69,7 +69,13 @@ async function fetchWithCache(url, cacheKey, ttlHours = 6, forceRefresh = false)
     console.log(`[Cache Miss/Refresh] Fetching: ${url}`);
     try {
         const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) {
+            // Check if it's a known Frankfurter 404 to avoid scary red console errors
+            if (response.status === 404 && url.includes('api.frankfurter.app')) {
+                throw new Error('Frankfurter_404_NoData');
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
 
         const cacheData = {
@@ -79,7 +85,13 @@ async function fetchWithCache(url, cacheKey, ttlHours = 6, forceRefresh = false)
         localStorage.setItem(fullKey, JSON.stringify(cacheData));
         return data;
     } catch (error) {
-        console.error(`[Cache Fetch Error] ${url}:`, error);
+        // Only log error as an actual error if it's not our expected Frankfurter 404
+        if (error.message === 'Frankfurter_404_NoData') {
+            console.log(`[Cache Fetch Info] No data for ${url} (Normal for holidays/weekends)`);
+        } else {
+            console.error(`[Cache Fetch Error] ${url}:`, error);
+        }
+        
         // Fallback to old cache if exists, even if expired
         const cached = localStorage.getItem(fullKey);
         if (cached) {
@@ -120,9 +132,22 @@ async function fetchHistoricalRate(currency, dateStr) {
     try {
         const url = `https://api.frankfurter.app/${queryDate}?from=${currency}&to=TWD`;
         const data = await fetchWithCache(url, cacheKey, ttl);
-        return data?.rates?.TWD || null;
+        if (data && data.rates && data.rates.TWD) {
+            return data.rates.TWD;
+        }
+        throw new Error('No TWD rate found in Frankfurter response');
     } catch (e) {
-        return null;
+        console.warn(`[匯率] 無法取得 ${queryDate} 的匯率，嘗試從備用 API 取得最新匯率...`, e.message);
+        // Fallback to exchangerate-api if historical fails or TWD is missing
+        try {
+            const fallbackUrl = `https://api.exchangerate-api.com/v4/latest/${currency}`;
+            const fallbackCacheKey = `fxhist_${currency}_latest_v4`;
+            const fallbackData = await fetchWithCache(fallbackUrl, fallbackCacheKey, 6);
+            return fallbackData?.rates?.TWD || null;
+        } catch (fallbackErr) {
+            console.error('[匯率] Fallback 也失敗', fallbackErr);
+            return null;
+        }
     }
 }
 
