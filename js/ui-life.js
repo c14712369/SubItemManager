@@ -1,4 +1,15 @@
-﻿// ====== js/ui-life.js ======
+// ====== js/ui-life.js ======
+var _lifeSelectedCatId = null;
+var _lifeExpSortMode = 'date-desc';
+var _selectedCreditCardId = null;
+var _calcCurrent = '0';
+
+function _safeFormat(num, type) {
+    if (typeof num !== 'number') num = parseFloat(num) || 0;
+    if (window.isPrivacyMode && (type === 'income' || type === 'asset')) return '****';
+    return num.toLocaleString();
+}
+
 function changeLifeMonth(delta) {
     var parts = lifeCurrentMonth.split('-').map(Number);
     var d = new Date(parts[0], parts[1] - 1 + delta, 1);
@@ -6,68 +17,28 @@ function changeLifeMonth(delta) {
     renderLifeTab();
 }
 
-function getLifeTotalForMonth(ym) {
-    return lifeExpenses
-        .filter(e => e.date && e.date.startsWith(ym))
-        .reduce((s, e) => s + (e.amount || 0), 0);
-}
-
-function getLifeSpentByCat(catId, ym) {
-    return lifeExpenses
-        .filter(e => e.categoryId === catId && e.date && e.date.startsWith(ym))
-        .reduce((s, e) => s + (e.amount || 0), 0);
-}
-
-function getLifeBudget(catId, ym) {
-    return lifeBudgets[catId + '|' + ym] || 0;
-}
-
-function getTotalBudgetForMonth(ym) {
-    return lifeCategories.reduce((s, c) => s + getLifeBudget(c.id, ym), 0);
-}
-
 function getLifeIncomeForMonth(ym) {
-    return lifeExpenses
-        .filter(e => e.type === 'income' && e.date && e.date.startsWith(ym))
-        .reduce((s, e) => s + (e.amount || 0), 0);
+    return lifeExpenses.filter(e => e.type === 'income' && e.date && e.date.startsWith(ym)).reduce((s, e) => s + (e.amount || 0), 0);
 }
 
 function getLifeOnlyExpForMonth(ym) {
-    return lifeExpenses
-        .filter(e => e.type !== 'income' && e.date && e.date.startsWith(ym))
-        .reduce((s, e) => s + (e.amount || 0), 0);
+    return lifeExpenses.filter(e => e.type !== 'income' && e.date && e.date.startsWith(ym)).reduce((s, e) => s + (e.amount || 0), 0);
 }
 
 function getMonthlyFixedTotal(ym) {
-    if (!ym) return 0;
+    if (!ym || !items) return 0;
     const [yearStr, monthStr] = ym.split('-');
-    const viewYear = parseInt(yearStr);
-    const viewMonth = parseInt(monthStr);
-    const monthStart = new Date(viewYear, viewMonth - 1, 1);
-    const monthEnd = new Date(viewYear, viewMonth, 0);
-    monthStart.setHours(0, 0, 0, 0);
-    monthEnd.setHours(23, 59, 59, 999);
-
-    const activeItems = items.filter(item => {
+    const viewYear = parseInt(yearStr), viewMonth = parseInt(monthStr);
+    const monthStart = new Date(viewYear, viewMonth - 1, 1), monthEnd = new Date(viewYear, viewMonth, 0);
+    const daysInMonth = monthEnd.getDate();
+    return items.filter(item => {
         const start = new Date(item.startDate);
-        start.setHours(0, 0, 0, 0);
         if (start > monthEnd) return false;
         const end = item.endDate ? new Date(item.endDate) : null;
-        if (end) {
-            end.setHours(23, 59, 59, 999);
-            if (end < monthStart) return false;
-        }
+        if (end && end < monthStart) return false;
         return true;
-    });
-
-    const daysInMonth = new Date(viewYear, viewMonth, 0).getDate();
-    return activeItems.reduce((total, item) => {
-        const baseAmt = getItemAmountForMonth(item, viewYear, viewMonth);
-        if (item.cycle === 'fixed') {
-            const startD = new Date(item.startDate);
-            if (startD.getFullYear() === viewYear && (startD.getMonth() + 1) === viewMonth) return total + baseAmt;
-            return total;
-        }
+    }).reduce((total, item) => {
+        const baseAmt = item.amount || 0;
         let monthly = baseAmt;
         switch (item.cycle) {
             case 'daily': monthly = baseAmt * daysInMonth; break;
@@ -75,9 +46,12 @@ function getMonthlyFixedTotal(ym) {
             case 'monthly': monthly = baseAmt; break;
             case 'bimonthly': monthly = baseAmt / 2; break;
             case 'quarterly': monthly = baseAmt / 3; break;
-            case 'half-yearly':
             case 'halfyear': monthly = baseAmt / 6; break;
             case 'yearly': monthly = baseAmt / 12; break;
+            case 'fixed': 
+                const startD = new Date(item.startDate);
+                if (startD.getFullYear() === viewYear && (startD.getMonth() + 1) === viewMonth) return total + baseAmt;
+                return total;
         }
         return total + monthly;
     }, 0);
@@ -86,750 +60,249 @@ function getMonthlyFixedTotal(ym) {
 async function renderLifeTab() {
     autoApplySalary(lifeCurrentMonth);
     autoApplyDailyExpenses(lifeCurrentMonth);
-    const [ly, lm] = lifeCurrentMonth.split('-').map(Number);
-    await prefetchFXRates(items, [[ly, lm]]);
-
     var label = document.getElementById('lifeMonthDisplay');
     if (label) label.textContent = lifeMonthLabel(lifeCurrentMonth);
-
     var totalIncome = getLifeIncomeForMonth(lifeCurrentMonth);
     var totalExpense = getLifeOnlyExpForMonth(lifeCurrentMonth);
     var totalFixed = getMonthlyFixedTotal(lifeCurrentMonth);
-    var totalProject = 0;
-    if (typeof projectExpenses !== 'undefined' && projectExpenses) {
-        projectExpenses.forEach(e => { if (e.date && e.date.startsWith(lifeCurrentMonth)) totalProject += (e.amount || 0); });
-    }
-
-    var remain = totalIncome - totalExpense - totalFixed - totalProject;
-    var totalOutgoing = totalExpense + totalFixed + totalProject;
-    var isOver = totalOutgoing > totalIncome && totalIncome > 0;
-    var pct = totalIncome > 0 ? Math.min(Math.round((totalOutgoing / totalIncome) * 100), 100) : 0;
-    var rawPct = totalIncome > 0 ? Math.round((totalOutgoing / totalIncome) * 100) : 0;
-
-    if (document.getElementById('lifeMonthBudget')) document.getElementById('lifeMonthBudget').textContent = 'NT$ ' + formatAmount(totalIncome, 'income');
-    if (document.getElementById('lifeMonthFixed')) document.getElementById('lifeMonthFixed').textContent = 'NT$ ' + formatAmount(Math.round(totalFixed), 'fixed');
-    if (document.getElementById('lifeMonthSpent')) document.getElementById('lifeMonthSpent').textContent = 'NT$ ' + formatAmount(totalExpense, 'expense');
-    if (document.getElementById('lifeMonthProject')) document.getElementById('lifeMonthProject').textContent = 'NT$ ' + formatAmount(Math.round(totalProject), 'expense');
-    if (document.getElementById('lifeMonthProjectRow')) document.getElementById('lifeMonthProjectRow').style.display = totalProject > 0 ? '' : 'none';
-    
+    var remain = totalIncome - totalExpense - totalFixed;
+    var isOver = (totalExpense + totalFixed) > totalIncome && totalIncome > 0;
+    var pct = totalIncome > 0 ? Math.min(Math.round(((totalExpense + totalFixed) / totalIncome) * 100), 100) : 0;
+    if (document.getElementById('lifeMonthBudget')) document.getElementById('lifeMonthBudget').textContent = 'NT$ ' + _safeFormat(totalIncome, 'income');
+    if (document.getElementById('lifeMonthSpent')) document.getElementById('lifeMonthSpent').textContent = 'NT$ ' + _safeFormat(totalExpense, 'expense');
+    if (document.getElementById('lifeMonthFixed')) document.getElementById('lifeMonthFixed').textContent = 'NT$ ' + _safeFormat(Math.round(totalFixed), 'fixed');
     var remainEl = document.getElementById('lifeMonthRemain');
     if (remainEl) {
-        remainEl.textContent = 'NT$ ' + formatAmount(Math.abs(Math.round(remain)), 'asset') + (remain < 0 ? ' (超支)' : '');
+        remainEl.textContent = 'NT$ ' + _safeFormat(Math.abs(Math.round(remain)), 'asset') + (remain < 0 ? ' (超支)' : '');
         remainEl.className = 'hero-amount ' + (remain < 0 ? 'stat-negative' : 'stat-positive');
     }
-    
-    var barEl = document.getElementById('lifeOverallProgress');
-    if (barEl) {
-        barEl.style.width = pct + '%';
-        barEl.className = 'progress-fill' + (isOver ? ' over-budget' : '');
+    if (document.getElementById('lifeOverallProgress')) {
+        document.getElementById('lifeOverallProgress').style.width = pct + '%';
+        document.getElementById('lifeOverallProgress').className = 'progress-fill' + (isOver ? ' over-budget' : '');
     }
-    
-    var pctEl = document.getElementById('lifeOverallPct');
-    if (pctEl) {
-        pctEl.textContent = totalIncome > 0 ? '支出 ' + rawPct + '%' : '—';
-        pctEl.className = 'progress-pct' + (isOver ? ' over-budget' : '');
-    }
-
-    renderBudgetCards();
-    renderLifeExpenseList();
-    if (typeof updateSalaryApplyBtn === 'function') updateSalaryApplyBtn();
-}
-
-var _lifeSelectedCatId = null;
-var _lifeExpSortMode = 'date-desc';
-
-function toggleLifeExpSort() {
-    _lifeExpSortMode = (_lifeExpSortMode === 'date-desc') ? 'date-asc' : 'date-desc';
-    var btn = document.getElementById('lifeExpSortBtn');
-    if (btn) {
-        btn.innerHTML = (_lifeExpSortMode === 'date-desc') ? '<i class="fa-solid fa-arrow-down-short-wide"></i>' : '<i class="fa-solid fa-arrow-up-wide-short"></i>';
-        btn.title = (_lifeExpSortMode === 'date-desc') ? '切換排序 (新到舊)' : '切換排序 (舊到新)';
-    }
-    renderLifeExpenseList();
-}
-
-function switchLifeView(viewType) {
-    document.getElementById('lifeTabBtnCat').classList.toggle('active', viewType === 'cat');
-    document.getElementById('lifeTabBtnExp').classList.toggle('active', viewType === 'exp');
-    document.getElementById('lifeViewCat').classList.toggle('active', viewType === 'cat');
-    document.getElementById('lifeViewExp').classList.toggle('active', viewType === 'exp');
-    if (viewType === 'cat') { document.getElementById('lifeViewExp').style.display = 'none'; document.getElementById('lifeViewCat').style.display = 'block'; }
-    else { document.getElementById('lifeViewCat').style.display = 'none'; document.getElementById('lifeViewExp').style.display = 'block'; }
+    renderBudgetCards(); renderLifeExpenseList();
 }
 
 function renderBudgetCards() {
-    var container = document.getElementById('budgetCards');
-    if (!container) return;
+    var container = document.getElementById('budgetCards'); if (!container) return;
     container.innerHTML = '';
     var totalSpent = getLifeOnlyExpForMonth(lifeCurrentMonth);
-
-    var allRow = document.createElement('div');
-    allRow.className = 'life-cat-row' + (_lifeSelectedCatId === null ? ' active' : '');
-    allRow.onclick = function () { clearLifeFilter(); };
-    allRow.innerHTML = `<div class="life-cat-row-left"><span class="life-cat-dot" style="background:var(--primary-color)"></span><span class="life-cat-row-name">全部支出</span></div><div class="life-cat-row-right"><span class="life-cat-row-amt">NT$ ${totalSpent.toLocaleString()}</span><button class="icon-btn life-cat-action" style="visibility:hidden;"><i class="fa-solid fa-plus"></i></button></div>`;
-    container.appendChild(allRow);
-
-    var sep = document.createElement('div');
-    sep.className = 'life-cat-sep';
-    container.appendChild(sep);
-
+    container.innerHTML = `<div class="life-cat-row ${(_lifeSelectedCatId === null ? 'active' : '')}" onclick="clearLifeFilter()">全部支出: NT$ ${totalSpent.toLocaleString()}</div>`;
     lifeCategories.forEach(cat => {
-        var spent = getLifeSpentByCat(cat.id, lifeCurrentMonth);
+        var spent = lifeExpenses.filter(e => e.categoryId === cat.id && e.date && e.date.startsWith(lifeCurrentMonth)).reduce((s, e) => s + (e.amount || 0), 0);
         if (spent <= 0) return;
-        var budget = getLifeBudget(cat.id, lifeCurrentMonth);
-        var isOverBudget = budget > 0 && spent > budget;
-        var budgetPct = budget > 0 ? Math.min(Math.round((spent / budget) * 100), 100) : 0;
-        var row = document.createElement('div');
-        row.className = 'life-cat-row' + (_lifeSelectedCatId === cat.id ? ' active' : '') + (isOverBudget ? ' over-budget-row' : '');
-        row.onclick = () => selectLifeCat(cat.id);
-        var budgetBar = budget > 0 ? `<div class="cat-budget-bar"><div class="cat-budget-fill${isOverBudget ? ' over' : ''}" style="width:${budgetPct}%"></div></div>` : '';
-        row.innerHTML = `<div class="life-cat-row-left"><span class="life-cat-dot" style="background:${cat.color}"></span><span class="life-cat-row-name">${cat.name}${isOverBudget ? ' <i class="fa-solid fa-triangle-exclamation" style="color:var(--danger-color);font-size:0.75rem;margin-left:4px;"></i>' : ''}</span></div><div class="life-cat-row-right"><div style="text-align:right"><span class="life-cat-row-amt${isOverBudget ? ' text-danger' : ''}">NT$ ${spent.toLocaleString()}</span>${budget > 0 ? `<div class="life-cat-row-budget-hint">/ NT$ ${budget.toLocaleString()}</div>` : ''}</div><button class="icon-btn life-cat-action" onclick="event.stopPropagation();openLifeExpModal('${cat.id}')" title="新增支出"><i class="fa-solid fa-plus"></i></button></div>${budgetBar ? `<div class="cat-budget-bar-wrap">${budgetBar}</div>` : ''}`;
-        container.appendChild(row);
+        container.innerHTML += `<div class="life-cat-row ${(_lifeSelectedCatId === cat.id ? 'active' : '')}" onclick="selectLifeCat('${cat.id}')">${cat.name}: NT$ ${spent.toLocaleString()}</div>`;
     });
 }
 
-function selectLifeCat(catId) {
-    _lifeSelectedCatId = catId;
-    renderBudgetCards();
-    renderLifeExpenseList();
-    var cat = getLifeCat(catId);
-    if (document.getElementById('lifeDetailTitle')) document.getElementById('lifeDetailTitle').innerHTML = `<span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${cat.color};margin-right:6px;vertical-align:middle;"></span>${cat.name} 明細`;
-    if (document.getElementById('lifeClearFilter')) document.getElementById('lifeClearFilter').style.display = '';
-}
-
-function clearLifeFilter() {
-    _lifeSelectedCatId = null;
-    renderBudgetCards();
-    renderLifeExpenseList();
-    if (document.getElementById('lifeDetailTitle')) document.getElementById('lifeDetailTitle').innerHTML = '<i class="fa-solid fa-book"></i> 全部明細';
-    if (document.getElementById('lifeClearFilter')) document.getElementById('lifeClearFilter').style.display = 'none';
-}
+function selectLifeCat(catId) { _lifeSelectedCatId = catId; renderLifeTab(); }
+function clearLifeFilter() { _lifeSelectedCatId = null; renderLifeTab(); }
 
 function renderLifeExpenseList() {
-    var container = document.getElementById('lifeExpList');
-    if (!container) return;
+    var container = document.getElementById('lifeExpList'); if (!container) return;
     var sortMode = _lifeExpSortMode || 'date-desc';
+    var rewardMap = {};
+    lifeExpenses.forEach(e => { if (e.type === 'income' && e._linkedExpenseId) rewardMap[e._linkedExpenseId] = e.amount; });
     var all = lifeExpenses.filter(e => {
         if (!e.date || !e.date.startsWith(lifeCurrentMonth)) return false;
-        if (_lifeSelectedCatId !== null) return e.type !== 'income' && e.categoryId === _lifeSelectedCatId;
+        if (e.type === 'income' && e._linkedExpenseId) return false;
+        if (_lifeSelectedCatId !== null) return e.categoryId === _lifeSelectedCatId;
         return true;
     }).sort((a, b) => sortMode === 'date-desc' ? (b.date.localeCompare(a.date) || b.id.localeCompare(a.id)) : (a.date.localeCompare(b.date) || a.id.localeCompare(b.id)));
-
-    if (all.length === 0) {
-        container.innerHTML = `<div class="empty-state"><span class="empty-icon"><i class="fa-regular fa-face-smile-beam"></i></span><strong>本月尚無記錄</strong><p>點擊下方按鈕開始記錄生活開支</p><button class="btn btn-primary empty-state-btn" onclick="openLifeExpModal()"><i class="fa-solid fa-plus"></i> 立即記一筆</button></div>`;
-        return;
-    }
-
+    if (all.length === 0) { container.innerHTML = `<div class="empty-state"><strong>本月尚無記錄</strong></div>`; return; }
     container.innerHTML = all.map(e => {
         var day = parseInt(e.date.split('-')[2]);
-        var editBtn = `<button class="icon-btn" onclick="editLifeExp('${e.id}')" title="編輯"><i class="fa-solid fa-pen"></i></button>`;
-        var delBtn = `<button class="icon-btn delete" onclick="deleteLifeExp('${e.id}')" title="刪除"><i class="fa-solid fa-trash"></i></button>`;
+        var editBtn = `<button class="icon-btn" onclick="editLifeExp('${e.id}')"><i class="fa-solid fa-pen"></i></button>`;
+        var delBtn = `<button class="icon-btn delete" onclick="deleteLifeExp('${e.id}')"><i class="fa-solid fa-trash"></i></button>`;
         if (e.type === 'income') {
-            var incCat = getLifeIncCat(e.categoryId);
-            var note = (e.note || incCat.name).replace(/[（\(\[].*?[）\)\]]/g, '').trim() || incCat.name;
-            return `<div class="life-income-row"><div class="life-income-date" style="color:${incCat.color};">${day}</div><div class="life-income-arrow" style="background:${incCat.color};"></div><div class="life-income-info"><div class="life-income-src">${incCat.name}</div><div class="life-income-note">${note}</div></div><div class="life-income-amount">+ NT$ ${formatAmount(e.amount, 'income')}</div>${editBtn}${delBtn}</div>`;
+            var incCat = lifeIncomeCategories.find(c => c.id === e.categoryId) || {name: '收入', color: '#3D7A5A'};
+            var displayNote = (e.note && e.note !== incCat.name) ? `<span class="life-item-note-sep">·</span><span class="life-item-note" title="${e.note}">${e.note}</span>` : '';
+            return `<div class="life-income-row"><div class="life-income-date">${day}</div><div class="life-income-arrow" style="background:${incCat.color}"></div><div class="life-exp-info"><div class="life-item-main-line"><span class="life-item-cat-name">${incCat.name}</span>${displayNote}</div></div><div class="life-exp-amount-wrap"><div class="life-income-amount">+ NT$ ${_safeFormat(e.amount, 'income')}</div></div><div class="life-item-actions">${editBtn}${delBtn}</div></div>`;
         } else {
-            var cat = getLifeCat(e.categoryId);
-            var payIcon = e.paymentMethod && e.paymentMethod !== 'cash' ? ' <i class="fa-solid fa-credit-card" style="font-size:0.7rem;opacity:0.6;"></i>' : '';
-            return `<div class="life-exp-row"><div class="life-exp-date">${day}</div><div class="life-exp-dot" style="background:${cat.color}"></div><div class="life-exp-info"><div class="life-exp-cat">${cat.name}${payIcon}</div><div class="life-exp-note">${e.note || cat.name}</div></div><div class="life-exp-amount">- NT$ ${e.amount.toLocaleString()}</div>${editBtn}${delBtn}</div>`;
+            var cat = lifeCategories.find(c => c.id === e.categoryId) || {name: '支出', color: '#6B6B6B'};
+            var payIcon = e.paymentMethod === 'card' ? ' <i class="fa-solid fa-credit-card" style="font-size:0.7rem;opacity:0.6;margin-left:4px;"></i>' : '';
+            var linkedReward = rewardMap[e.id];
+            var rewardHtml = linkedReward ? `<div class="life-exp-reward-inline"><i class="fa-solid fa-gift"></i> +${linkedReward.toLocaleString()}</div>` : '';
+            var displayNote = (e.note && e.note !== cat.name) ? `<span class="life-item-note-sep">·</span><span class="life-item-note" title="${e.note}">${e.note}</span>` : '';
+            return `<div class="life-exp-row"><div class="life-exp-date">${day}</div><div class="life-exp-dot" style="background:${cat.color}"></div><div class="life-exp-info"><div class="life-item-main-line"><span class="life-item-cat-name">${cat.name}</span>${displayNote}${payIcon}</div></div><div class="life-exp-amount-wrap"><div class="life-exp-amount stat-negative">- NT$ ${e.amount.toLocaleString()}</div>${rewardHtml}</div><div class="life-item-actions">${editBtn}${delBtn}</div></div>`;
         }
     }).join('');
 }
 
-function setLifeExpType(type) {
-    document.getElementById('lifeExpType').value = type;
-    var expBtn = document.getElementById('typeExpBtn');
-    var incBtn = document.getElementById('typeIncBtn');
-    var catGroup = document.getElementById('lifeExpCatGroup');
-    var incCatGroup = document.getElementById('lifeExpIncCatGroup');
-    var payGroup = document.getElementById('lifeExpPaymentGroup');
-    var submitBtn = document.getElementById('lifeExpSubmitBtn');
-    var batchWrap = document.getElementById('lifeExpBatchToggleWrap');
-
-    if (type === 'income') {
-        expBtn.className = 'type-btn';
-        incBtn.className = 'type-btn active income-mode';
-        if (catGroup) catGroup.style.display = 'none';
-        if (incCatGroup) incCatGroup.style.display = '';
-        if (payGroup) payGroup.style.display = 'none';
-        if (submitBtn) submitBtn.textContent = '儲存收入';
-        if (batchWrap) batchWrap.style.display = 'none';
-        document.getElementById('lifeExpModalTitle').textContent = '新增收入';
-    } else {
-        expBtn.className = 'type-btn active';
-        incBtn.className = 'type-btn';
-        if (catGroup) catGroup.style.display = '';
-        if (incCatGroup) incCatGroup.style.display = 'none';
-        if (payGroup) payGroup.style.display = '';
-        if (submitBtn) submitBtn.textContent = '儲存支出';
-        if (batchWrap) batchWrap.style.display = '';
-        document.getElementById('lifeExpModalTitle').textContent = '新增支出';
-    }
-    updateRewardPreview();
-}
-
 function openLifeExpModal(typeOrPreset) {
-    var overlay = document.getElementById('lifeExpModalOverlay');
+    var overlay = document.getElementById('lifeExpModalOverlay'); if(!overlay) return;
     var type = (typeOrPreset === 'income') ? 'income' : 'expense';
     var presetCatId = (typeOrPreset && typeOrPreset !== 'income' && typeOrPreset !== 'expense') ? typeOrPreset : null;
-
-    var sel = document.getElementById('lifeExpCat');
-    if (sel) {
-        sel.innerHTML = lifeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        if (type === 'expense' && presetCatId) sel.value = presetCatId;
-    }
-    var incSel = document.getElementById('lifeExpIncCat');
-    if (incSel) {
-        incSel.innerHTML = lifeIncomeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-        if (type === 'income' && presetCatId) incSel.value = presetCatId;
-    }
-
-    // Populate Payment Methods
-    var paySel = document.getElementById('lifeExpPaymentMethod');
-    if (paySel) {
-        var options = paymentMethods.map(pm => `<option value="${pm.id}">${pm.name}</option>`).join('');
-        paySel.innerHTML = options;
-        paySel.value = 'cash';
-    }
-
-    document.getElementById('lifeExpId').value = '';
-    document.getElementById('lifeExpAmount').value = '';
+    var cSel = document.getElementById('lifeExpCat'); if(cSel) cSel.innerHTML = lifeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    var iSel = document.getElementById('lifeExpIncCat'); if(iSel) iSel.innerHTML = lifeIncomeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    var pSel = document.getElementById('lifeExpPaymentMethod'); if(pSel) pSel.innerHTML = paymentMethods.map(pm => `<option value="${pm.id}">${pm.name}</option>`).join('');
+    if (presetCatId) { if (type === 'income' && iSel) iSel.value = presetCatId; else if (cSel) cSel.value = presetCatId; }
+    document.getElementById('lifeExpId').value = ''; document.getElementById('lifeExpAmount').value = '';
     document.getElementById('lifeExpDate').value = lifeCurrentMonth + '-' + String(new Date().getDate()).padStart(2, '0');
     document.getElementById('lifeExpNote').value = '';
-
-    var batchWrap = document.getElementById('lifeExpBatchToggleWrap');
-    if (batchWrap) {
-        batchWrap.classList.remove('active');
-        batchWrap.style.display = ''; 
-        document.getElementById('lifeExpBatchPanel').style.display = 'none';
-        document.getElementById('lifeExpBatchDates').value = '';
-        document.getElementById('batchPreviewList').innerHTML = '';
-        document.getElementById('batchToggleIcon').className = 'fa-solid fa-chevron-down toggle-icon';
-    }
-
-    lifeCalcReset();
-    setLifeExpType(type);
-    if (overlay) overlay.classList.add('active');
-    document.body.classList.add('modal-open');
+    _selectedCreditCardId = null; document.getElementById('creditCardPickerGroup').style.display = 'none'; document.getElementById('benefitPlanPickerGroup').style.display = 'none';
+    lifeCalcReset(); setLifeExpType(type); overlay.classList.add('active');
 }
 
-function closeLifeExpModal() {
-    closeCalcPopup();
-    var overlay = document.getElementById('lifeExpModalOverlay');
-    if (overlay) overlay.classList.remove('active');
-    document.body.classList.remove('modal-open');
-    if (typeof resetViewport === 'function') resetViewport();
-    lifeCalcReset();
-}
+function closeLifeExpModal() { var o = document.getElementById('lifeExpModalOverlay'); if(o) o.classList.remove('active'); }
 
-function openCalcPopup() {
-    var overlay = document.getElementById('calcPopupOverlay');
-    if (overlay) overlay.classList.add('active');
-}
-
-function closeCalcPopup() {
-    var overlay = document.getElementById('calcPopupOverlay');
-    if (overlay) overlay.classList.remove('active');
+async function onPaymentMethodChange() {
+    var pmId = document.getElementById('lifeExpPaymentMethod').value;
+    var pickerGroup = document.getElementById('creditCardPickerGroup');
+    if (pmId === 'card') { if(pickerGroup) pickerGroup.style.display = 'block'; await loadCreditCardPicker(); } 
+    else { if(pickerGroup) pickerGroup.style.display = 'none'; var bGroup = document.getElementById('benefitPlanPickerGroup'); if(bGroup) bGroup.style.display = 'none'; _selectedCreditCardId = null; }
     updateRewardPreview();
 }
 
-function calcPopupBgClick(e) { if (e.target === document.getElementById('calcPopupOverlay')) closeCalcPopup(); }
+async function loadCreditCardPicker() {
+    var picker = document.getElementById('creditCardPicker'); if(!picker) return;
+    try {
+        var cards = await CreditCardService.getCards();
+        picker.innerHTML = '<option value="">-- 選擇信用卡 --</option>' + cards.map(c => `<option value="${c.CardID}">${c.BankName} ${c.CardName}</option>`).join('');
+        if (_selectedCreditCardId) picker.value = _selectedCreditCardId;
+    } catch (e) { }
+}
 
-function updateRewardPreview() {
-    var type = document.getElementById('lifeExpType').value;
+async function onCreditCardChange() {
+    var picker = document.getElementById('creditCardPicker'); if(!picker) return;
+    var planGroup = document.getElementById('benefitPlanPickerGroup');
+    var planPicker = document.getElementById('benefitPlanPicker');
+    _selectedCreditCardId = picker.value ? parseInt(picker.value) : null;
+    if (_selectedCreditCardId) {
+        const cards = await CreditCardService.getCards();
+        const card = cards.find(c => c.CardID === _selectedCreditCardId);
+        if (card && card.RequireSwitch) {
+            const rewards = await CreditCardService.getRewardsForCard(_selectedCreditCardId);
+            const plans = [...new Set(rewards.map(r => r.PlanName).filter(Boolean))];
+            if (plans.length > 0 && planPicker) { planPicker.innerHTML = plans.map(p => `<option value="${p}">${p}</option>`).join(''); if(planGroup) planGroup.style.display = 'block'; } 
+            else if(planGroup) planGroup.style.display = 'none';
+        } else if(planGroup) planGroup.style.display = 'none';
+    } else if(planGroup) planGroup.style.display = 'none';
+    updateRewardPreview();
+}
+
+async function updateRewardPreview() {
     var amount = parseInt(document.getElementById('lifeExpAmount').value) || 0;
     var pmId = document.getElementById('lifeExpPaymentMethod').value;
-    var preview = document.getElementById('rewardPreview');
-    
-    if (type === 'income' || !pmId || pmId === 'cash' || amount <= 0) {
-        if (preview) preview.style.display = 'none';
-        return;
-    }
-
-    var pm = paymentMethods.find(x => x.id === pmId);
-    if (pm && pm.rewardRate > 0) {
-        var reward = Math.floor(amount * pm.rewardRate / 100);
-        document.getElementById('rewardPreviewAmount').textContent = reward;
-        document.getElementById('rewardPreviewRate').textContent = pm.rewardRate;
+    var preview = document.getElementById('rewardPreview'); if(!preview) return;
+    if (pmId !== 'card' || amount <= 0 || !_selectedCreditCardId) { preview.style.display = 'none'; return; }
+    var bPicker = document.getElementById('benefitPlanPicker');
+    var bGroup = document.getElementById('benefitPlanPickerGroup');
+    const planName = (bGroup && bGroup.style.display !== 'none' && bPicker) ? bPicker.value : null;
+    const best = await CreditCardService.getBestRewardRate(_selectedCreditCardId, document.getElementById('lifeExpCat').value, planName);
+    if (best.rate > 0) {
+        document.getElementById('rewardPreviewAmount').textContent = Math.floor(amount * best.rate / 100);
+        document.getElementById('rewardPreviewRate').textContent = best.rate + '% [' + best.category + ']';
         preview.style.display = 'block';
-    } else {
-        preview.style.display = 'none';
+    } else preview.style.display = 'none';
+}
+
+async function editLifeExp(id) {
+    var e = lifeExpenses.find(x => x.id === id); if (!e) return;
+    openLifeExpModal(e.type === 'income' ? 'income' : 'expense');
+    document.getElementById('lifeExpId').value = e.id;
+    document.getElementById('lifeExpAmount').value = e.amount;
+    _calcCurrent = String(e.amount); _lifeCalcRefresh();
+    document.getElementById('lifeExpDate').value = e.date;
+    document.getElementById('lifeExpNote').value = e.note || '';
+    if (e.type === 'income') { var iSel = document.getElementById('lifeExpIncCat'); if(iSel) iSel.value = e.categoryId; }
+    else {
+        var cSel = document.getElementById('lifeExpCat'); if(cSel) cSel.value = e.categoryId;
+        var pSel = document.getElementById('lifeExpPaymentMethod'); if(pSel) pSel.value = e.paymentMethod || 'cash';
+        _selectedCreditCardId = e._selectedCardId || null;
+        await onPaymentMethodChange();
+        if (_selectedCreditCardId) {
+            var picker = document.getElementById('creditCardPicker');
+            if(picker) { picker.value = _selectedCreditCardId; await onCreditCardChange(); var bPicker = document.getElementById('benefitPlanPicker'); if(bPicker && e._selectedPlanName) bPicker.value = e._selectedPlanName; }
+        }
     }
 }
 
-function handleLifeExpSubmit(e) {
+async function handleLifeExpSubmit(e) {
     e.preventDefault();
-    var id = document.getElementById('lifeExpId').value;
-    var type = document.getElementById('lifeExpType').value || 'expense';
     var amount = parseInt(document.getElementById('lifeExpAmount').value);
     var date = document.getElementById('lifeExpDate').value;
     var note = document.getElementById('lifeExpNote').value.trim();
     var pmId = document.getElementById('lifeExpPaymentMethod').value;
-    var batchDatesStr = document.getElementById('lifeExpBatchDates') ? document.getElementById('lifeExpBatchDates').value : '';
-
-    if (!amount || amount <= 0 || !date) {
-        const modal = document.querySelector('#lifeExpModalOverlay .modal');
-        if (modal) { modal.classList.remove('shake'); void modal.offsetWidth; modal.classList.add('shake'); }
-        showToast('請輸入有效金額與日期');
-        return;
+    var type = document.getElementById('lifeExpType').value || 'expense';
+    var id = document.getElementById('lifeExpId').value;
+    if (!amount || amount <= 0 || !date) { showToast('請輸入金額'); return; }
+    var catId = (type === 'income') ? document.getElementById('lifeExpIncCat').value : document.getElementById('lifeExpCat').value;
+    var entry = { id: id || crypto.randomUUID(), type: type, categoryId: catId, amount: amount, date: date, note: note };
+    if (type === 'expense') {
+        entry.paymentMethod = pmId;
+        if (pmId === 'card' && _selectedCreditCardId) {
+            entry._selectedCardId = _selectedCreditCardId;
+            var bGroup = document.getElementById('benefitPlanPickerGroup');
+            var bPicker = document.getElementById('benefitPlanPicker');
+            if (bGroup && bGroup.style.display !== 'none' && bPicker) entry._selectedPlanName = bPicker.value;
+        }
     }
+    if (id) { var idx = lifeExpenses.findIndex(ex => ex.id === id); if (idx !== -1) lifeExpenses[idx] = entry; } else lifeExpenses.push(entry);
+    if (type === 'expense') await syncLinkedReward(entry);
+    saveLifeData(); closeLifeExpModal(); renderLifeTab(); showToast('已儲存');
+}
 
-    if (id) {
-        var catId = type === 'income' ? document.getElementById('lifeExpIncCat').value : document.getElementById('lifeExpCat').value;
-        var entry = { id: id, type: type, categoryId: catId, amount: amount, date: date, note: note };
-        if (type === 'expense') entry.paymentMethod = pmId;
-        var idx = lifeExpenses.findIndex(ex => ex.id === id);
-        if (idx !== -1) lifeExpenses[idx] = entry;
-        showToast('已更新');
-    } else {
-        var datesToProcess = [date];
-        if (batchDatesStr && type === 'expense') datesToProcess = batchDatesStr.split(',');
-        var catId = type === 'income' ? document.getElementById('lifeExpIncCat').value : document.getElementById('lifeExpCat').value;
-
-        datesToProcess.forEach(d => {
-            var adjustedDate = d;
-            if (type === 'income') {
-                var dObj = new Date(d);
-                if (dObj.getDay() === 0) dObj.setDate(dObj.getDate() - 2);
-                else if (dObj.getDay() === 6) dObj.setDate(dObj.getDate() - 1);
-                adjustedDate = dObj.toISOString().split('T')[0];
-            }
-            
-            var entryId = crypto.randomUUID();
-            lifeExpenses.push({ id: entryId, type: type, categoryId: catId, amount: amount, date: adjustedDate, note: note, paymentMethod: (type === 'expense' ? pmId : null) });
-
-            // Auto-Reward Logic
-            if (type === 'expense' && pmId && pmId !== 'cash') {
-                var pm = paymentMethods.find(x => x.id === pmId);
-                if (pm && pm.rewardRate > 0) {
-                    var rewardAmt = Math.floor(amount * pm.rewardRate / 100);
-                    if (rewardAmt > 0) {
-                        lifeExpenses.push({
-                            id: crypto.randomUUID(),
-                            type: 'income',
-                            categoryId: 'lc_inc_invest', // Default to investment/other
-                            amount: rewardAmt,
-                            date: adjustedDate,
-                            note: `[回饋] ${pm.name} (${pm.rewardRate}%)`,
-                            _linkedExpenseId: entryId
-                        });
-                    }
-                }
-            }
-        });
-        showToast(datesToProcess.length > 1 ? `已批次新增 ${datesToProcess.length} 筆記錄` : (type === 'income' ? '收入已記錄' : '支出已新增'));
+async function syncLinkedReward(expenseEntry) {
+    lifeExpenses = lifeExpenses.filter(e => e._linkedExpenseId !== expenseEntry.id);
+    let rate = 0, cardInfo = "";
+    if (expenseEntry.paymentMethod === 'card' && expenseEntry._selectedCardId) {
+        const best = await CreditCardService.getBestRewardRate(expenseEntry._selectedCardId, expenseEntry.categoryId, expenseEntry._selectedPlanName);
+        rate = best.rate;
+        const cards = await CreditCardService.getCards();
+        const card = cards.find(c => c.CardID === expenseEntry._selectedCardId);
+        cardInfo = card ? card.CardName : "信用卡";
     }
-
-    saveLifeData();
-    closeLifeExpModal();
-    renderLifeTab();
-}
-
-function deleteLifeExp(id) {
-    if (confirm('確定刪除這筆紀錄？')) {
-        lifeExpenses = lifeExpenses.filter(e => e.id !== id && e._linkedExpenseId !== id);
-        saveLifeData();
-        showToast('已刪除');
-        renderLifeTab();
+    if (rate > 0) {
+        var rewardAmt = Math.floor(expenseEntry.amount * rate / 100);
+        if (rewardAmt > 0) lifeExpenses.push({ id: crypto.randomUUID(), type: 'income', categoryId: 'lc_inc_invest', amount: rewardAmt, date: expenseEntry.date, note: `[回饋] ${cardInfo} (${rate}%)`, _linkedExpenseId: expenseEntry.id });
     }
-}
-
-function editLifeExp(id) {
-    var e = lifeExpenses.find(x => x.id === id);
-    if (!e) return;
-    openLifeExpModal(e.type === 'income' ? 'income' : 'expense');
-    document.getElementById('lifeExpId').value = e.id;
-    var batchWrap = document.getElementById('lifeExpBatchToggleWrap');
-    if (batchWrap) batchWrap.style.display = 'none';
-    document.getElementById('lifeExpAmount').value = e.amount;
-    lifeCalcDisplaySet(e.amount);
-    document.getElementById('lifeExpDate').value = e.date;
-    document.getElementById('lifeExpNote').value = e.note || '';
-    if (e.type === 'income') {
-        document.getElementById('lifeExpIncCat').value = e.categoryId;
-        document.getElementById('lifeExpModalTitle').textContent = '編輯收入';
-    } else {
-        document.getElementById('lifeExpCat').value = e.categoryId;
-        document.getElementById('lifeExpPaymentMethod').value = e.paymentMethod || 'cash';
-        document.getElementById('lifeExpModalTitle').textContent = '編輯支出';
-    }
-    updateRewardPreview();
-}
-
-// ── Batch Apply Helpers ──
-function toggleBatchPanel() {
-    var wrap = document.getElementById('lifeExpBatchToggleWrap');
-    var panel = document.getElementById('lifeExpBatchPanel');
-    var trigger = wrap.querySelector('.batch-trigger');
-    var icon = document.getElementById('batchToggleIcon');
-    var isHidden = panel.style.display === 'none';
-    panel.style.display = isHidden ? 'block' : 'none';
-    wrap.classList.toggle('active', isHidden);
-    trigger.setAttribute('aria-expanded', isHidden);
-    icon.className = isHidden ? 'fa-solid fa-chevron-up toggle-icon' : 'fa-solid fa-chevron-down toggle-icon';
-}
-
-function applyBatchPreset(type) {
-    var baseDate = new Date(document.getElementById('lifeExpDate').value);
-    if (isNaN(baseDate.getTime())) baseDate = new Date();
-    document.querySelectorAll('.segment-btn').forEach(btn => btn.classList.remove('active'));
-    if (type !== 'clear') { var activeBtn = document.getElementById('batch-preset-' + type); if (activeBtn) activeBtn.classList.add('active'); }
-    var dates = [];
-    if (type === 'clear') { document.getElementById('lifeExpBatchDates').value = ''; document.getElementById('batchPreviewList').innerHTML = ''; return; }
-    var day = baseDate.getDay(); 
-    var diff = baseDate.getDate() - day + (day === 0 ? -6 : 1);
-    var monday = new Date(baseDate.getTime()); monday.setDate(diff);
-    for (var i = 0; i < 7; i++) {
-        var d = new Date(monday.getTime()); d.setDate(monday.getDate() + i);
-        var dow = d.getDay();
-        if (type === 'weekdays' && (dow === 0 || dow === 6)) continue;
-        dates.push(d.toISOString().split('T')[0]);
-    }
-    document.getElementById('lifeExpBatchDates').value = dates.join(',');
-    _updateBatchPreview(dates);
-}
-
-function _updateBatchPreview(dates) {
-    var container = document.getElementById('batchPreviewList');
-    if (!container) return;
-    const dayMap = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    container.innerHTML = dates.map((d, index) => {
-        var dObj = new Date(d);
-        return `<div class="batch-tag" style="animation-delay: ${index * 0.05}s"><span>${dObj.getDate()}</span><small>${dayMap[dObj.getDay()]}</small></div>`;
-    }).join('');
-}
-
-function openBudgetModal(catId) {
-    var cat = getLifeCat(catId);
-    var overlay = document.getElementById('budgetModalOverlay');
-    document.getElementById('budgetModalCatLabel').textContent = '「' + cat.name + '」' + lifeMonthLabel(lifeCurrentMonth) + ' 預算';
-    document.getElementById('budgetModalCatId').value = catId;
-    var cur = getLifeBudget(catId, lifeCurrentMonth);
-    document.getElementById('budgetAmtInput').value = cur > 0 ? cur : '';
-    if (overlay) overlay.classList.add('active');
-}
-function closeBudgetModal() { var overlay = document.getElementById('budgetModalOverlay'); if (overlay) overlay.classList.remove('active'); }
-function saveBudget() {
-    var catId = document.getElementById('budgetModalCatId').value;
-    var amt = parseInt(document.getElementById('budgetAmtInput').value) || 0;
-    lifeBudgets[catId + '|' + lifeCurrentMonth] = amt;
-    saveLifeData(); closeBudgetModal(); renderLifeTab(); showToast('預算已設定');
-}
-
-function setCatManageType(type) {
-    _currentCatManageType = type;
-    document.getElementById('catTypeExpBtn').className = type === 'expense' ? 'type-btn active' : 'type-btn';
-    document.getElementById('catTypeIncBtn').className = type === 'income' ? 'type-btn active income-mode' : 'type-btn';
-    renderLifeCatList();
-    document.getElementById('editLifeCatId').value = '';
-    document.getElementById('newLifeCatName').value = '';
-    document.getElementById('newLifeCatColor').value = type === 'expense' ? '#C17B2E' : '#5A9E7A';
-    document.getElementById('cancelLifeCatBtn').style.display = 'none';
-}
-
-function openLifeCatModal(type) { setCatManageType(type || 'expense'); var overlay = document.getElementById('lifeCatModalOverlay'); if (overlay) overlay.classList.add('active'); }
-function closeLifeCatModal() { var overlay = document.getElementById('lifeCatModalOverlay'); if (overlay) overlay.classList.remove('active'); document.getElementById('lifeExpCat').innerHTML = lifeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); document.getElementById('lifeExpIncCat').innerHTML = lifeIncomeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); renderLifeTab(); }
-function renderLifeCatList() {
-    var container = document.getElementById('lifeCategoryList');
-    if (!container) return;
-    var cats = _currentCatManageType === 'income' ? lifeIncomeCategories : lifeCategories;
-    if (cats.length === 0) { container.innerHTML = '<div class="empty-state"><p>尚無分類，請新增</p></div>'; return; }
-    container.innerHTML = cats.map(cat => `<div class="category-item" style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><span style="width:14px;height:14px;border-radius:50%;background:${cat.color};flex-shrink:0;display:inline-block;"></span><span style="flex:1;font-weight:500;">${cat.name}</span><button class="icon-btn" onclick="editLifeCategory('${cat.id}')"><i class="fa-solid fa-pen"></i></button><button class="icon-btn delete" onclick="deleteLifeCategory('${cat.id}')"><i class="fa-solid fa-trash"></i></button></div>`).join('');
-}
-
-function saveLifeCategory() {
-    var id = document.getElementById('editLifeCatId').value;
-    var name = document.getElementById('newLifeCatName').value.trim();
-    var color = document.getElementById('newLifeCatColor').value;
-    if (!name) { showToast('請輸入分類名稱'); return; }
-    var cats = _currentCatManageType === 'income' ? lifeIncomeCategories : lifeCategories;
-    if (id) { var idx = cats.findIndex(c => c.id === id); if (idx !== -1) { cats[idx].name = name; cats[idx].color = color; } }
-    else { cats.push({ id: (_currentCatManageType === 'income' ? 'lc_inc_' : 'lc_') + Date.now(), name: name, color: color }); }
-    saveLifeData(); setCatManageType(_currentCatManageType); showToast('分類已儲存');
-}
-
-function editLifeCategory(id) {
-    var cats = _currentCatManageType === 'income' ? lifeIncomeCategories : lifeCategories;
-    var cat = cats.find(c => c.id === id);
-    if (!cat) return;
-    document.getElementById('editLifeCatId').value = id;
-    document.getElementById('newLifeCatName').value = cat.name;
-    document.getElementById('newLifeCatColor').value = cat.color;
-    document.getElementById('cancelLifeCatBtn').style.display = '';
-}
-
-function cancelLifeCatEdit() { setCatManageType(_currentCatManageType); }
-function deleteLifeCategory(id) {
-    var cat = (_currentCatManageType === 'income' ? lifeIncomeCategories : lifeCategories).find(c => c.id === id);
-    if (!cat) return;
-    if (confirm(`刪除分類「${cat.name}」？`)) {
-        if (_currentCatManageType === 'income') lifeIncomeCategories = lifeIncomeCategories.filter(c => c.id !== id);
-        else lifeCategories = lifeCategories.filter(c => c.id !== id);
-        saveLifeData(); renderLifeCatList(); showToast('分類已刪除');
-    }
-}
-
-function getDefaultSalary() { var raw = localStorage.getItem(SALARY_DEFAULT_KEY); return raw ? JSON.parse(raw) : null; }
-function updateSalaryApplyBtn() { var wrap = document.getElementById('salaryApplyWrap'); if (!wrap) return; var setting = getDefaultSalary(); if (!setting) { wrap.style.display = 'none'; return; } var applied = lifeExpenses.some(e => e.type === 'income' && e.categoryId === setting.catId && e.date && e.date.startsWith(lifeCurrentMonth) && (e._salaryDefault || e._autoSalary)); wrap.style.display = applied ? 'none' : ''; }
-function applyDefaultSalary() {
-    var setting = getDefaultSalary(); if (!setting) { showToast('請先設定預設薪資'); return; }
-    var d = getAdjustedPaydate(lifeCurrentMonth, setting.day || 5);
-    lifeExpenses.push({ id: crypto.randomUUID(), type: 'income', categoryId: setting.catId, amount: setting.amount, date: d, note: setting.note || '薪資', _salaryDefault: true });
-    saveLifeData(); renderLifeTab(); showToast('薪資已套用');
-}
-
-function openSalarySettingModal() {
-    var sel = document.getElementById('salaryDefaultCatSelect'); if (sel) sel.innerHTML = lifeIncomeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    var setting = getDefaultSalary(); if (setting) { document.getElementById('salaryDefaultAmtInput').value = setting.amount; document.getElementById('salaryDefaultCatSelect').value = setting.catId; document.getElementById('salaryDefaultDay').value = setting.day || 5; }
-    var overlay = document.getElementById('salarySettingModalOverlay'); if (overlay) overlay.classList.add('active');
-}
-function closeSalarySettingModal() { var overlay = document.getElementById('salarySettingModalOverlay'); if (overlay) overlay.classList.remove('active'); }
-function saveDefaultSalary() {
-    var amt = parseInt(document.getElementById('salaryDefaultAmtInput').value); var catId = document.getElementById('salaryDefaultCatSelect').value; var day = parseInt(document.getElementById('salaryDefaultDay').value) || 5;
-    if (!amt || amt <= 0) { showToast('請輸入有效金額'); return; }
-    localStorage.setItem(SALARY_DEFAULT_KEY, JSON.stringify({ amount: amt, catId: catId, day: day, note: '薪資' }));
-    closeSalarySettingModal(); updateSalaryApplyBtn(); showToast('預設薪資已儲存');
-}
-function clearDefaultSalary() { if (confirm('確定清除預設薪資設定？')) { localStorage.removeItem(SALARY_DEFAULT_KEY); closeSalarySettingModal(); updateSalaryApplyBtn(); showToast('預設薪資已清除'); } }
-
-function getAdjustedPaydate(ym, payday) {
-    var parts = ym.split('-'); var d = new Date(parts[0], parts[1] - 1, payday); var last = new Date(parts[0], parts[1], 0).getDate();
-    if (payday > last) d = new Date(parts[0], parts[1] - 1, last);
-    if (d.getDay() === 0) d.setDate(d.getDate() - 2); else if (d.getDay() === 6) d.setDate(d.getDate() - 1);
-    return d.toISOString().split('T')[0];
 }
 
 function autoApplySalary(ym) {
-    if (ym < new Date().toISOString().slice(0, 7)) return;
-    var setting = getDefaultSalary(); if (!setting) return;
-    if (lifeExpenses.some(e => e.type === 'income' && e.date && e.date.startsWith(ym) && (e._autoSalary || e._salaryDefault))) return;
-    if (getLifeIncomeForMonth(ym) > 0) return;
-    lifeExpenses.push({ id: crypto.randomUUID(), type: 'income', categoryId: setting.catId, amount: setting.amount, date: getAdjustedPaydate(ym, setting.day || 5), note: setting.note || '薪資', _autoSalary: true });
-    saveLifeData(); if (typeof triggerCloudSync === 'function') triggerCloudSync();
-}
-
-// ── Calculator ──
-var _calcCurrent = '0', _calcFirstNum = null, _calcOp = null, _calcFreshEntry = false;
-function _lifeCalcRefresh() {
-    var dispPopup = document.getElementById('lifeCalcDisplay'); // 計算機彈窗內的顯示
-    var dispMain = document.getElementById('lifeCalcAmountDisplay'); // 主支出彈窗上的顯示
-    var valStr = parseFloat(_calcCurrent).toLocaleString('zh-TW');
-    
-    if (dispPopup) dispPopup.textContent = valStr;
-    if (dispMain) dispMain.textContent = valStr;
-    
-    var hidden = document.getElementById('lifeExpAmount');
-    if (hidden) hidden.value = parseFloat(_calcCurrent) || '';
-}
-function lifeCalcReset() { _calcCurrent = '0'; _calcFirstNum = null; _calcOp = null; _calcFreshEntry = false; if(document.getElementById('lifeCalcExpr')) document.getElementById('lifeCalcExpr').textContent = ''; _lifeCalcRefresh(); }
-function lifeCalcDisplaySet(val) { _calcCurrent = String(val || 0); _calcFirstNum = null; _calcOp = null; _calcFreshEntry = false; if(document.getElementById('lifeCalcExpr')) document.getElementById('lifeCalcExpr').textContent = ''; _lifeCalcRefresh(); }
-function lifeCalcDigit(d) { if (_calcFreshEntry) { _calcCurrent = (d === '.') ? '0.' : d; _calcFreshEntry = false; } else { if (d === '.' && _calcCurrent.includes('.')) return; if (_calcCurrent === '0' && d !== '.') _calcCurrent = d; else _calcCurrent += d; } _lifeCalcRefresh(); }
-function lifeCalcOp(op) { var cur = parseFloat(_calcCurrent); if (_calcOp && _calcFirstNum !== null && !_calcFreshEntry) cur = _lifeCalcCompute(_calcFirstNum, cur, _calcOp); _calcFirstNum = cur; _calcOp = op; _calcFreshEntry = true; if(document.getElementById('lifeCalcExpr')) document.getElementById('lifeCalcExpr').textContent = cur.toLocaleString('zh-TW') + ' ' + op; _lifeCalcRefresh(); }
-function lifeCalcEqual() { if (!_calcOp || _calcFirstNum === null) return; var res = _lifeCalcCompute(_calcFirstNum, parseFloat(_calcCurrent), _calcOp); lifeCalcDisplaySet(Math.round(res * 100) / 100); }
-function lifeCalcBack() { _calcCurrent = _calcCurrent.length > 1 ? _calcCurrent.slice(0, -1) : '0'; _lifeCalcRefresh(); }
-function lifeCalcToggleSign() { _calcCurrent = String(-parseFloat(_calcCurrent)); _lifeCalcRefresh(); }
-function lifeCalcClear() { lifeCalcReset(); }
-function _lifeCalcCompute(a, b, op) { switch (op) { case '+': return a + b; case '−': return a - b; case '×': return a * b; case '÷': return b === 0 ? a : a / b; } return b; }
-
-// ── Daily Expenses ──
-function getDailyExpenses() { return JSON.parse(localStorage.getItem(DAILY_EXP_DEFAULT_KEY) || '[]'); }
-function saveDailyExpenses(data) { localStorage.setItem(DAILY_EXP_DEFAULT_KEY, JSON.stringify(data)); if (typeof triggerCloudSync === 'function') triggerCloudSync(); }
-function openDailyExpModal() { document.getElementById('dailyExpCat').innerHTML = lifeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join(''); cancelDailyExpEdit(); renderDailyExpList(); var overlay = document.getElementById('dailyExpModalOverlay'); if (overlay) overlay.classList.add('active'); }
-function closeDailyExpModal() { var overlay = document.getElementById('dailyExpModalOverlay'); if (overlay) overlay.classList.remove('active'); }
-function cancelDailyExpEdit() { document.getElementById('dailyExpId').value = ''; document.getElementById('dailyExpName').value = ''; document.getElementById('dailyExpAmount').value = ''; document.getElementById('dailyExpFreq').value = 'everyday'; document.getElementById('dailyExpCancelBtn').style.display = 'none'; }
-function renderDailyExpList() {
-    var container = document.getElementById('dailyExpList'); if (!container) return;
-    var list = getDailyExpenses(); if (list.length === 0) { container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">尚未設定常態支出</div>'; return; }
-    container.innerHTML = list.map(item => {
-        var cat = getLifeCat(item.catId);
-        var freqText = item.freq === 'weekdays' ? '平日' : (item.freq === 'weekends' ? '假日' : '每天');
-        return `<div class="expense-list-row" style="margin-bottom:8px;"><div class="expense-list-info"><div class="expense-list-color" style="background:${cat?cat.color:'#ccc'}"></div><div><div style="font-weight:600;">${item.name} <span style="font-size:0.75rem;background:var(--border-color);padding:2px 6px;border-radius:4px;font-weight:normal;">${freqText}</span></div><div style="font-size:0.75rem;color:var(--text-muted);">${cat?cat.name:'未知'}</div></div></div><div style="display:flex;align-items:center;gap:12px;"><div class="expense-list-amount">NT$ ${item.amount.toLocaleString()}</div><div style="display:flex;gap:4px;"><button class="icon-btn" onclick="editDailyExp('${item.id}')"><i class="fa-solid fa-pen"></i></button><button class="icon-btn delete" onclick="deleteDailyExp('${item.id}')"><i class="fa-solid fa-trash"></i></button></div></div></div>`;
-    }).join('');
-}
-function handleDailyExpSubmit(e) {
-    e.preventDefault();
-    var id = document.getElementById('dailyExpId').value, name = document.getElementById('dailyExpName').value.trim(), catId = document.getElementById('dailyExpCat').value, amount = parseInt(document.getElementById('dailyExpAmount').value), freq = document.getElementById('dailyExpFreq').value;
-    if (!name || !amount) { showToast('請輸入有效名稱與金額'); return; }
-    var list = getDailyExpenses();
-    if (id) { var idx = list.findIndex(x => x.id === id); if (idx !== -1) list[idx] = { id, name, catId, amount, freq }; }
-    else list.push({ id: crypto.randomUUID(), name, catId, amount, freq });
-    saveDailyExpenses(list); cancelDailyExpEdit(); renderDailyExpList(); autoApplyDailyExpenses(lifeCurrentMonth); renderLifeTab(); showToast('常態支出已更新');
-}
-function deleteDailyExp(id) { if (confirm('確定刪除？')) { var list = getDailyExpenses().filter(x => x.id !== id); saveDailyExpenses(list); renderDailyExpList(); showToast('已刪除'); } }
-function editDailyExp(id) { var item = getDailyExpenses().find(x => x.id === id); if (!item) return; document.getElementById('dailyExpId').value = item.id; document.getElementById('dailyExpName').value = item.name; document.getElementById('dailyExpCat').value = item.catId; document.getElementById('dailyExpAmount').value = item.amount; document.getElementById('dailyExpFreq').value = item.freq || 'everyday'; document.getElementById('dailyExpCancelBtn').style.display = 'inline-flex'; }
-function autoApplyDailyExpenses(ym) {
-    var list = getDailyExpenses(); if (!list.length) return;
-    var today = new Date(), viewDate = new Date(ym + '-01'), year = viewDate.getFullYear(), month = viewDate.getMonth(), max = (year === today.getFullYear() && month === today.getMonth()) ? today.getDate() : new Date(year, month + 1, 0).getDate();
-    if (viewDate > today) return;
-    var changed = false;
-    list.forEach(rule => {
-        for (var d = 1; d <= max; d++) {
-            var target = new Date(year, month, d), dow = target.getDay(), dateStr = target.toISOString().split('T')[0];
-            if (rule.freq === 'weekdays' && (dow === 0 || dow === 6)) continue;
-            if (rule.freq === 'weekends' && (dow !== 0 && dow !== 6)) continue;
-            if (!lifeExpenses.some(e => e._autoDailyId === rule.id && e.date === dateStr)) {
-                lifeExpenses.push({ id: crypto.randomUUID(), type: 'expense', categoryId: rule.catId, amount: rule.amount, date: dateStr, note: rule.name, _autoDailyId: rule.id });
-                changed = true;
-            }
-        }
-    });
-    if (changed) saveLifeData();
-}
-function forceApplyDailyExpenses() { autoApplyDailyExpenses(lifeCurrentMonth); renderLifeTab(); closeDailyExpModal(); showToast('已套用'); }
-
-// ── Payment Method Management ──
-function openPaymentMethodModal() {
-    cancelPaymentMethodEdit();
-    renderPaymentMethodList();
-    var overlay = document.getElementById('paymentMethodModalOverlay');
-    if (overlay) overlay.classList.add('active');
-}
-
-function closePaymentMethodModal() {
-    var overlay = document.getElementById('paymentMethodModalOverlay');
-    if (overlay) overlay.classList.remove('active');
-    // Update the main dropdown options
-    var paySel = document.getElementById('lifeExpPaymentMethod');
-    if (paySel) {
-        var currentVal = paySel.value;
-        paySel.innerHTML = paymentMethods.map(function(pm) { return '<option value="' + pm.id + '">' + pm.name + '</option>'; }).join('');
-        paySel.value = currentVal;
-    }
-}
-
-function renderPaymentMethodList() {
-    var container = document.getElementById('paymentMethodList');
-    if (!container) return;
-    if (paymentMethods.length === 0) { container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">尚無支付方式</div>'; return; }
-    container.innerHTML = paymentMethods.map(function(pm) {
-        var icon = pm.type === 'card' ? 'fa-credit-card' : 'fa-money-bill-wave';
-        var rewardText = pm.rewardRate > 0 ? '<span style="font-size:0.75rem;background:var(--success-light);color:var(--success-color);padding:2px 6px;border-radius:4px;margin-left:8px;">' + pm.rewardRate + '% 回饋</span>' : '';
-        return '<div class="expense-list-row" style="margin-bottom:8px;"><div class="expense-list-info"><div class="expense-list-color" style="background:var(--primary-color); display:flex; align-items:center; justify-content:center;"><i class="fa-solid ' + icon + '" style="color:#fff; font-size:0.8rem;"></i></div><div><div style="font-weight:600;">' + pm.name + rewardText + '</div></div></div><div style="display:flex;gap:4px;"><button class="icon-btn" onclick="editPaymentMethod(\'' + pm.id + '\')"><i class="fa-solid fa-pen"></i></button>' + (pm.id !== 'cash' ? '<button class="icon-btn delete" onclick="deletePaymentMethod(\'' + pm.id + '\')"><i class="fa-solid fa-trash"></i></button>' : '') + '</div></div>';
-    }).join('');
-}
-
-function handlePaymentMethodSubmit(e) {
-    e.preventDefault();
-    var id = document.getElementById('editPaymentMethodId').value;
-    var name = document.getElementById('pmName').value.trim();
-    var type = document.getElementById('pmType').value;
-    var rate = parseFloat(document.getElementById('pmRewardRate').value) || 0;
-    if (!name) return;
-    if (id) {
-        var idx = paymentMethods.findIndex(function(x) { return x.id === id; });
-        if (idx !== -1) paymentMethods[idx] = { id: id, name: name, type: type, rewardRate: rate };
-    } else {
-        paymentMethods.push({ id: 'pm_' + Date.now(), name: name, type: type, rewardRate: rate });
-    }
+    var s = JSON.parse(localStorage.getItem(SALARY_DEFAULT_KEY));
+    if (!s || lifeExpenses.some(e => e.date.startsWith(ym) && e.categoryId === s.catId)) return;
+    lifeExpenses.push({ id: crypto.randomUUID(), type: 'income', categoryId: s.catId, amount: s.amount, date: ym + '-' + String(s.day).padStart(2, '0'), note: '薪資 (自動)', _autoSalary: true });
     saveLifeData();
-    cancelPaymentMethodEdit();
-    renderPaymentMethodList();
-    showToast('支付方式已更新');
 }
 
-function editPaymentMethod(id) {
-    var pm = paymentMethods.find(function(x) { return x.id === id; });
-    if (!pm) return;
-    document.getElementById('editPaymentMethodId').value = pm.id;
-    document.getElementById('pmName').value = pm.name;
-    document.getElementById('pmType').value = pm.type;
-    document.getElementById('pmRewardRate').value = pm.rewardRate;
-    document.getElementById('pmCancelBtn').style.display = 'inline-flex';
+function autoApplyDailyExpenses(ym) {
+    var list = JSON.parse(localStorage.getItem(DAILY_EXP_DEFAULT_KEY) || '[]');
+    list.forEach(rule => { if (!lifeExpenses.some(e => e._autoDailyId === rule.id && e.date.startsWith(ym))) { lifeExpenses.push({ id: crypto.randomUUID(), type: 'expense', categoryId: rule.catId, amount: rule.amount, date: ym + '-01', note: rule.name, _autoDailyId: rule.id }); } });
 }
 
-function deletePaymentMethod(id) {
-    if (id === 'cash') return;
-    if (confirm('確定刪除此支付方式？')) {
-        paymentMethods = paymentMethods.filter(function(x) { return x.id !== id; });
-        saveLifeData();
-        renderPaymentMethodList();
-        showToast('已刪除');
-    }
-}
-
-function cancelPaymentMethodEdit() {
-    document.getElementById('editPaymentMethodId').value = '';
-    document.getElementById('pmName').value = '';
-    document.getElementById('pmType').value = 'card';
-    document.getElementById('pmRewardRate').value = '0';
-    document.getElementById('pmCancelBtn').style.display = 'none';
-}
-
-
-// ====== 信用卡串接擴充 (credit-card integration) ======
-
-// 目前選定的信用卡 CardID
-let _selectedCreditCardId = null;
-
-// 載入卡片清單到下拉選單
-async function loadCreditCardPicker() {
-    var picker = document.getElementById('creditCardPicker');
-    var pickerGroup = document.getElementById('creditCardPickerGroup');
-    if (!picker || !pickerGroup) return;
-
-    if (!CreditCardService.isConfigured()) {
-        pickerGroup.style.display = 'none';
-        return;
-    }
-
-    try {
-        var cards = await CreditCardService.getCards();
-        if (!cards.length) { pickerGroup.style.display = 'none'; return; }
-
-        picker.innerHTML = '<option value="">-- 選擇信用卡 --</option>' +
-            cards.map(c => `<option value="${c.CardID}">${c.BankName} ${c.CardName}</option>`).join('');
-        
-        if (_selectedCreditCardId) picker.value = _selectedCreditCardId;
-        pickerGroup.style.display = '';
-    } catch (err) {
-        console.warn('載入信用卡失敗:', err);
-        pickerGroup.style.display = 'none';
-    }
-}
-
-// 當選擇付款方式時，決定是否顯示信用卡選擇器
-async function onPaymentMethodChange() {
-    var pmId = document.getElementById('lifeExpPaymentMethod').value;
-    var pm = paymentMethods.find(x => x.id === pmId);
-    var pickerGroup = document.getElementById('creditCardPickerGroup');
-
-    // 只要類型是 card，不論是否已設定 Config，都嘗試顯示並載入 (Config 檢查交給 loadCreditCardPicker 處理)
-    if (pm && pm.type === 'card') {
-        if (pickerGroup) pickerGroup.style.display = 'block';
-        await loadCreditCardPicker();
-    } else {
-        if (pickerGroup) pickerGroup.style.display = 'none';
-        _selectedCreditCardId = null;
-    }
+function setLifeExpType(type) {
+    document.getElementById('lifeExpType').value = type;
+    var cG = document.getElementById('lifeExpCatGroup'); if(cG) cG.style.display = (type === 'income') ? 'none' : 'block';
+    var iG = document.getElementById('lifeExpIncCatGroup'); if(iG) iG.style.display = (type === 'income') ? 'block' : 'none';
+    var pG = document.getElementById('lifeExpPaymentGroup'); if(pG) pG.style.display = (type === 'income') ? 'none' : 'block';
+    var mT = document.getElementById('lifeExpModalTitle'); if(mT) mT.textContent = (type === 'income') ? '新增收入' : '新增支出';
     updateRewardPreview();
 }
 
-// 當選擇信用卡時
-async function onCreditCardChange() {
-    var picker = document.getElementById('creditCardPicker');
-    _selectedCreditCardId = picker && picker.value ? parseInt(picker.value) : null;
-    await updateRewardPreview();
-}
+function deleteLifeExp(id) { if (confirm('確定刪除？')) { lifeExpenses = lifeExpenses.filter(e => e.id !== id && e._linkedExpenseId !== id); saveLifeData(); renderLifeTab(); } }
 
-// 開啟 CreditCardAnalyzer 設定 Modal
-function openCCAnalyzerSettingModal() {
-    var cfg = CreditCardService.getConfig();
-    document.getElementById('ccAnalyzerUrl').value = cfg ? cfg.url : '';
-    document.getElementById('ccAnalyzerKey').value = cfg ? cfg.anonKey : '';
-    var overlay = document.getElementById('ccAnalyzerSettingOverlay');
-    if (overlay) overlay.classList.add('active');
+function _lifeCalcRefresh() {
+    var val = parseFloat(_calcCurrent || 0).toLocaleString();
+    var d1 = document.getElementById('lifeCalcDisplay'); if(d1) d1.textContent = val;
+    var d2 = document.getElementById('lifeCalcAmountDisplay'); if(d2) d2.textContent = val;
+    var v1 = document.getElementById('lifeExpAmount'); if(v1) v1.value = parseFloat(_calcCurrent || 0);
 }
-
-function closeCCAnalyzerSettingModal() {
-    var overlay = document.getElementById('ccAnalyzerSettingOverlay');
-    if (overlay) overlay.classList.remove('active');
-}
+function lifeCalcReset() { _calcCurrent = '0'; _lifeCalcRefresh(); }
+function lifeCalcDigit(d) { _calcCurrent = (_calcCurrent === '0') ? d : _calcCurrent + d; _lifeCalcRefresh(); }
+function lifeCalcBack() { _calcCurrent = _calcCurrent.length > 1 ? _calcCurrent.slice(0, -1) : '0'; _lifeCalcRefresh(); }
 
 function saveCCAnalyzerConfig() {
     var url = document.getElementById('ccAnalyzerUrl').value.trim();
     var key = document.getElementById('ccAnalyzerKey').value.trim();
-    if (!url || !key) { showToast('請填入 URL 與 Anon Key'); return; }
     CreditCardService.saveConfig(url, key);
-    closeCCAnalyzerSettingModal();
-    showToast('CreditCardAnalyzer 設定已儲存');
+    var o = document.getElementById('ccAnalyzerSettingOverlay'); if(o) o.classList.remove('active');
+    showToast('設定已儲存');
 }
+function openCCAnalyzerSettingModal() {
+    var cfg = CreditCardService.getConfig();
+    var u = document.getElementById('ccAnalyzerUrl'); if(u) u.value = cfg ? cfg.url : '';
+    var k = document.getElementById('ccAnalyzerKey'); if(k) k.value = cfg ? cfg.anonKey : '';
+    var o = document.getElementById('ccAnalyzerSettingOverlay'); if(o) o.classList.add('active');
+}
+function closeCCAnalyzerSettingModal() { var o = document.getElementById('ccAnalyzerSettingOverlay'); if(o) o.classList.remove('active'); }

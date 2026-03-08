@@ -81,21 +81,27 @@ const CreditCardService = {
     },
 
     // 依生活費類別 ID 找出指定卡片最佳回饋率
-    async getBestRewardRate(cardId, lifeCatId) {
+    async getBestRewardRate(cardId, lifeCatId, planName = null) {
         const rewards = await this.getRewardsForCard(cardId);
-        if (!rewards.length) return 0;
+        if (!rewards.length) return { rate: 0, category: '' };
+
+        // 過濾方案 (如果卡片需要切換)
+        let filtered = rewards;
+        if (planName) {
+            filtered = rewards.filter(r => !r.PlanName || r.PlanName === planName);
+        }
 
         const keywords = LIFE_CAT_TO_CC_CATEGORY[lifeCatId] || ['國內一般'];
 
         for (const kw of keywords) {
-            const matched = rewards
+            const matched = filtered
                 .filter(r => r.Category && r.Category.includes(kw))
                 .sort((a, b) => b.RewardRate - a.RewardRate);
             if (matched.length) return { rate: matched[0].RewardRate, category: matched[0].Category };
         }
 
         // Fallback: 回傳最高的一般回饋
-        const general = rewards.sort((a, b) => b.RewardRate - a.RewardRate);
+        const general = filtered.sort((a, b) => b.RewardRate - a.RewardRate);
         return general.length ? { rate: general[0].RewardRate, category: general[0].Category } : { rate: 0, category: '' };
     },
 

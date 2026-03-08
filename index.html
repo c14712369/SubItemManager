@@ -839,107 +839,67 @@
                 <span id="lifeExpModalTitle">新增記錄</span>
                 <span class="close-modal" onclick="closeLifeExpModal()">&times;</span>
             </div>
-            <!-- Type Toggle -->
             <div class="type-toggle">
-                <button class="type-btn active" id="typeExpBtn" onclick="setLifeExpType('expense')">
-                    <i class="fa-solid fa-arrow-up-from-bracket"></i> 支出
-                </button>
-                <button class="type-btn" id="typeIncBtn" onclick="setLifeExpType('income')">
-                    <i class="fa-solid fa-arrow-down-to-bracket"></i> 收入
-                </button>
+                <button class="type-btn active" id="typeExpBtn" onclick="setLifeExpType('expense')">支出</button>
+                <button class="type-btn" id="typeIncBtn" onclick="setLifeExpType('income')">收入</button>
             </div>
             <form id="lifeExpForm" onsubmit="handleLifeExpSubmit(event); return false;">
                 <input type="hidden" id="lifeExpId">
                 <input type="hidden" id="lifeExpType" value="expense">
-                <!-- Category (expense only) -->
+                
                 <div class="form-group" id="lifeExpCatGroup">
-                    <label class="form-label" style="display:flex;justify-content:space-between;">
-                        分類
-                        <span class="link-btn" onclick="openLifeCatModal('expense')">管理分類</span>
-                    </label>
+                    <label class="form-label">分類</label>
                     <select id="lifeExpCat" class="form-select"></select>
                 </div>
 
-                <!-- Payment Method -->
+                <div class="form-group" id="lifeExpIncCatGroup" style="display:none;">
+                    <label class="form-label">收入分類</label>
+                    <select id="lifeExpIncCat" class="form-select"></select>
+                </div>
+
                 <div class="form-group" id="lifeExpPaymentGroup">
-                    <label class="form-label" style="display:flex;justify-content:space-between;">
-                        付款方式
-                        <span class="link-btn" onclick="openPaymentMethodModal()">管理方式</span>
-                    </label>
+                    <label class="form-label">付款方式</label>
                     <select id="lifeExpPaymentMethod" class="form-select" onchange="onPaymentMethodChange()">
-                        <option value="cash">現金 / 其他</option>
+                        <option value="cash">現金</option>
+                        <option value="card">信用卡</option>
+                        <option value="other">其他</option>
                     </select>
-                    <div id="rewardPreview" class="reward-preview-hint" style="display:none;">
+                    <div id="rewardPreview" class="reward-preview-hint" style="display:none; color:var(--success-color); font-size:0.8rem; margin-top:4px;">
                         <i class="fa-solid fa-gift"></i> 預計回饋: <span id="rewardPreviewAmount">0</span> (<span id="rewardPreviewRate">0</span>%)
                     </div>
                 </div>
 
-                <!-- Credit Card Selection (dynamic) -->
                 <div class="form-group" id="creditCardPickerGroup" style="display:none;">
-                    <label class="form-label">選擇信用卡 (回饋計算)</label>
-                    <select id="creditCardPicker" class="form-select" onchange="onCreditCardChange()">
-                        <!-- JS populated from Supabase -->
-                    </select>
+                    <label class="form-label">選擇信用卡</label>
+                    <select id="creditCardPicker" class="form-select" onchange="onCreditCardChange()"></select>
                 </div>
 
-                <!-- Category (income only) -->
-                <!-- Income Category (income only) -->
-                <div class="form-group" id="lifeExpIncCatGroup" style="display:none;">
-                    <label class="form-label" style="display:flex;justify-content:space-between;">
-                        收入分類
-                        <span class="link-btn" onclick="openLifeCatModal('income')">管理分類</span>
-                    </label>
-                    <select id="lifeExpIncCat" class="form-select">
-                        <!-- JS populated -->
-                    </select>
+                <div class="form-group" id="benefitPlanPickerGroup" style="display:none;">
+                    <label class="form-label">權益方案</label>
+                    <select id="benefitPlanPicker" class="form-select" onchange="updateRewardPreview()"></select>
                 </div>
 
                 <div class="form-row">
-                    <!-- Clickable amount display — tapping opens the calc popup -->
                     <div class="form-group">
-                        <label class="form-label">金額 (TWD)</label>
-                        <div class="calc-amount-field" id="lifeCalcAmountField" onclick="openCalcPopup()"
-                            title="點擊開啟計算機">
+                        <label class="form-label">金額</label>
+                        <div class="calc-amount-field" onclick="openCalcPopup()" style="padding:10px; border:1px solid var(--border-color); border-radius:4px; cursor:pointer; display:flex; justify-content:space-between;">
                             <span id="lifeCalcAmountDisplay">0</span>
-                            <i class="fa-solid fa-calculator"
-                                style="font-size:0.85rem;opacity:0.5;margin-left:6px;"></i>
+                            <i class="fa-solid fa-calculator" style="opacity:0.5;"></i>
                         </div>
-                        <!-- Hidden field used by form submit -->
-                        <input type="number" id="lifeExpAmount" required min="1" style="display:none;">
+                        <input type="number" id="lifeExpAmount" style="display:none;">
                     </div>
                     <div class="form-group">
                         <label class="form-label">日期</label>
                         <input type="date" id="lifeExpDate" class="form-input" required>
                     </div>
                 </div>
+
                 <div class="form-group">
-                    <label class="form-label">備註 (選填)</label>
-                    <input type="text" id="lifeExpNote" class="form-input" placeholder="例如：超市採購...">
+                    <label class="form-label">備註</label>
+                    <input type="text" id="lifeExpNote" class="form-input" placeholder="選填">
                 </div>
 
-                <!-- Batch Apply Panel (Redesigned) -->
-                <div class="batch-container" id="lifeExpBatchToggleWrap">
-                    <button type="button" class="batch-trigger" onclick="toggleBatchPanel()" aria-expanded="false" aria-controls="lifeExpBatchPanel">
-                        <span class="batch-trigger-text"><i class="fa-solid fa-calendar-week"></i> 批次套用至本週…</span>
-                        <i class="fa-solid fa-chevron-down toggle-icon" id="batchToggleIcon"></i>
-                    </button>
-                    
-                    <div class="batch-content" id="lifeExpBatchPanel" style="display:none;">
-                        <div class="batch-segmented-control">
-                            <button type="button" class="segment-btn" id="batch-preset-weekdays" onclick="applyBatchPreset('weekdays')">平日</button>
-                            <button type="button" class="segment-btn" id="batch-preset-allweek" onclick="applyBatchPreset('allweek')">全選</button>
-                            <button type="button" class="segment-btn danger" onclick="applyBatchPreset('clear')">清除</button>
-                        </div>
-                        
-                        <div id="batchPreviewList" class="batch-preview-grid">
-                            <!-- JS Populated: e.g. <div class="batch-tag"><span>12</span><small>Mon</small></div> -->
-                        </div>
-                        <input type="hidden" id="lifeExpBatchDates">
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-primary" id="lifeExpSubmitBtn"
-                    style="width:100%;margin-top:10px;">儲存支出</button>
+                <button type="submit" class="btn btn-primary" id="lifeExpSubmitBtn" style="width:100%; margin-top:10px;">儲存</button>
             </form>
         </div>
     </div>

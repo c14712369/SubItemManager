@@ -26,7 +26,11 @@ let lifeBudgets = {};
 let projects = [];
 let projectExpenses = [];
 let projectCategories = [];
-let paymentMethods = [];
+let paymentMethods = [
+    { id: 'cash', name: '現金', type: 'cash', rewardRate: 0 },
+    { id: 'card', name: '信用卡', type: 'card', rewardRate: 0 },
+    { id: 'other', name: '其他', type: 'other', rewardRate: 0 }
+];
 let lifeCurrentMonth = '';
 let chartInstance = null;
 let lifeCatChartInstance = null;

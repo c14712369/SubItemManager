@@ -47,9 +47,6 @@ function loadLifeData() {
 
     var storedBdg = localStorage.getItem(LIFE_BDG_KEY);
     lifeBudgets = storedBdg ? JSON.parse(storedBdg) : {};
-
-    var storedPM = localStorage.getItem(PAYMENT_METHODS_KEY);
-    paymentMethods = storedPM ? JSON.parse(storedPM) : DEFAULT_PAYMENT_METHODS.map(function (pm) { return Object.assign({}, pm); });
 }
 
 function saveLifeData() {
@@ -57,8 +54,6 @@ function saveLifeData() {
     localStorage.setItem(LIFE_CAT_KEY, JSON.stringify(lifeCategories));
     localStorage.setItem(LIFE_INC_CAT_KEY, JSON.stringify(lifeIncomeCategories));
     localStorage.setItem(LIFE_BDG_KEY, JSON.stringify(lifeBudgets));
-    localStorage.setItem(PAYMENT_METHODS_KEY, JSON.stringify(paymentMethods));
     updateLocalTimestamp();
     if (typeof triggerCloudSync === 'function') triggerCloudSync();
 }
-
