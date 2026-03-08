@@ -793,7 +793,9 @@ async function onPaymentMethodChange() {
     var pm = paymentMethods.find(x => x.id === pmId);
     var pickerGroup = document.getElementById('creditCardPickerGroup');
 
-    if (pm && pm.type === 'card' && CreditCardService.isConfigured()) {
+    // 只要類型是 card，不論是否已設定 Config，都嘗試顯示並載入 (Config 檢查交給 loadCreditCardPicker 處理)
+    if (pm && pm.type === 'card') {
+        if (pickerGroup) pickerGroup.style.display = 'block';
         await loadCreditCardPicker();
     } else {
         if (pickerGroup) pickerGroup.style.display = 'none';

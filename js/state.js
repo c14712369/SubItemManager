@@ -70,7 +70,8 @@ const DEFAULT_PROJECT_CATS = [
 ];
 
 const DEFAULT_PAYMENT_METHODS = [
-    { id: 'cash', name: '現金 / 其他', type: 'cash', rewardRate: 0 }
+    { id: 'cash', name: '現金 / 其他', type: 'cash', rewardRate: 0 },
+    { id: 'credit_card_default', name: '信用卡 (自動計算)', type: 'card', rewardRate: 0 }
 ];
 
 let dragSrcEl = null;

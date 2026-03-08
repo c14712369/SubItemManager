@@ -866,13 +866,20 @@
                         付款方式
                         <span class="link-btn" onclick="openPaymentMethodModal()">管理方式</span>
                     </label>
-                    <select id="lifeExpPaymentMethod" class="form-select" onchange="updateRewardPreview()">
+                    <select id="lifeExpPaymentMethod" class="form-select" onchange="onPaymentMethodChange()">
                         <option value="cash">現金 / 其他</option>
-                        <!-- 卡片清單將由 JS 動態帶入 -->
                     </select>
                     <div id="rewardPreview" class="reward-preview-hint" style="display:none;">
                         <i class="fa-solid fa-gift"></i> 預計回饋: <span id="rewardPreviewAmount">0</span> (<span id="rewardPreviewRate">0</span>%)
                     </div>
+                </div>
+
+                <!-- Credit Card Selection (dynamic) -->
+                <div class="form-group" id="creditCardPickerGroup" style="display:none;">
+                    <label class="form-label">選擇信用卡 (回饋計算)</label>
+                    <select id="creditCardPicker" class="form-select" onchange="onCreditCardChange()">
+                        <!-- JS populated from Supabase -->
+                    </select>
                 </div>
 
                 <!-- Category (income only) -->
