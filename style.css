@@ -4076,3 +4076,21 @@ video {
     0% { opacity: 0; transform: scale(0.8); }
     100% { opacity: 1; transform: scale(1); }
 }
+
+/* ── Reward Preview Hint ── */
+.reward-preview-hint {
+    margin-top: 8px;
+    padding: 8px 12px;
+    background: var(--success-light);
+    border: 1px dashed var(--success-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    color: var(--success-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    animation: fadeIn 0.3s ease;
+}
+.reward-preview-hint i {
+    font-size: 0.9rem;
+}

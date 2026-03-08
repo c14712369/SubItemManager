@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-TW">
 
 <head>
@@ -848,19 +848,34 @@
                     <i class="fa-solid fa-arrow-down-to-bracket"></i> 收入
                 </button>
             </div>
-            <form id="lifeExpForm" onsubmit="handleLifeExpSubmit(event)">
+            <form id="lifeExpForm" onsubmit="handleLifeExpSubmit(event); return false;">
                 <input type="hidden" id="lifeExpId">
                 <input type="hidden" id="lifeExpType" value="expense">
                 <!-- Category (expense only) -->
                 <div class="form-group" id="lifeExpCatGroup">
                     <label class="form-label" style="display:flex;justify-content:space-between;">
-                        支出分類
+                        分類
                         <span class="link-btn" onclick="openLifeCatModal('expense')">管理分類</span>
                     </label>
-                    <select id="lifeExpCat" class="form-select">
-                        <!-- JS populated -->
-                    </select>
+                    <select id="lifeExpCat" class="form-select"></select>
                 </div>
+
+                <!-- Payment Method -->
+                <div class="form-group" id="lifeExpPaymentGroup">
+                    <label class="form-label" style="display:flex;justify-content:space-between;">
+                        付款方式
+                        <span class="link-btn" onclick="openPaymentMethodModal()">管理方式</span>
+                    </label>
+                    <select id="lifeExpPaymentMethod" class="form-select" onchange="updateRewardPreview()">
+                        <option value="cash">現金 / 其他</option>
+                        <!-- 卡片清單將由 JS 動態帶入 -->
+                    </select>
+                    <div id="rewardPreview" class="reward-preview-hint" style="display:none;">
+                        <i class="fa-solid fa-gift"></i> 預計回饋: <span id="rewardPreviewAmount">0</span> (<span id="rewardPreviewRate">0</span>%)
+                    </div>
+                </div>
+
+                <!-- Category (income only) -->
                 <!-- Income Category (income only) -->
                 <div class="form-group" id="lifeExpIncCatGroup" style="display:none;">
                     <label class="form-label" style="display:flex;justify-content:space-between;">
@@ -1350,10 +1365,77 @@
         </div>
     </div>
 
+    <!-- Modal: Manage Payment Methods -->
+    <div class="modal-overlay" id="paymentMethodModalOverlay">
+        <div class="modal" style="max-width:420px;">
+            <div class="modal-header">
+                <span id="paymentMethodModalTitle">管理付款方式</span>
+                <span class="close-modal" onclick="closePaymentMethodModal()">&times;</span>
+            </div>
+            <div style="margin-bottom:16px; font-size:0.8rem; color:var(--text-muted);">
+                設定您的信用卡與回饋率。當您選取該方式時，系統會自動新增回饋收入。
+            </div>
+            
+            <form id="paymentMethodForm" onsubmit="handlePaymentMethodSubmit(event)" style="background:var(--bg-secondary); padding:12px; border-radius:8px; margin-bottom:16px;">
+                <input type="hidden" id="editPaymentMethodId">
+                <div class="form-group">
+                    <label class="form-label">名稱 (如: 台新 FlyGo)</label>
+                    <input type="text" id="pmName" class="form-input" required placeholder="卡片名稱">
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label">類型</label>
+                        <select id="pmType" class="form-select">
+                            <option value="card">信用卡</option>
+                            <option value="cash">其他 / 現金</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label class="form-label">回饋率 (%)</label>
+                        <input type="number" id="pmRewardRate" class="form-input" min="0" step="0.1" value="0">
+                    </div>
+                </div>
+                <div style="display:flex; gap:8px;">
+                    <button type="submit" class="btn btn-primary" style="flex:1;"><i class="fa-solid fa-plus"></i> 儲存方式</button>
+                    <button type="button" class="btn btn-secondary" id="pmCancelBtn" onclick="cancelPaymentMethodEdit()" style="display:none;"><i class="fa-solid fa-xmark"></i> 取消</button>
+                </div>
+            </form>
+            
+            <div id="paymentMethodList" class="item-list" style="max-height: 250px; overflow-y: auto;">
+                <!-- JS populated -->
+            </div>
+        </div>
+    </div>
+
     <!-- Global FAB (shown on mobile, floating above nav) -->
     <button class="fab-global" onclick="openLifeExpModal()" title="快速記帳">
         <i class="fa-solid fa-plus"></i>
     </button>
+
+    <!-- Modal: CreditCardAnalyzer 串接設定 -->
+    <div class="modal-overlay" id="ccAnalyzerSettingOverlay">
+        <div class="modal" style="max-width:420px;">
+            <div class="modal-header">
+                <span><i class="fa-solid fa-link"></i> CreditCardAnalyzer 串接設定</span>
+                <span class="close-modal" onclick="closeCCAnalyzerSettingModal()">&times;</span>
+            </div>
+            <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px;">
+                填入你的 CreditCardAnalyzer Supabase 連線資訊，即可在記帳時自動帶入信用卡回饋率。
+            </p>
+            <div class="form-group">
+                <label class="form-label">Supabase URL</label>
+                <input type="text" id="ccAnalyzerUrl" class="form-input" placeholder="https://xxx.supabase.co">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Anon Key</label>
+                <input type="text" id="ccAnalyzerKey" class="form-input" placeholder="eyJ...">
+            </div>
+            <div style="display:flex;gap:8px;margin-top:8px;">
+                <button class="btn btn-secondary" onclick="closeCCAnalyzerSettingModal()" style="flex:1;">取消</button>
+                <button class="btn btn-primary" onclick="saveCCAnalyzerConfig()" style="flex:1;"><i class="fa-solid fa-check"></i> 儲存設定</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Core Logic & Data Scripts First -->
     <script src="js/state.js?v=1.3"></script>
@@ -1367,6 +1449,7 @@
 
     <!-- UI Scripts -->
     <script src="js/ui-fixed.js?v=1.3"></script>
+    <script src="js/credit-card-service.js?v=1.0"></script>
     <script src="js/ui-life.js?v=1.3"></script>
     <script src="js/ui-analysis.js?v=1.3"></script>
     <script src="js/ui-wealth.js?v=1.3"></script>

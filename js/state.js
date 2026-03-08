@@ -14,6 +14,7 @@ const PROJECT_CAT_KEY = 'sub_mgr_project_categories';
 const SALARY_DEFAULT_KEY = 'sub_mgr_default_salary';
 const APP_IDENTITY_KEY = 'sub_mgr_app_identity';
 const DAILY_EXP_DEFAULT_KEY = 'sub_mgr_daily_exp';
+const PAYMENT_METHODS_KEY = 'sub_mgr_payment_methods';
 
 
 let items = [];
@@ -25,6 +26,7 @@ let lifeBudgets = {};
 let projects = [];
 let projectExpenses = [];
 let projectCategories = [];
+let paymentMethods = [];
 let lifeCurrentMonth = '';
 let chartInstance = null;
 let lifeCatChartInstance = null;
@@ -65,6 +67,10 @@ const DEFAULT_PROJECT_CATS = [
     { id: 'pc_ticket', name: '門票', color: '#8B5CF6' },
     { id: 'pc_shop', name: '購物', color: '#D46060' },
     { id: 'pc_other', name: '其他', color: '#8A8A8A' }
+];
+
+const DEFAULT_PAYMENT_METHODS = [
+    { id: 'cash', name: '現金 / 其他', type: 'cash', rewardRate: 0 }
 ];
 
 let dragSrcEl = null;
