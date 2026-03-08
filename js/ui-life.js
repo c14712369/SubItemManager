@@ -25,12 +25,18 @@ function getLifeOnlyExpForMonth(ym) {
     return lifeExpenses.filter(e => e.type !== 'income' && e.date && e.date.startsWith(ym)).reduce((s, e) => s + (e.amount || 0), 0);
 }
 
+function getLifeSpentByCat(catId, ym) {
+    if (!ym) return 0;
+    return lifeExpenses.filter(e => e.categoryId === catId && e.date && e.date.startsWith(ym)).reduce((s, e) => s + (e.amount || 0), 0);
+}
+
+function getLifeBudget(catId, ym) { return lifeBudgets[catId + '|' + ym] || 0; }
+
 function getMonthlyFixedTotal(ym) {
     if (!ym || !items) return 0;
     const [yearStr, monthStr] = ym.split('-');
     const viewYear = parseInt(yearStr), viewMonth = parseInt(monthStr);
     const monthStart = new Date(viewYear, viewMonth - 1, 1), monthEnd = new Date(viewYear, viewMonth, 0);
-    const daysInMonth = monthEnd.getDate();
     return items.filter(item => {
         const start = new Date(item.startDate);
         if (start > monthEnd) return false;
@@ -40,6 +46,7 @@ function getMonthlyFixedTotal(ym) {
     }).reduce((total, item) => {
         const baseAmt = item.amount || 0;
         let monthly = baseAmt;
+        const daysInMonth = monthEnd.getDate();
         switch (item.cycle) {
             case 'daily': monthly = baseAmt * daysInMonth; break;
             case 'weekly': monthly = baseAmt * (daysInMonth / 7); break;
@@ -102,7 +109,15 @@ function renderLifeExpenseList() {
     var container = document.getElementById('lifeExpList'); if (!container) return;
     var sortMode = _lifeExpSortMode || 'date-desc';
     var rewardMap = {};
-    lifeExpenses.forEach(e => { if (e.type === 'income' && e._linkedExpenseId) rewardMap[e._linkedExpenseId] = e.amount; });
+    lifeExpenses.forEach(e => { 
+        if (e.type === 'income' && e._linkedExpenseId) {
+            var rateMatch = (e.note || '').match(/\((.*?%)\)/);
+            rewardMap[e._linkedExpenseId] = {
+                amount: e.amount,
+                rate: rateMatch ? rateMatch[1] : ''
+            };
+        }
+    });
     var all = lifeExpenses.filter(e => {
         if (!e.date || !e.date.startsWith(lifeCurrentMonth)) return false;
         if (e.type === 'income' && e._linkedExpenseId) return false;
@@ -116,13 +131,13 @@ function renderLifeExpenseList() {
         var delBtn = `<button class="icon-btn delete" onclick="deleteLifeExp('${e.id}')"><i class="fa-solid fa-trash"></i></button>`;
         if (e.type === 'income') {
             var incCat = lifeIncomeCategories.find(c => c.id === e.categoryId) || {name: '收入', color: '#3D7A5A'};
-            var displayNote = (e.note && e.note !== incCat.name) ? `<span class="life-item-note-sep">·</span><span class="life-item-note" title="${e.note}">${e.note}</span>` : '';
+            var displayNote = (e.note && e.note !== incCat.name) ? `<span class="life-item-note-sep">·</span><span class="life-item-note">${e.note}</span>` : '';
             return `<div class="life-income-row"><div class="life-income-date">${day}</div><div class="life-income-arrow" style="background:${incCat.color}"></div><div class="life-exp-info"><div class="life-item-main-line"><span class="life-item-cat-name">${incCat.name}</span>${displayNote}</div></div><div class="life-exp-amount-wrap"><div class="life-income-amount">+ NT$ ${_safeFormat(e.amount, 'income')}</div></div><div class="life-item-actions">${editBtn}${delBtn}</div></div>`;
         } else {
             var cat = lifeCategories.find(c => c.id === e.categoryId) || {name: '支出', color: '#6B6B6B'};
-            var payIcon = e.paymentMethod === 'card' ? ' <i class="fa-solid fa-credit-card" style="font-size:0.7rem;opacity:0.6;margin-left:4px;"></i>' : '';
-            var linkedReward = rewardMap[e.id];
-            var rewardHtml = linkedReward ? `<div class="life-exp-reward-inline"><i class="fa-solid fa-gift"></i> +${linkedReward.toLocaleString()}</div>` : '';
+            var payIcon = e.paymentMethod && e.paymentMethod === 'card' ? ' <i class="fa-solid fa-credit-card" style="font-size:0.7rem;opacity:0.6;"></i>' : '';
+            var linked = rewardMap[e.id];
+            var rewardHtml = linked ? `<div class="life-exp-reward-inline"><i class="fa-solid fa-gift"></i> +${linked.amount.toLocaleString()} ${linked.rate ? '('+linked.rate+')' : ''}</div>` : '';
             var displayNote = (e.note && e.note !== cat.name) ? `<span class="life-item-note-sep">·</span><span class="life-item-note" title="${e.note}">${e.note}</span>` : '';
             return `<div class="life-exp-row"><div class="life-exp-date">${day}</div><div class="life-exp-dot" style="background:${cat.color}"></div><div class="life-exp-info"><div class="life-item-main-line"><span class="life-item-cat-name">${cat.name}</span>${displayNote}${payIcon}</div></div><div class="life-exp-amount-wrap"><div class="life-exp-amount stat-negative">- NT$ ${e.amount.toLocaleString()}</div>${rewardHtml}</div><div class="life-item-actions">${editBtn}${delBtn}</div></div>`;
         }
@@ -133,10 +148,10 @@ function openLifeExpModal(typeOrPreset) {
     var overlay = document.getElementById('lifeExpModalOverlay'); if(!overlay) return;
     var type = (typeOrPreset === 'income') ? 'income' : 'expense';
     var presetCatId = (typeOrPreset && typeOrPreset !== 'income' && typeOrPreset !== 'expense') ? typeOrPreset : null;
-    var cSel = document.getElementById('lifeExpCat'); if(cSel) cSel.innerHTML = lifeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    var iSel = document.getElementById('lifeExpIncCat'); if(iSel) iSel.innerHTML = lifeIncomeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    var pSel = document.getElementById('lifeExpPaymentMethod'); if(pSel) pSel.innerHTML = paymentMethods.map(pm => `<option value="${pm.id}">${pm.name}</option>`).join('');
-    if (presetCatId) { if (type === 'income' && iSel) iSel.value = presetCatId; else if (cSel) cSel.value = presetCatId; }
+    document.getElementById('lifeExpCat').innerHTML = lifeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    document.getElementById('lifeExpIncCat').innerHTML = lifeIncomeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    document.getElementById('lifeExpPaymentMethod').innerHTML = paymentMethods.map(pm => `<option value="${pm.id}">${pm.name}</option>`).join('');
+    if (presetCatId) { if (type === 'income') document.getElementById('lifeExpIncCat').value = presetCatId; else if (cSel) cSel.value = presetCatId; }
     document.getElementById('lifeExpId').value = ''; document.getElementById('lifeExpAmount').value = '';
     document.getElementById('lifeExpDate').value = lifeCurrentMonth + '-' + String(new Date().getDate()).padStart(2, '0');
     document.getElementById('lifeExpNote').value = '';
@@ -149,8 +164,8 @@ function closeLifeExpModal() { var o = document.getElementById('lifeExpModalOver
 async function onPaymentMethodChange() {
     var pmId = document.getElementById('lifeExpPaymentMethod').value;
     var pickerGroup = document.getElementById('creditCardPickerGroup');
-    if (pmId === 'card') { if(pickerGroup) pickerGroup.style.display = 'block'; await loadCreditCardPicker(); } 
-    else { if(pickerGroup) pickerGroup.style.display = 'none'; var bGroup = document.getElementById('benefitPlanPickerGroup'); if(bGroup) bGroup.style.display = 'none'; _selectedCreditCardId = null; }
+    if (pmId === 'card') { pickerGroup.style.display = 'block'; await loadCreditCardPicker(); } 
+    else { pickerGroup.style.display = 'none'; var bGroup = document.getElementById('benefitPlanPickerGroup'); if(bGroup) bGroup.style.display = 'none'; _selectedCreditCardId = null; }
     updateRewardPreview();
 }
 
@@ -174,7 +189,7 @@ async function onCreditCardChange() {
         if (card && card.RequireSwitch) {
             const rewards = await CreditCardService.getRewardsForCard(_selectedCreditCardId);
             const plans = [...new Set(rewards.map(r => r.PlanName).filter(Boolean))];
-            if (plans.length > 0 && planPicker) { planPicker.innerHTML = plans.map(p => `<option value="${p}">${p}</option>`).join(''); if(planGroup) planGroup.style.display = 'block'; } 
+            if (plans.length > 0 && planPicker) { planPicker.innerHTML = plans.map(p => `<option value="${p}">${p}</option>`).join(''); planGroup.style.display = 'block'; } 
             else if(planGroup) planGroup.style.display = 'none';
         } else if(planGroup) planGroup.style.display = 'none';
     } else if(planGroup) planGroup.style.display = 'none';
@@ -186,9 +201,7 @@ async function updateRewardPreview() {
     var pmId = document.getElementById('lifeExpPaymentMethod').value;
     var preview = document.getElementById('rewardPreview'); if(!preview) return;
     if (pmId !== 'card' || amount <= 0 || !_selectedCreditCardId) { preview.style.display = 'none'; return; }
-    var bPicker = document.getElementById('benefitPlanPicker');
-    var bGroup = document.getElementById('benefitPlanPickerGroup');
-    const planName = (bGroup && bGroup.style.display !== 'none' && bPicker) ? bPicker.value : null;
+    const planName = (document.getElementById('benefitPlanPickerGroup').style.display !== 'none') ? document.getElementById('benefitPlanPicker').value : null;
     const best = await CreditCardService.getBestRewardRate(_selectedCreditCardId, document.getElementById('lifeExpCat').value, planName);
     if (best.rate > 0) {
         document.getElementById('rewardPreviewAmount').textContent = Math.floor(amount * best.rate / 100);
@@ -207,8 +220,8 @@ async function editLifeExp(id) {
     document.getElementById('lifeExpNote').value = e.note || '';
     if (e.type === 'income') { var iSel = document.getElementById('lifeExpIncCat'); if(iSel) iSel.value = e.categoryId; }
     else {
-        var cSel = document.getElementById('lifeExpCat'); if(cSel) cSel.value = e.categoryId;
-        var pSel = document.getElementById('lifeExpPaymentMethod'); if(pSel) pSel.value = e.paymentMethod || 'cash';
+        document.getElementById('lifeExpCat').value = e.categoryId;
+        document.getElementById('lifeExpPaymentMethod').value = e.paymentMethod || 'cash';
         _selectedCreditCardId = e._selectedCardId || null;
         await onPaymentMethodChange();
         if (_selectedCreditCardId) {
@@ -262,7 +275,10 @@ async function syncLinkedReward(expenseEntry) {
 function autoApplySalary(ym) {
     var s = JSON.parse(localStorage.getItem(SALARY_DEFAULT_KEY));
     if (!s || lifeExpenses.some(e => e.date.startsWith(ym) && e.categoryId === s.catId)) return;
-    lifeExpenses.push({ id: crypto.randomUUID(), type: 'income', categoryId: s.catId, amount: s.amount, date: ym + '-' + String(s.day).padStart(2, '0'), note: '薪資 (自動)', _autoSalary: true });
+    var d = new Date(ym + '-' + String(s.day).padStart(2, '0'));
+    var day = d.getDay();
+    if (day === 0) d.setDate(d.getDate() - 2); else if (day === 6) d.setDate(d.getDate() - 1);
+    lifeExpenses.push({ id: crypto.randomUUID(), type: 'income', categoryId: s.catId, amount: s.amount, date: d.toISOString().split('T')[0], note: '薪資 (自動)', _autoSalary: true });
     saveLifeData();
 }
 
