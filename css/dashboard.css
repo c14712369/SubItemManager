@@ -1,0 +1,209 @@
+/* ?�?� Dashboard ?�?� */
+.dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    padding: 24px 22px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    transition: background-color 0.35s, border-color 0.35s, transform 0.2s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--primary-color);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.stat-card:hover::after {
+    opacity: 0.5;
+}
+
+.stat-title {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 500;
+    margin-bottom: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.stat-value,
+.item-amount,
+.wealth-row-value,
+.wealth-total-amount,
+.hero-amount,
+.life-exp-amount,
+.life-income-amount,
+.budget-spent,
+.budget-limit,
+.fixed-summary-amount,
+.wealth-result-main,
+.sub-value,
+.calc-display-val {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+.stat-value {
+    font-family: var(--font-serif);
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.stat-monthly {
+    color: var(--primary-color);
+}
+
+.stat-yearly {
+    color: var(--text-muted);
+}
+
+.stat-positive {
+    color: var(--success-color);
+}
+
+.stat-negative {
+    color: var(--danger-color);
+}
+
+.stat-input {
+    width: 100%;
+    font-family: var(--font-serif);
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--text-main);
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    background: transparent;
+    padding: 4px 0;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.2;
+}
+
+.stat-input:focus {
+    border-color: var(--primary-color);
+}
+
+.stat-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.4;
+}
+
+/* ?�?� Chart Section ?�?� */
+.chart-section {
+    background: var(--card-bg);
+    padding: 22px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    margin-bottom: 24px;
+    transition: background-color 0.35s, border-color 0.35s;
+}
+
+#annualReportChartInner {
+    min-width: 800px;
+    width: 100%;
+}
+
+.chart-header {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 24px;
+    gap: 16px;
+}
+
+.chart-header-title {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.chart-header h3 {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+}
+
+.yearly-badge {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: var(--bg-color);
+    padding: 6px 14px;
+    border-radius: 100px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.yearly-badge span {
+    font-weight: 700;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+}
+
+.chart-controls {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.chart-controls .type-toggle {
+    margin-bottom: 0;
+}
+
+.chart-select {
+    width: auto !important;
+    height: 38px !important;
+    font-size: 0.9rem !important;
+    padding: 0 12px !important;
+    margin: 0 !important;
+    display: flex;
+    align-items: center;
+}
+
+.chart-header h3 i {
+    color: var(--primary-color);
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+

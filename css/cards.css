@@ -1,0 +1,238 @@
+/* ?�?� Item Cards (Bento Grid) ?�?� */
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 18px;
+}
+
+.item-card {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-color);
+    border-left: 3px solid transparent;
+    position: relative;
+    transition: border-left-color 0.2s, border-color 0.2s, background-color 0.35s, transform 0.2s, box-shadow 0.2s;
+    cursor: grab;
+}
+
+.item-card:hover {
+    border-left-color: var(--primary-color);
+    border-color: var(--border-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.item-card:active {
+    cursor: grabbing;
+}
+
+.item-card.dragging {
+    opacity: 0.45;
+    border: 1px dashed var(--primary-color);
+    transform: scale(0.98);
+}
+
+.item-card.over {
+    border-top: 2px solid var(--primary-color) !important;
+}
+
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.item-name {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
+.item-amount {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1.15rem;
+    color: var(--text-main);
+}
+
+.item-cycle {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    background: rgba(42, 100, 117, 0.1);
+    color: var(--primary-color);
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.item-meta {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    line-height: 1.55;
+}
+
+.item-meta i {
+    width: 14px;
+    color: var(--text-muted);
+    opacity: 0.7;
+    margin-right: 3px;
+}
+
+.item-actions {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+/* ?�?� Item Row (Fixed Expense List View) ?�?� */
+#itemsList {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 800px;
+}
+
+.item-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.item-row:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+    transform: translateX(4px);
+}
+
+.item-row--ended {
+    opacity: 0.6;
+}
+
+.item-row-bar {
+    width: 4px;
+    min-width: 4px;
+    align-self: stretch;
+    flex-shrink: 0;
+}
+
+.item-row-main {
+    flex: 1;
+    padding: 10px 12px;
+    min-width: 0;
+}
+
+.item-row-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    line-height: 1.4;
+}
+
+.item-row-tags {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+}
+
+.item-row-cat {
+    font-size: 0.72rem;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.item-row-cycle {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.item-row-date {
+    font-size: 0.8rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    margin-top: 4px;
+}
+
+.item-row-note {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 180px;
+}
+
+.item-row-badge {
+    font-size: 0.68rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.item-row-badge--ended {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+[data-theme="dark"] .item-row-badge--ended {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+.item-row-amount {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    padding: 10px 12px;
+    text-align: right;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.item-row-actions {
+    display: flex;
+    gap: 2px;
+    padding: 6px 8px;
+    flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+    .item-row-note {
+        display: none;
+    }
+
+    .item-row-amount {
+        font-size: 0.85rem;
+        padding: 8px 8px;
+    }
+}
+
+

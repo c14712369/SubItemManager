@@ -1,0 +1,319 @@
+/* ?�?� Mobile Utilities & RWD Overrides ?�?� */
+@media (max-width: 768px) {
+    .chart-dual {
+        grid-template-columns: 1fr;
+    }
+
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 16px;
+    }
+
+    .chart-header>div {
+        width: 100%;
+    }
+
+    .chart-header h3 {
+        width: 100%;
+    }
+
+    #annualReportChartInner {
+        min-width: 100% !important;
+    }
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 20px 16px;
+    }
+
+    .header-controls {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    .header-controls-top {
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    #authLoginBtn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    #authUserEmail {
+        text-align: left;
+        margin-right: 0 !important;
+        font-size: 0.8rem !important;
+        opacity: 0.8;
+    }
+
+    header::before {
+        display: none;
+    }
+
+    #authUserEmail {
+        margin-right: 0 !important;
+        font-size: 0.8rem !important;
+        opacity: 0.8;
+    }
+
+    #authLoginBtn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .month-nav {
+        justify-content: center;
+        width: 100%;
+        gap: 10px;
+        margin: 0 auto 16px auto;
+        max-width: 800px;
+    }
+
+    .tabs-nav {
+        margin-bottom: 16px;
+        gap: 4px;
+        justify-content: center;
+    }
+
+    .tab-btn {
+        padding: 8px 10px;
+        font-size: 0.78rem;
+        gap: 5px;
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+
+    .tab-btn i {
+        font-size: 0.85rem;
+    }
+
+    .chart-section {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+
+    .chart-header {
+        margin-bottom: 14px;
+        gap: 12px;
+    }
+
+
+    .overview-stat:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+
+    .budget-grid {
+        grid-template-columns: 1fr;
+    }
+
+    /* Original 640px overrides relocated here */
+    .toolbar-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar-row .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    /* On mobile, form elements inside toolbar should fill the full width */
+    .toolbar-row .form-select,
+    .toolbar-row .form-input {
+        width: 100%;
+    }
+
+    .divider-vertical {
+        display: none;
+    }
+
+    .dashboard {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .search-filter {
+        flex-direction: column;
+    }
+
+    .items-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 400px) {
+    .stat-value {
+        font-size: 1.1rem;
+    }
+
+    .chart-header h3 {
+        font-size: 0.9rem;
+    }
+
+    #wealthResultText {
+        font-size: 1.5rem !important;
+    }
+
+    .chart-section {
+        padding: 15px;
+    }
+
+    .chart-header-title {
+        flex-direction: column;
+        align-items: flex-start !important;
+        gap: 8px;
+    }
+
+
+    .yearly-badge {
+        font-size: 0.75rem;
+        padding: 4px 8px;
+    }
+
+    .chart-controls {
+        gap: 8px;
+        justify-content: flex-start;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .type-toggle {
+        margin-bottom: 0;
+        flex-shrink: 0;
+    }
+
+    .type-btn {
+        padding: 6px 10px !important;
+        font-size: 0.75rem !important;
+        height: 34px;
+    }
+
+    .loading-overlay .loading-text {
+        font-size: 0.85rem;
+    }
+}
+
+.wealth-result-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+@media (max-width: 600px) {
+    .wealth-result-card {
+        gap: 24px;
+    }
+}
+
+/* Global overflow safety */
+img,
+canvas,
+iframe,
+video {
+    max-width: 100%;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+/* ── Auth Styles ── */
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.header-controls-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    /* Pushes content appropriately on desktop */
+}
+
+.header-icons {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+#authUserEmail {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: none;
+    text-align: right;
+    /* Default for desktop */
+}
+
+#authLoginBtn {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.auth-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+}
+
+.auth-modal.active {
+    display: flex;
+}
+
+.auth-modal-content {
+    background: var(--card-bg);
+    width: 90%;
+    max-width: 400px;
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    position: relative;
+    border: 1px solid var(--border-color);
+}
+
+.auth-modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-family: var(--font-serif);
+    margin-bottom: 20px;
+    text-align: center;
+    color: var(--text-main);
+}
+
+/* ── Toolbar form element overrides (after forms.css to guarantee cascade) ── */
+.toolbar-row .form-select,
+.toolbar-row .form-input {
+    height: 48px;
+    border-color: #C8C4BE;
+    background-color: #FAFAF9;
+}
+
+[data-theme="dark"] .toolbar-row .form-select,
+[data-theme="dark"] .toolbar-row .form-input {
+    border-color: #3D3B38;
+    background-color: var(--input-bg);
+}
+

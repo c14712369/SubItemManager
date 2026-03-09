@@ -1,0 +1,205 @@
+/* ── Analysis Tab Refinement ── */
+.analysis-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    gap: 16px;
+}
+
+.analysis-month-nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.analysis-month-nav .icon-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+.analysis-month-nav #analysisGlobalMonth {
+    width: auto;
+    min-width: 0;
+}
+
+.analysis-title-group h2 {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    color: var(--text-main);
+    margin-bottom: 4px;
+}
+
+.analysis-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.analysis-hero-card,
+.life-hero-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    gap: 48px;
+    margin: 0 auto 28px auto;
+    box-shadow: var(--shadow-sm);
+    max-width: 800px;
+    position: relative;
+    overflow: hidden;
+}
+
+
+.hero-main {
+    flex: 1.2;
+    padding-right: 0;
+}
+
+.hero-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.hero-amount {
+    font-family: var(--font-serif);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    letter-spacing: -0.5px;
+    line-height: 1;
+    margin-bottom: 16px;
+}
+
+.progress-wrap-hero {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed var(--border-color);
+    max-width: 250px;
+}
+
+.progress-wrap-hero .progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+
+.hero-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.hero-detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.detail-label {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.detail-value {
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+/* Mobile Analysis Adjustments */
+@media (max-width: 768px) {
+    .analysis-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .analysis-hero-card,
+    .life-hero-card {
+        flex-direction: column;
+        padding: 20px;
+        gap: 20px;
+        max-width: 100%;
+    }
+
+    .hero-main {
+        padding-right: 0;
+        width: 100%;
+    }
+
+    .hero-amount {
+        font-size: 2.4rem;
+    }
+
+
+    .hero-details {
+        width: 100%;
+        border-top: none;
+        padding-top: 0;
+    }
+}
+
+
+/* ── Chart Controls Layout ── */
+.chart-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: auto;
+    flex-wrap: nowrap;
+}
+
+.chart-controls .form-select.chart-select,
+.chart-controls select {
+    width: auto;
+    min-width: 100px;
+    flex: 0 1 auto;
+    height: 32px;
+    padding: 0 28px 0 8px; /* right: 28px accommodates the dropdown arrow */
+    margin: 0;
+}
+
+.chart-controls .icon-btn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@media (max-width: 480px) {
+    .chart-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .chart-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

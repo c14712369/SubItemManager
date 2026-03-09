@@ -1,0 +1,50 @@
+
+/* ?�?� Reset ?�?� */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ?�?� Base ?�?� */
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    line-height: 1.7;
+    transition: background-color 0.35s ease, color 0.35s ease;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ?�?� Scrollbar ?�?� */
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 2px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* ?�?� Layout ?�?� */
+.container {
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 32px 24px;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 20px 16px;
+    }
+}
+

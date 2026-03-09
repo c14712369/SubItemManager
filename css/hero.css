@@ -1,0 +1,178 @@
+/* ?�?� Hero Panel (Dashboard A) ?�?� */
+.hero-panel {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--border-color);
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 32px;
+}
+
+.hero-main {
+    flex: 1;
+    min-width: 200px;
+}
+
+@media (max-width: 768px) {
+    .hero-main {
+        padding-right: 0;
+        padding-bottom: 24px;
+    }
+}
+
+.hero-title {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.hero-value {
+    font-family: var(--font-serif);
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 12px;
+    color: var(--primary-color);
+}
+
+.hero-value.stat-positive {
+    color: var(--success-color);
+}
+
+.hero-value.stat-negative {
+    color: var(--danger-color);
+}
+
+.hero-options {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.hero-stats {
+    display: flex;
+    gap: 32px;
+    flex: 2;
+    min-width: 320px;
+    flex-wrap: wrap;
+}
+
+.hero-stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 120px;
+}
+
+.hero-stat-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.hero-stat-value {
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.hero-stat-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px dashed var(--border-color);
+    color: var(--text-main);
+    font-family: var(--font-serif);
+    font-size: 1.4rem;
+    font-weight: 600;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+    padding: 0 0 2px 0;
+}
+
+.hero-stat-input:focus {
+    border-bottom-color: var(--primary-color);
+}
+
+/* ?�?� Loading Overlay ?�?� */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    z-index: 10000;
+    display: none;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #fff;
+    transition: opacity 0.3s ease;
+}
+
+.loading-overlay.active {
+    display: flex;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s ease-in-out infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-text {
+    font-weight: 500;
+    letter-spacing: 1px;
+    font-size: 0.95rem;
+}
+
+.expense-list-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--bg-color);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+}
+
+.expense-list-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.expense-list-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.expense-list-amount {
+    font-weight: bold;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+}
+

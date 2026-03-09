@@ -1,0 +1,50 @@
+﻿/* ===========================
+   ?��?簡�? ??SubItemManager
+   Wabi-Sabi Minimalism
+   =========================== */
+
+/* ?�?� CSS Variables ?�?� */
+:root {
+    --primary-color: #2A6475;
+    --primary-hover: #1E5060;
+    --accent-color: #C17B2E;
+    --secondary-color: #6B6B6B;
+    --bg-color: #FAFAF9;
+    --card-bg: #FFFFFF;
+    --text-main: #1A1A1A;
+    --text-muted: #6B6B6B;
+    --danger-color: #B24040;
+    --success-color: #3D7A5A;
+    --border-color: #E8E5E0;
+    --input-bg: #FFFFFF;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+    --radius: 8px;
+    --radius-sm: 5px;
+    --radius-lg: 16px;
+    --font-serif: 'Noto Serif TC', serif;
+    --font-sans: 'Noto Sans TC', sans-serif;
+    --hover-bg: rgba(0, 0, 0, 0.04);
+    --shadow-color: rgba(0, 0, 0, 0.08);
+    --success-light: rgba(61, 122, 90, 0.08);
+}
+
+[data-theme="dark"] {
+    --primary-color: #4A9DB5;
+    --primary-hover: #5BB8D4;
+    --accent-color: #D4944A;
+    --secondary-color: #8A8A8A;
+    --bg-color: #0F0E0D;
+    --card-bg: #1A1917;
+    --text-main: #F0EDE8;
+    --text-muted: #8A8A8A;
+    --danger-color: #D46060;
+    --success-color: #5A9E7A;
+    --border-color: #2D2B28;
+    --input-bg: #130F0E;
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+    --hover-bg: rgba(255, 255, 255, 0.05);
+    --shadow-color: rgba(0, 0, 0, 0.35);
+    --success-light: rgba(90, 158, 122, 0.12);
+}

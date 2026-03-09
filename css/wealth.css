@@ -1,0 +1,646 @@
+/* ====== js/ui-wealth.js ====== */
+.wealth-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    align-items: stretch;
+}
+
+@media (max-width: 900px) {
+    .wealth-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ?? Wealth Tab ?? */
+.wealth-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 700px) {
+    .wealth-panels {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wealth-panel {
+    margin-bottom: 0 !important;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.wealth-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    gap: 16px;
+    flex-wrap: wrap;
+    /* Allow wrapping for buttons */
+}
+
+@media (max-width: 500px) {
+    .wealth-panel-header {
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 24px;
+    }
+
+    .wealth-panel-header>div {
+        width: 100%;
+    }
+
+    .wealth-panel-header .btn {
+        flex: 1;
+        /* Allow buttons to share width if in a row */
+        white-space: nowrap;
+    }
+
+    .wealth-panel-header>div[style*="display:flex"] {
+        width: 100%;
+        justify-content: stretch;
+    }
+}
+
+.wealth-panel-title {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 6px 0;
+    line-height: 1.2;
+}
+
+.wealth-panel-title i {
+    color: var(--primary-color);
+}
+
+.wealth-panel-total {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    /* Prevent total from wrapping */
+}
+
+.wealth-panel-total strong {
+    color: var(--text-main);
+    font-family: var(--font-serif);
+    margin-left: 4px;
+}
+
+.wealth-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 60px;
+}
+
+.wealth-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    transition: border-color 0.15s;
+}
+
+.wealth-row:hover {
+    border-color: var(--primary-color);
+}
+
+.wealth-row-left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 72px;
+}
+
+.wealth-row-symbol {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+    white-space: nowrap;
+}
+
+.wealth-row-name {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90px;
+}
+
+.wealth-row-mid {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.wealth-row-detail {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.wealth-row-price {
+    font-size: 0.8rem;
+    color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.wealth-row-time {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: 3px;
+    padding: 0 4px;
+}
+
+.wealth-row-value {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-main);
+    white-space: nowrap;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.wealth-row-actions {
+    display: flex;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.wealth-empty {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    padding: 12px 0;
+    font-style: italic;
+}
+
+/* Wealth Projection Grid */
+.wealth-calc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    align-items: start;
+}
+
+@media (max-width: 700px) {
+    .wealth-calc-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wealth-calc-col {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.wealth-current-display {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+}
+
+.wealth-current-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+}
+
+.wealth-current-label {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wealth-current-value {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main);
+}
+
+/* ?�?� Stock Autocomplete ?�?� */
+.stock-search-wrap {
+    position: relative;
+}
+
+.stock-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    z-index: 500;
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.stock-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.stock-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.stock-dropdown-item:hover,
+.stock-dropdown-item.active {
+    background: rgba(42, 100, 117, 0.08);
+}
+
+.stock-dd-symbol {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--primary-color);
+    min-width: 64px;
+}
+
+.stock-dd-name {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stock-dropdown-hint {
+    padding: 10px 14px;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* Selected stock info bar */
+.holding-selected-info {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    margin-bottom: 8px;
+}
+
+.holding-selected-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.holding-selected-symbol {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--primary-color);
+}
+
+.holding-selected-name {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    flex: 1;
+}
+
+.holding-selected-price {
+    font-size: 0.85rem;
+    color: var(--success-color);
+    font-weight: 600;
+    margin-left: auto;
+}
+
+
+/* Override: limit fixed expense list width */
+#itemsList {
+    max-width: 800px;
+}
+
+/* Override: limit fixed expense list width */
+#itemsList {
+    max-width: 800px;
+}
+
+/* ── Fixed Expenses Two-Column Layout ── */
+.fixed-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .fixed-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .fixed-summary-col {
+        order: -1;
+    }
+}
+
+.fixed-list-col {
+    min-width: 0;
+}
+
+.fixed-summary-col {
+    position: sticky;
+    top: 20px;
+}
+
+/* Summary panel rows */
+.fixed-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+
+.fixed-summary-row:last-child {
+    border-bottom: none;
+}
+
+.fixed-summary-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.fixed-summary-name {
+    flex: 1;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.fixed-summary-amount {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+.fixed-summary-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 2px solid var(--border-color);
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+}
+
+.fixed-summary-yearly {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+/* Mobile: disable sticky on summary panel */
+@media (max-width: 800px) {
+    .fixed-summary-col {
+        position: static !important;
+    }
+}
+
+/* ── Wealth Calculator Form (mobile-first) ── */
+.wealth-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+    .wealth-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .wealth-calc-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wealth-auto-sync-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.wealth-target-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: nowrap;
+}
+
+.wealth-target-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+/* Mobile: holding modal form-row to single column */
+@media (max-width: 540px) {
+    #holdingModalOverlay .form-row {
+        grid-template-columns: 1fr;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .holding-selected-row {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .holding-selected-price {
+        width: 100%;
+        margin-left: 0;
+        font-size: 0.82rem;
+    }
+
+    .stock-dropdown {
+        max-height: 200px;
+    }
+}
+
+/* ── Fixed Expenses Two-Column Layout ── */
+.fixed-layout {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    gap: 20px;
+    align-items: start;
+}
+
+@media (max-width: 800px) {
+    .fixed-layout {
+        grid-template-columns: 1fr;
+    }
+
+    .fixed-summary-col {
+        order: -1;
+    }
+}
+
+.fixed-list-col {
+    min-width: 0;
+}
+
+.fixed-summary-col {
+    position: sticky;
+    top: 20px;
+}
+
+/* Summary panel rows */
+.fixed-summary-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+}
+
+.fixed-summary-row:last-child {
+    border-bottom: none;
+}
+
+.fixed-summary-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.fixed-summary-name {
+    flex: 1;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.fixed-summary-amount {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    color: var(--text-main);
+    white-space: nowrap;
+}
+
+
+.fixed-summary-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 2px solid var(--border-color);
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+}
+
+.fixed-summary-yearly {
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-align: right;
+}
+
+/* Mobile: disable sticky on summary panel */
+@media (max-width: 800px) {
+    .fixed-summary-col {
+        position: static !important;
+    }
+}
+
+/* ── Wealth Calculator Form (mobile-first) ── */
+.wealth-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+@media (max-width: 600px) {
+    .wealth-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .wealth-calc-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wealth-auto-sync-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    cursor: pointer;
+}
+
+.wealth-target-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: nowrap;
+}
+
+.wealth-target-btn {
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+

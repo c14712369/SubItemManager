@@ -1,0 +1,87 @@
+import { readFileSync, writeFileSync, appendFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
+
+const src = 'C:\\Users\\c1471\\Desktop\\SubItemManager\\style.css';
+const cssDir = 'C:\\Users\\c1471\\Desktop\\SubItemManager\\css';
+
+mkdirSync(cssDir, { recursive: true });
+
+const raw = readFileSync(src, 'utf8');
+const lines = raw.split('\n');
+
+function slice(start, end) {
+  // 1-indexed, inclusive
+  return lines.slice(start - 1, end).join('\n');
+}
+
+const modules = [
+  { name: 'tokens.css',        start: 1,    end: 43   },
+  { name: 'base.css',          start: 44,   end: 93   },
+  { name: 'header.css',        start: 94,   end: 266  },
+  { name: 'animations.css',    start: 267,  end: 380  },
+  { name: 'buttons.css',       start: 381,  end: 478  },
+  { name: 'cards.css',         start: 479,  end: 716  },
+  { name: 'dashboard.css',     start: 717,  end: 925  },
+  { name: 'forms.css',         start: 926,  end: 1083 },
+  { name: 'feedback.css',      start: 1084, end: 1203 },
+  { name: 'life.css',          start: 1204, end: 1923 },
+  { name: 'hero.css',          start: 1924, end: 2101 },
+  { name: 'rwd.css',           start: 2102, end: 2400 },
+  { name: 'nav.css',           start: 2401, end: 2541 },
+  { name: 'life-sidebar.css',  start: 2542, end: 2897 },
+  { name: 'wealth.css',        start: 2898, end: 3543 },
+  { name: 'wealth-result.css', start: 3544, end: 3717 },
+  { name: 'identity.css',      start: 3718, end: 3751 },
+  { name: 'analysis.css',      start: 3752, end: 3915 },
+  { name: 'mobile-touch.css',  start: 3916, end: 4096 },
+];
+
+for (const m of modules) {
+  writeFileSync(join(cssDir, m.name), slice(m.start, m.end) + '\n');
+  console.log(`✓  ${m.name.padEnd(22)} L${m.start}–${m.end}`);
+}
+
+// Lines 4097-4103: distribute the packed !important override blobs
+// 4097, 4098, 4101, 4102, 4103 → life.css (life-exp-*, life-income-*, life-item-*)
+// 4099, 4100              → analysis.css (chart-header, chart-controls annual report)
+
+const lifeOverrides   = [4097, 4098, 4101, 4102, 4103].map(n => lines[n - 1]).join('\n');
+const analysisOverrides = [4099, 4100].map(n => lines[n - 1]).join('\n');
+
+appendFileSync(join(cssDir, 'life.css'),
+  '\n/* ── Legacy UI Overrides (consolidated from bottom of style.css) ── */\n' + lifeOverrides + '\n');
+
+appendFileSync(join(cssDir, 'analysis.css'),
+  '\n/* ── Legacy UI Overrides (consolidated from bottom of style.css) ── */\n' + analysisOverrides + '\n');
+
+// Create main.css entry point
+const mainCss = `/* ======================================================
+   SubItemManager — CSS Entry Point
+   All modules imported in cascade order.
+   Edit individual files; do NOT add rules here.
+   ====================================================== */
+
+@import './tokens.css';
+@import './base.css';
+@import './header.css';
+@import './animations.css';
+@import './buttons.css';
+@import './cards.css';
+@import './dashboard.css';
+@import './forms.css';
+@import './feedback.css';
+@import './life.css';
+@import './hero.css';
+@import './rwd.css';
+@import './nav.css';
+@import './life-sidebar.css';
+@import './wealth.css';
+@import './wealth-result.css';
+@import './identity.css';
+@import './analysis.css';
+@import './mobile-touch.css';
+`;
+
+writeFileSync(join(cssDir, 'main.css'), mainCss);
+console.log('✓  main.css (entry point with @imports)');
+console.log('\nAll done. Update index.html: <link rel="stylesheet" href="css/main.css">');

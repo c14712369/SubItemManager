@@ -1,0 +1,174 @@
+/* CAGR Auto-Fetch UI Refinements */
+.wealth-cagr-controls {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+#investTickerDropdown {
+    min-width: 180px;
+    box-shadow: var(--shadow-lg);
+    z-index: 100;
+}
+
+@media (max-width: 480px) {
+    .wealth-cagr-controls {
+        flex-direction: column !important;
+        gap: 6px;
+    }
+
+    #wealthInvestRangeSelect {
+        width: 100% !important;
+    }
+}
+
+
+/* Wealth Result Card Styling */
+.wealth-result-card {
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: 18px 20px;
+    margin-bottom: 0px;
+}
+
+.wealth-result-main {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    line-height: 1.2;
+    margin-top: 6px;
+    font-family: var(--font-serif);
+}
+
+.wealth-result-summary {
+    margin-top: 12px;
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+}
+
+.wealth-summary-line {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.wealth-summary-label {
+    color: var(--text-muted);
+}
+
+.wealth-summary-value {
+    color: var(--text-main);
+    font-weight: 600;
+    font-family: var(--font-serif);
+    white-space: nowrap;
+}
+
+@media (max-width: 500px) {
+    .wealth-result-main {
+        font-size: 1.6rem;
+    }
+
+    .wealth-result-summary {
+        font-size: 0.82rem;
+    }
+}
+
+/* Wealth Total Assets Card */
+.wealth-total-card {
+    grid-column: span 2;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 30px !important;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 20px;
+    border-radius: var(--radius);
+}
+
+.wealth-total-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--primary-color);
+}
+
+.wealth-total-label {
+    font-size: 0.88rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wealth-total-amount {
+    font-size: 2.2rem;
+    font-weight: 800;
+    font-family: var(--font-serif);
+    color: var(--primary-color);
+    letter-spacing: -0.02em;
+}
+
+.wealth-total-stats {
+    display: flex;
+    gap: 32px;
+}
+
+.wealth-total-sub {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.sub-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+}
+
+.sub-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-main);
+    font-family: var(--font-serif);
+}
+
+.sub-pct {
+    font-size: 0.7rem;
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-top: 2px;
+    min-height: 1em;
+}
+
+@media (max-width: 600px) {
+    .wealth-total-card {
+        grid-column: span 1;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+        padding: 20px !important;
+    }
+
+    .wealth-total-stats {
+        width: 100%;
+        justify-content: space-between;
+        gap: 16px;
+        padding-top: 16px;
+        border-top: 1px dashed var(--border-color);
+    }
+
+    .wealth-total-amount {
+        font-size: 1.8rem;
+    }
+}
+

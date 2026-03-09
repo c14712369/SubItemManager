@@ -1,0 +1,831 @@
+/* ?�?� Responsive ?�?� */
+/* Base media queries removed from here to be moved to the bottom */
+
+/* ?��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��???
+   ?�活費�?帳模�?
+   ?��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��??��???*/
+
+/* ?�?� Month Navigator ?�?� */
+.month-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin: 0 auto 20px auto;
+    max-width: 800px;
+}
+
+.month-nav-label {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    min-width: 120px;
+    text-align: center;
+    letter-spacing: 0.04em;
+}
+
+.month-nav .icon-btn {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.overview-banner {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin: 0 auto 24px auto;
+    /* Centered */
+    box-shadow: var(--shadow-sm);
+    max-width: 800px;
+}
+
+@media (max-width: 768px) {
+    .overview-banner {
+        max-width: 100%;
+    }
+}
+
+.overview-stats {
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    gap: 24px;
+    margin-bottom: 12px;
+}
+
+#tab-analysis .overview-stats {
+    grid-template-columns: repeat(2, auto);
+    gap: 60px;
+}
+
+@media (max-width: 600px) {
+
+    .overview-stats,
+    #tab-analysis .overview-stats {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .overview-banner {
+        padding: 20px 16px;
+    }
+
+    .overview-stat {
+        border-right: none !important;
+        border-bottom: 1px solid var(--border-color);
+        padding: 0 0 16px 0 !important;
+        width: 100%;
+    }
+
+    .overview-stat:last-child {
+        border-bottom: none;
+        padding-bottom: 0 !important;
+    }
+
+    .hero-options {
+        margin-top: 10px;
+        width: 100%;
+    }
+}
+
+.stat-sub-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-family: var(--font-serif);
+    max-width: 320px;
+    /* Tighten on desktop */
+}
+
+@media (max-width: 600px) {
+    .stat-sub-group {
+        max-width: none;
+    }
+}
+
+.stat-sub-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.stat-sub-item .label {
+    margin-right: 8px;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+}
+
+.stat-sub-item .label i {
+    font-size: 0.85rem;
+    margin-right: 8px;
+    opacity: 0.7;
+    width: 14px;
+    text-align: center;
+}
+
+.stat-sub-item .value {
+    color: var(--text-main);
+    font-weight: 700;
+    text-align: right;
+    font-feature-settings: "tnum";
+    /* Tabular numbers for better alignment */
+}
+
+@media (max-width: 480px) {
+    .stat-sub-item {
+        font-size: 1.05rem;
+    }
+}
+
+.overview-stat {
+    padding: 0 12px;
+    border-right: 1px solid var(--border-color);
+}
+
+.overview-stat:last-child {
+    border-right: none;
+}
+
+.hero-options {
+    margin-top: 14px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-color);
+    width: fit-content;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
+
+.hero-options label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+}
+
+.stat-title {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-value {
+    font-size: 1.25rem;
+    font-weight: 700;
+    font-family: var(--font-serif);
+}
+
+.stat-positive {
+    color: var(--success-color);
+}
+
+.stat-negative {
+    color: var(--danger-color);
+}
+
+.stat-monthly {
+    color: var(--primary-color);
+}
+
+.progress-bar-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-color);
+}
+
+.progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--border-color);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-color);
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.progress-fill.over-budget {
+    background: var(--danger-color);
+}
+
+.progress-pct {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    min-width: 35px;
+    text-align: right;
+}
+
+.progress-pct.over-budget {
+    color: var(--danger-color);
+}
+
+/* ?�?� Budget Grid & Card ?�?� */
+.budget-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.budget-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 100px;
+}
+
+.budget-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--primary-color);
+}
+
+.budget-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.budget-cat-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--text-main);
+}
+
+.budget-card-actions {
+    display: flex;
+    gap: 2px;
+}
+
+.budget-amounts {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+
+.budget-spent {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--text-main);
+}
+
+.budget-spent.over-budget {
+    color: var(--danger-color);
+}
+
+.budget-limit {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.budget-no-limit {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ?�?� Life Expense Row ?�?� */
+.life-exp-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.life-exp-row:last-child {
+    border-bottom: none;
+}
+
+.life-exp-date {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    min-width: 28px;
+    text-align: center;
+}
+
+.life-exp-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.life-exp-info {
+    flex: 1;
+}
+
+.life-exp-cat {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+}
+
+.life-exp-note {
+    font-size: 0.88rem;
+    color: var(--text-main);
+    line-height: 1.4;
+}
+
+.life-exp-amount {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--text-main);
+    text-align: right;
+    min-width: 80px;
+}
+
+@media (max-width: 480px) {
+    .life-exp-row {
+        gap: 8px;
+        padding: 12px 0;
+    }
+
+    .life-exp-date {
+        font-size: 0.9rem;
+        min-width: 24px;
+    }
+
+    .life-exp-note {
+        font-size: 0.82rem;
+    }
+
+    .life-exp-amount {
+        font-size: 0.88rem;
+        min-width: 70px;
+    }
+}
+
+/* ?�?� Dual Chart Layout ?�?� */
+.chart-dual {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.chart-dual .chart-section {
+    margin-bottom: 0;
+}
+
+/* ?�?� Type Toggle (?�入/?�出?��?) ?�?� */
+.type-toggle {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.type-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font-sans);
+    font-size: 0.88rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+    gap: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.type-btn:hover {
+    background: var(--hover-bg);
+}
+
+.type-btn:active {
+    transform: scale(0.95);
+}
+
+.type-btn.active {
+    background: var(--primary-color);
+    color: #fff;
+}
+
+.type-btn.active.income-mode {
+    background: var(--success-color);
+}
+
+/* ?�?� Life Income Row ?�?� */
+.life-income-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+    background: transparent;
+}
+
+.life-income-row:last-child {
+    border-bottom: none;
+}
+
+.life-income-date {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    /* Sync with exp date color */
+    min-width: 28px;
+    text-align: center;
+}
+
+.life-income-arrow {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--success-color);
+    flex-shrink: 0;
+}
+
+.life-income-info {
+    flex: 1;
+}
+
+.life-income-src {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+}
+
+.life-income-note {
+    font-size: 0.88rem;
+    color: var(--text-main);
+    line-height: 1.4;
+    /* Added for consistency */
+}
+
+.life-income-amount {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--success-color);
+    /* Keep success color for amount only */
+    text-align: right;
+    min-width: 80px;
+}
+
+@media (max-width: 480px) {
+    .life-income-row {
+        gap: 8px;
+        padding: 12px 0;
+    }
+
+    .life-income-date {
+        font-size: 0.9rem;
+        min-width: 24px;
+    }
+
+    .life-income-note {
+        font-size: 0.82rem;
+    }
+
+    .life-income-amount {
+        font-size: 0.88rem;
+        min-width: 70px;
+    }
+}
+
+/* ── Body Scroll Lock ── */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* ── Calculator Amount Field (Faux Input) ── */
+.calc-amount-field {
+    width: 100%;
+    height: 42px;
+    padding: 0 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    font-size: 0.92rem;
+    color: var(--text-main);
+    background-color: var(--bg-color);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.calc-amount-field:active {
+    background-color: var(--hover-bg);
+}
+
+#lifeCalcAmountDisplay {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* ── Calculator Popup Overlay ── */
+.calc-popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    z-index: 20000;
+    display: none;
+    align-items: flex-end;
+    /* Slide up from bottom */
+    justify-content: center;
+}
+
+.calc-popup-overlay.active {
+    display: flex;
+}
+
+.calc-popup {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 440px;
+    border-top-left-radius: var(--radius-lg);
+    border-top-right-radius: var(--radius-lg);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+
+    to {
+        transform: translateY(0);
+    }
+}
+
+.calc-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-color);
+}
+
+/* Display area */
+.calc-display-wrap {
+    background: var(--bg-color);
+    padding: 10px 14px 8px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.calc-expr-line {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    min-height: 1.2em;
+    text-align: right;
+    font-family: var(--font-sans);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.calc-display-val {
+    font-family: var(--font-serif);
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-main);
+    text-align: right;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Keypad grid */
+.calc-pad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border-color);
+    /* gap color */
+}
+
+/* Base button */
+.cpb {
+    min-height: 52px;
+    border: none;
+    background: var(--card-bg);
+    color: var(--text-main);
+    font-size: 1.15rem;
+    font-weight: 600;
+    font-family: var(--font-sans);
+    cursor: pointer;
+    transition: background 0.1s, transform 0.08s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
+.cpb:active {
+    background: var(--hover-bg);
+    transform: scale(0.93);
+}
+
+/* Function buttons (C, +/−, ⌫) */
+.cpb-fn {
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-weight: 700;
+    background: var(--bg-color);
+}
+
+/* Operator buttons (÷, ×, −, +) */
+.cpb-op {
+    background: color-mix(in srgb, var(--primary-color) 12%, var(--card-bg));
+    color: var(--primary-color);
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.cpb-op-active {
+    background: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+/* = button */
+.cpb-eq {
+    background: var(--primary-color);
+    color: #fff;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+.cpb-eq:active {
+    filter: brightness(1.1);
+    background: var(--primary-color);
+}
+
+/* 0 spans 2 columns */
+.cpb-zero {
+    grid-column: span 2;
+    justify-content: flex-start;
+    padding-left: 20px;
+}
+
+/* Dark mode tweaks */
+.dark .cpb-fn {
+    background: color-mix(in srgb, var(--text-muted) 8%, var(--card-bg));
+}
+
+
+
+/* ── Row Layout (final, overrides earlier definitions) ── */
+.life-exp-row,
+.life-income-row {
+    padding: 10px 0;
+    height: auto;
+    min-height: 48px;
+    gap: 8px;
+}
+
+.life-exp-row:last-child,
+.life-income-row:last-child {
+    margin-bottom: 0;
+    padding-bottom: 10px;
+    border-bottom: none;
+}
+
+.life-exp-date,
+.life-income-date {
+    min-width: 28px;
+    width: 28px;
+}
+
+/* Dot/Arrow: let gap handle spacing, no extra margin */
+.life-exp-dot,
+.life-income-arrow {
+    flex-shrink: 0;
+}
+
+/* Info section: takes all remaining space, note truncates */
+.life-exp-info {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.life-item-main-line {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 100%;
+    line-height: 1;
+}
+
+.life-item-cat-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-right: 4px;
+    line-height: 1;
+}
+
+.life-item-note {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    line-height: 1;
+}
+
+/* Amount column: shrink-proof, never wraps */
+.life-exp-amount-wrap {
+    min-width: 80px;
+    width: max-content;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    flex-shrink: 0;
+    padding-right: 4px;
+}
+
+.life-exp-amount {
+    color: var(--danger-color);
+    font-weight: 700;
+    font-size: 0.95rem;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.life-exp-reward-inline {
+    color: var(--success-color);
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-top: 2px;
+    white-space: nowrap;
+    text-align: right;
+    width: 100%;
+}
+
+.life-income-amount {
+    color: var(--success-color);
+    font-weight: 700;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+
+/* Action buttons: 2 × 32px icon-btn */
+.life-item-actions {
+    width: 64px;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 4px;
+}
+
+/* stat colors */
+.detail-value.stat-negative { color: var(--danger-color); }
+.detail-value.stat-positive { color: var(--success-color); }

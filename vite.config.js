@@ -9,5 +9,8 @@ export default defineConfig({
   server: {
     port: 3000,
     open: true,
-  }
+  },
+  css: {
+    devSourcemap: true, // maps DevTools rules back to source module (e.g. life.css:42)
+  },
 });

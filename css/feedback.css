@@ -1,0 +1,120 @@
+/* ?�?� Category List ?�?� */
+.category-list {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    max-height: 480px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+}
+
+.category-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--input-bg);
+    transition: border-color 0.1s ease-out, background-color 0.1s ease-out;
+    cursor: grab;
+    will-change: border-color, background-color;
+    transform: translateZ(0);
+    /* Hardware acceleration */
+}
+
+.category-item:hover {
+    border-color: var(--primary-color);
+    background-color: var(--bg-color);
+}
+
+.category-item.dragging {
+    opacity: 0.45;
+    border: 1px dashed var(--primary-color);
+}
+
+.category-item.over {
+    border-top: 2px solid var(--primary-color) !important;
+}
+
+.color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+
+
+/* ?�?� Empty State ?�?� */
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 72px 24px;
+    color: var(--text-muted);
+    animation: fadeIn 0.4s ease;
+}
+
+.empty-icon {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+    color: var(--border-color);
+    display: block;
+}
+
+.empty-state p {
+    font-size: 0.9rem;
+    line-height: 1.7;
+    max-width: 280px;
+    margin: 0 auto;
+    opacity: 0.8;
+}
+
+.empty-state strong {
+    display: block;
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+}
+
+/* ?�?� Toast ?�?� */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 11px 20px;
+    background: var(--text-main);
+    color: var(--bg-color);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s;
+    z-index: 2000;
+    font-size: 0.87rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 180px;
+    max-width: 320px;
+}
+
+.toast.show {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.toast.success {
+    background: var(--success-color);
+    color: #fff;
+}
+
+.toast.error {
+    background: var(--danger-color);
+    color: #fff;
+}
+
