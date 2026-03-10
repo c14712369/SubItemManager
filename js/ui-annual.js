@@ -166,6 +166,16 @@ function drawAnnualBarChart(monthlyData) {
             labels: labels,
             datasets: [
                 {
+                    label: '收入',
+                    data: monthlyData.map(d => d.income),
+                    borderColor: '#3D7A5A',
+                    backgroundColor: '#3D7A5A18',
+                    borderWidth: 2,
+                    pointRadius: 4,
+                    tension: 0.3,
+                    fill: true
+                },
+                {
                     label: '固定支出',
                     data: monthlyData.map(d => d.fixed),
                     borderColor: '#2A6475',

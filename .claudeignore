@@ -1,1 +1,8 @@
 node_modules/
+  dist/
+  style.css.bak
+  split-css.mjs.done
+  sync_check.txt
+  package-lock.json
+  ref_docs/
+  .git/

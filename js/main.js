@@ -118,6 +118,7 @@ function switchTab(tabId) {
 }
 
 function init(skipCloudFetch = false) {
+    window._appInitializing = true; // Block local→cloud sync until fetchFromServer completes
     initTheme();
     loadData();
     loadLifeData(); // from data.js

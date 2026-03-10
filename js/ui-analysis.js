@@ -129,8 +129,11 @@ async function updateBudgetCalc() {
     }
 
     var deductCb = document.getElementById('deductProjectSavings');
-    if (deductCb && deductCb.checked) {
-        remaining -= totalSavings;
+    if (deductCb) {
+        var saved = localStorage.getItem('deductProjectSavings');
+        deductCb.checked = saved === null ? true : saved === 'true';
+        localStorage.setItem('deductProjectSavings', deductCb.checked);
+        if (deductCb.checked) remaining -= totalSavings;
     }
 
     var remainEl = document.getElementById('remainingBudget');

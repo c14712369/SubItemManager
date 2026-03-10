@@ -145,6 +145,12 @@
         flex-direction: column;
     }
 
+    .search-filter .form-input,
+    .search-filter .form-select {
+        width: 100%;
+        flex-shrink: 0;
+    }
+
     .items-grid {
         grid-template-columns: 1fr;
     }

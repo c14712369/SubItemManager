@@ -337,6 +337,52 @@ function lifeCalcDigit(d) { if (_calcFreshEntry) { _calcCurrent = d; _calcFreshE
 function lifeCalcOp(op) { _calcFirstNum = parseFloat(_calcCurrent); _calcOp = op; _calcFreshEntry = true; }
 function lifeCalcEqual() { if (_calcOp === null || _calcFirstNum === null) return; var a = _calcFirstNum, b = parseFloat(_calcCurrent), res = 0; if (_calcOp === '+') res = a + b; else if (_calcOp === '−') res = a - b; else if (_calcOp === '×') res = a * b; else if (_calcOp === '÷') res = (b !== 0) ? a / b : 0; _calcCurrent = String(res); _calcOp = null; _calcFirstNum = null; _calcFreshEntry = true; _lifeCalcRefresh(); }
 function lifeCalcBack() { _calcCurrent = _calcCurrent.length > 1 ? _calcCurrent.slice(0, -1) : '0'; _lifeCalcRefresh(); }
+function lifeCalcClear() { _calcCurrent = '0'; _lifeCalcRefresh(); }
+
+function toggleLifeExpSort() {
+    _lifeExpSortMode = (_lifeExpSortMode === 'date-desc') ? 'date-asc' : 'date-desc';
+    var btn = document.getElementById('lifeExpSortBtn');
+    if (btn) {
+        btn.title = _lifeExpSortMode === 'date-desc' ? '切換排序 (新到舊)' : '切換排序 (舊到新)';
+        btn.querySelector('i').className = _lifeExpSortMode === 'date-desc'
+            ? 'fa-solid fa-arrow-down-short-wide'
+            : 'fa-solid fa-arrow-up-short-wide';
+    }
+    renderLifeExpenseList();
+}
+
+function openSalarySettingModal() {
+    var s = JSON.parse(localStorage.getItem(SALARY_DEFAULT_KEY) || 'null');
+    var sel = document.getElementById('salaryDefaultCatSelect');
+    if (sel) sel.innerHTML = lifeIncomeCategories.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    if (s) {
+        if (document.getElementById('salaryDefaultAmtInput')) document.getElementById('salaryDefaultAmtInput').value = s.amount || '';
+        if (sel && s.catId) sel.value = s.catId;
+        if (document.getElementById('salaryDefaultDay')) document.getElementById('salaryDefaultDay').value = s.day || 5;
+    }
+    document.getElementById('salarySettingModalOverlay').classList.add('active');
+}
+
+function closeSalarySettingModal() {
+    document.getElementById('salarySettingModalOverlay').classList.remove('active');
+}
+
+function saveDefaultSalary() {
+    var amount = Number(document.getElementById('salaryDefaultAmtInput').value);
+    var catId = document.getElementById('salaryDefaultCatSelect').value;
+    var day = parseInt(document.getElementById('salaryDefaultDay').value) || 5;
+    if (!amount || amount <= 0) { showToast('請輸入薪資金額'); return; }
+    localStorage.setItem(SALARY_DEFAULT_KEY, JSON.stringify({ amount, catId, day }));
+    closeSalarySettingModal();
+    showToast('預設薪資已儲存');
+}
+
+function clearDefaultSalary() {
+    if (!confirm('確定清除預設薪資設定？')) return;
+    localStorage.removeItem(SALARY_DEFAULT_KEY);
+    closeSalarySettingModal();
+    showToast('已清除');
+}
 function openCalcPopup() { var o = document.getElementById('calcPopupOverlay'); if (o) o.classList.add('active'); }
 function closeCalcPopup() { var o = document.getElementById('calcPopupOverlay'); if (o) o.classList.remove('active'); updateRewardPreview(); }
 function calcPopupBgClick(e) { if (e.target.id === 'calcPopupOverlay') closeCalcPopup(); }

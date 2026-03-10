@@ -49,7 +49,8 @@ async function checkSession(skipFetch = false) {
             await fetchFromServer();
         }
     } else {
-        isFetchingFromServer = false; // No fetch needed, release the guard
+        isFetchingFromServer = false;
+        window._appInitializing = false; // No fetch needed, release both guards
     }
 }
 
@@ -255,6 +256,7 @@ async function syncToServer(force = false) {
 // Debounced version for frequent local saves
 let syncTimeout = null;
 function triggerCloudSync() {
+    if (window._appInitializing) return; // Block during init phase
     if (syncTimeout) clearTimeout(syncTimeout);
     syncTimeout = setTimeout(() => {
         syncToServer();
@@ -324,12 +326,23 @@ async function fetchFromServer() {
                                    (projects && projects.length > 0) ||
                                    (lifeExpenses && lifeExpenses.length > 1);
 
-            if (localHasRealData && localTimestamp > 0 && localTimestamp > cloudTimestamp) {
-                console.log('本地資料較新，將本地資料推上雲端覆蓋', { localTimestamp, cloudTimestamp });
+            // Data volume safety check: if cloud has significantly more records, always prefer cloud
+            // This prevents empty/reset local data from overwriting a full cloud backup
+            const localCount = (items?.length || 0) + (lifeExpenses?.length || 0) + (projects?.length || 0);
+            const cloudCount = (appData.items?.length || 0) + (appData.lifeExpenses?.length || 0) + (appData.projects?.length || 0);
+            const cloudHasMoreData = cloudCount > 5 && localCount < cloudCount * 0.5;
+
+            if (localHasRealData && localTimestamp > 0 && localTimestamp > cloudTimestamp && !cloudHasMoreData) {
+                console.log('本地資料較新，將本地資料推上雲端覆蓋', { localTimestamp, cloudTimestamp, localCount, cloudCount });
                 if (loadingOverlay) loadingOverlay.classList.remove('active');
-                isFetchingFromServer = false; // Allow sync before returning
+                isFetchingFromServer = false;
+                window._appInitializing = false;
                 await syncToServer(true); // Force push local to cloud
                 return;
+            }
+
+            if (cloudHasMoreData && localTimestamp > cloudTimestamp) {
+                console.warn('⚠️ 本地時間戳較新，但雲端資料量遠多於本地，優先使用雲端資料', { localCount, cloudCount });
             }
 
             const appData = data.app_data;
@@ -404,6 +417,7 @@ async function fetchFromServer() {
         console.error('Fetch error:', err);
     } finally {
         isFetchingFromServer = false;
+        window._appInitializing = false; // Init complete, allow local saves to sync
         if (loadingOverlay) loadingOverlay.classList.remove('active');
     }
 }

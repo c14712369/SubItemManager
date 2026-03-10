@@ -24,6 +24,7 @@ function loadData() {
 }
 
 function updateLocalTimestamp() {
+    if (window._appInitializing) return; // Don't mark local as "newer" during init
     localStorage.setItem('last_local_update', Date.now().toString());
 }
 
