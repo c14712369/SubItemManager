@@ -38,24 +38,19 @@ const STOCK_LIST = [
   { symbol: 'TSLA', name: 'Tesla', suffix: '' },
 ];
 
-const BANK_LIST = [
-  '台灣銀行 — 活存', '台灣銀行 — 定存',
-  '郵局 — 活存', '郵局 — 定期儲金',
-  '合作金庫 — 活存', '合作金庫 — 定存',
-  '第一銀行 — 活存', '第一銀行 — 定存',
-  '華南銀行 — 活存', '華南銀行 — 定存',
-  '兆豐銀行 — 活存', '兆豐銀行 — 定存',
-  '台北富邦 — 活存', '台北富邦 — 定存',
-  '國泰世華 — 活存', '國泰世華 — 定存',
-  '中國信託 — 活存', '中國信託 — 定存',
-  '玉山銀行 — 活存', '玉山銀行 — 定存',
-  '台新銀行 — 活存', '台新銀行 — 定存',
-  '永豐銀行 — 活存', '永豐銀行 — 定存',
-  '星展銀行 — 數位帳戶', '將來銀行 — 數位帳戶',
-  '樂天銀行 — 數位帳戶', 'LINE Bank — 數位帳戶',
-  '現金', '美股券商 (Firstrade)', '美股券商 (Interactive Brokers)',
-  '台股券商保留款',
+const BANK_NAMES = [
+  '台灣銀行', '土地銀行', '合作金庫', '第一銀行', '華南銀行',
+  '彰化銀行', '兆豐銀行', '台灣企銀', '輸出入銀行',
+  '台北富邦', '國泰世華', '中國信託', '玉山銀行', '台新銀行',
+  '永豐銀行', '聯邦銀行', '遠東銀行', '元大銀行', '凱基銀行',
+  '新光銀行', '陽信銀行', '安泰銀行', '三信銀行',
+  '星展銀行', '渣打銀行', '花旗銀行', '匯豐銀行',
+  '將來銀行', '樂天銀行', 'LINE Bank', 'Richart（台新）',
+  '郵局',
+  '美股券商 (Firstrade)', '美股券商 (Interactive Brokers)', '台股券商保留款', '現金',
 ];
+
+const ACCOUNT_TYPES = ['活存', '定存', '定期儲金', '數位帳戶', '外幣帳戶', '綜合存款', '其他'];
 
 // ── Symbol color (consistent per ticker) ────────────────────────────────────
 const SYMBOL_PALETTE = ['#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#06b6d4','#f97316','#ec4899','#14b8a6','#a855f7'];
@@ -170,21 +165,32 @@ function HoldingModal({ onClose, onSave }) {
 }
 
 // ── Bank Modal ────────────────────────────────────────────────────────────────
+function parseBankName(combined) {
+  const sep = combined?.indexOf(' — ');
+  if (sep > -1) return { bank: combined.slice(0, sep), type: combined.slice(sep + 3) };
+  return { bank: combined || '', type: '' };
+}
+
 function BankModal({ initial, onClose, onSave }) {
-  const [bankName, setBankName] = useState(initial?.bankName || '');
-  const [balance,  setBalance]  = useState(initial?.balance  || '');
+  const parsed = parseBankName(initial?.bankName);
+  const [bank,     setBank]     = useState(parsed.bank);
+  const [accType,  setAccType]  = useState(parsed.type || '活存');
+  const [balance,  setBalance]  = useState(initial?.balance || '');
   const [rate,     setRate]     = useState(initial?.rate     || '0');
   const [dropdown, setDropdown] = useState([]);
 
   const handleSearch = (q) => {
-    setBankName(q);
+    setBank(q);
     const lower = (q || '').toLowerCase();
-    setDropdown(lower ? BANK_LIST.filter(b => b.toLowerCase().includes(lower)) : BANK_LIST);
+    setDropdown(lower ? BANK_NAMES.filter(b => b.toLowerCase().includes(lower)) : BANK_NAMES);
   };
 
+  const isSpecial = (b) => ['現金', '美股券商 (Firstrade)', '美股券商 (Interactive Brokers)', '台股券商保留款'].includes(b);
+
   const handleSave = () => {
-    if (!bankName.trim()) { showToast('請填寫銀行名稱', 'error'); return; }
-    onSave({ id: initial?.id || 'b-' + Date.now(), bankName: bankName.trim(), balance: parseFloat(balance) || 0, rate: parseFloat(rate) || 0 });
+    if (!bank.trim()) { showToast('請填寫銀行名稱', 'error'); return; }
+    const combined = isSpecial(bank) ? bank : `${bank} — ${accType}`;
+    onSave({ id: initial?.id || 'b-' + Date.now(), bankName: combined, balance: parseFloat(balance) || 0, rate: parseFloat(rate) || 0 });
   };
 
   return (
@@ -194,17 +200,25 @@ function BankModal({ initial, onClose, onSave }) {
           <h3>{initial ? '編輯帳戶' : '新增帳戶'}</h3>
           <button className="icon-btn" onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
         </div>
-        <div className="form-group" id="bankSearchWrap" style={{ position: 'relative' }}>
-          <label className="form-label">銀行 / 帳戶名稱</label>
-          <input className="form-input" autoFocus value={bankName} onChange={e => handleSearch(e.target.value)} onFocus={() => setDropdown(BANK_LIST)} onBlur={() => setTimeout(() => setDropdown([]), 150)} placeholder="搜尋或輸入…" />
+        <div className="form-group" style={{ position: 'relative' }}>
+          <label className="form-label">銀行 / 機構</label>
+          <input className="form-input" autoFocus value={bank} onChange={e => handleSearch(e.target.value)} onFocus={() => setDropdown(BANK_NAMES)} onBlur={() => setTimeout(() => setDropdown([]), 150)} placeholder="搜尋或輸入…" />
           {dropdown.length > 0 && (
-            <div id="bankDropdown" style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: 'auto' }}>
-              {dropdown.slice(0, 10).map((b, i) => (
-                <div key={i} className="bank-dd-item" style={{ padding: '8px 12px', cursor: 'pointer' }} onMouseDown={() => { setBankName(b); setDropdown([]); }}>{b}</div>
+            <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: 'auto' }}>
+              {dropdown.slice(0, 12).map((b, i) => (
+                <div key={i} style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '0.9rem' }} onMouseDown={() => { setBank(b); setDropdown([]); }}>{b}</div>
               ))}
             </div>
           )}
         </div>
+        {!isSpecial(bank) && (
+          <div className="form-group">
+            <label className="form-label">帳戶類型</label>
+            <select className="form-select" value={accType} onChange={e => setAccType(e.target.value)}>
+              {ACCOUNT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+        )}
         <div className="form-group">
           <label className="form-label">餘額（NT$）</label>
           <input className="form-input" type="number" min="0" value={balance} onChange={e => setBalance(e.target.value)} placeholder="0" />
