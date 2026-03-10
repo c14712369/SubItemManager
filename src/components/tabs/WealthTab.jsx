@@ -589,9 +589,9 @@ export default function WealthTab() {
             {/* CAGR auto-fetch */}
             <div className="form-group" style={{ marginBottom: 4, position: 'relative' }} id="cagrSearchWrap">
               <label className="form-label" style={{ fontSize: '0.75rem' }}>CAGR 自動抓取</label>
-              <div style={{ display: 'flex', gap: 4 }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <div style={{ position: 'relative', flex: 1 }}>
-                  <input className="form-input" id="wealthInvestTickerSearch" style={{ fontSize: '0.8rem' }} value={cagrSearch} onChange={e => handleCagrSearch(e.target.value)} placeholder="代號…" />
+                  <input className="form-input" id="wealthInvestTickerSearch" style={{ fontSize: '0.8rem', width: '100%' }} value={cagrSearch} onChange={e => handleCagrSearch(e.target.value)} placeholder="代號搜尋…" />
                   {cagrDropdown.length > 0 && (
                     <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 6, zIndex: 100 }}>
                       {cagrDropdown.map((s, i) => (
@@ -602,21 +602,21 @@ export default function WealthTab() {
                     </div>
                   )}
                 </div>
-                <select className="form-select" id="wealthInvestRangeSelect" style={{ width: 60, padding: '4px' }} value={cagrYears}
+                <select className="form-select" id="wealthInvestRangeSelect" style={{ width: 72, flexShrink: 0 }} value={cagrYears}
                   onChange={e => {
                     setCagrYears(e.target.value);
                     if (selectedCagrSymbol.current) refreshCagrNow(selectedCagrSymbol.current, e.target.value);
                   }}>
-                  <option value="3">3Y</option>
-                  <option value="5">5Y</option>
-                  <option value="10">10Y</option>
+                  <option value="3">3 年</option>
+                  <option value="5">5 年</option>
+                  <option value="10">10 年</option>
                 </select>
-                {cagrLabel && (
-                  <span style={{ alignSelf: 'center', fontSize: '0.78rem', fontWeight: 600, color: 'var(--primary-color)', whiteSpace: 'nowrap' }}>
-                    {cagrLabel}
-                  </span>
-                )}
               </div>
+              {cagrLabel && (
+                <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--primary-color)', marginTop: 4 }}>
+                  {cagrLabel}
+                </div>
+              )}
               {cagrStatus && <div id="wealthCAGRStatus" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>{cagrStatus}</div>}
             </div>
           </div>
