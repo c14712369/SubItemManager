@@ -21,3 +21,7 @@ yarn-error.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# Claude Code
+.claude/
+FUTURE_PLANS.md

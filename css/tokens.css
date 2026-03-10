@@ -5,46 +5,49 @@
 
 /* ?�?� CSS Variables ?�?� */
 :root {
-    --primary-color: #2A6475;
-    --primary-hover: #1E5060;
-    --accent-color: #C17B2E;
-    --secondary-color: #6B6B6B;
-    --bg-color: #FAFAF9;
-    --card-bg: #FFFFFF;
-    --text-main: #1A1A1A;
-    --text-muted: #6B6B6B;
-    --danger-color: #B24040;
+    /* ── 主色系 #27374D #526D82 #9DB2BF #DDE6ED ── */
+    --primary-color: #526D82;
+    --primary-hover: #27374D;
+    --accent-color:  #C17B2E;      /* 暖琥珀，與冷藍互補 */
+    --secondary-color: #9DB2BF;
+    --bg-color:    #DDE6ED;
+    --card-bg:     #F2F7FA;
+    --text-main:   #27374D;
+    --text-muted:  #526D82;
+    --danger-color:  #B24040;
     --success-color: #3D7A5A;
-    --border-color: #E8E5E0;
-    --input-bg: #FFFFFF;
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --radius: 8px;
+    --border-color:  #B5C8D4;
+    --input-bg:    #F2F7FA;
+    --shadow-sm:   0 2px 8px  rgba(39, 55, 77, 0.09);
+    --shadow-md:   0 4px 18px rgba(39, 55, 77, 0.13);
+    --shadow-lg:   0 8px 28px rgba(39, 55, 77, 0.16);
+    --radius:    8px;
     --radius-sm: 5px;
     --radius-lg: 16px;
     --font-serif: 'Noto Serif TC', serif;
-    --font-sans: 'Noto Sans TC', sans-serif;
-    --hover-bg: rgba(0, 0, 0, 0.04);
-    --shadow-color: rgba(0, 0, 0, 0.08);
+    --font-sans:  'Noto Sans TC', sans-serif;
+    --hover-bg:      rgba(39, 55, 77, 0.05);
+    --shadow-color:  rgba(39, 55, 77, 0.10);
     --success-light: rgba(61, 122, 90, 0.08);
 }
 
 [data-theme="dark"] {
-    --primary-color: #4A9DB5;
-    --primary-hover: #5BB8D4;
-    --accent-color: #D4944A;
-    --secondary-color: #8A8A8A;
-    --bg-color: #0F0E0D;
-    --card-bg: #1A1917;
-    --text-main: #F0EDE8;
-    --text-muted: #8A8A8A;
-    --danger-color: #D46060;
+    --primary-color:  #9DB2BF;
+    --primary-hover:  #DDE6ED;
+    --accent-color:   #D4944A;
+    --secondary-color: #526D82;
+    --bg-color:    #181F2A;
+    --card-bg:     #27374D;
+    --text-main:   #DDE6ED;
+    --text-muted:  #9DB2BF;
+    --danger-color:  #D46060;
     --success-color: #5A9E7A;
-    --border-color: #2D2B28;
-    --input-bg: #130F0E;
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --hover-bg: rgba(255, 255, 255, 0.05);
-    --shadow-color: rgba(0, 0, 0, 0.35);
+    --border-color:  #3D546A;
+    --input-bg:    #1E2D3E;
+    --shadow-sm:   0 2px 8px  rgba(0, 0, 0, 0.35);
+    --shadow-md:   0 4px 18px rgba(0, 0, 0, 0.45);
+    --shadow-lg:   0 8px 28px rgba(0, 0, 0, 0.55);
+    --hover-bg:      rgba(221, 230, 237, 0.06);
+    --shadow-color:  rgba(0, 0, 0, 0.40);
     --success-light: rgba(90, 158, 122, 0.12);
 }

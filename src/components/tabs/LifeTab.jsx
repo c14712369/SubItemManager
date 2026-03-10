@@ -1,0 +1,594 @@
+import { useState, useEffect, useCallback } from 'react';
+import { useAppStore } from '../../store/appStore';
+import { lifeMonthLabel, calculateExpenseForMonth, formatAmount, showToast } from '../../lib/utils';
+import { SALARY_DEFAULT_KEY, DAILY_EXP_KEY } from '../../lib/constants';
+
+const PAGE_SIZE = 20;
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+function getMonthlyFixedTotal(items, ym) {
+  if (!ym || !items?.length) return 0;
+  const [y, m] = ym.split('-').map(Number);
+  return items.reduce((s, item) => s + calculateExpenseForMonth(item, y, m), 0);
+}
+
+// ── Calculator hook ──────────────────────────────────────────────────────────
+function useCalc(initialVal = '0') {
+  const [cur,   setCur]   = useState(String(initialVal));
+  const [first, setFirst] = useState(null);
+  const [op,    setOp]    = useState(null);
+  const [fresh, setFresh] = useState(false);
+
+  const reset = useCallback((val = '0') => {
+    setCur(String(val)); setFirst(null); setOp(null); setFresh(false);
+  }, []);
+  const digit = useCallback((d) => {
+    setCur(prev => {
+      if (fresh) { setFresh(false); return d === '.' ? '0.' : d; }
+      if (prev === '0' && d !== '.') return d;
+      if (d === '.' && prev.includes('.')) return prev;
+      return prev + d;
+    });
+  }, [fresh]);
+  const operator = useCallback((o) => {
+    setFirst(parseFloat(cur)); setOp(o); setFresh(true);
+  }, [cur]);
+  const equal = useCallback(() => {
+    if (!op || first == null) return;
+    const b = parseFloat(cur);
+    let res = 0;
+    if (op === '+') res = first + b;
+    else if (op === '−') res = first - b;
+    else if (op === '×') res = first * b;
+    else if (op === '÷') res = b !== 0 ? first / b : 0;
+    setCur(String(parseFloat(res.toFixed(4))));
+    setOp(null); setFirst(null); setFresh(true);
+  }, [op, first, cur]);
+  const back  = useCallback(() => setCur(p => p.length > 1 ? p.slice(0, -1) : '0'), []);
+  const clear = useCallback(() => setCur('0'), []);
+
+  return { cur, reset, digit, operator, equal, back, clear };
+}
+
+// ── Salary Modal ─────────────────────────────────────────────────────────────
+function SalaryModal({ lifeIncomeCategories, onClose }) {
+  const saved = (() => { try { return JSON.parse(localStorage.getItem(SALARY_DEFAULT_KEY)); } catch { return null; } })();
+  const [amount, setAmount] = useState(saved?.amount || '');
+  const [catId,  setCatId]  = useState(saved?.catId  || lifeIncomeCategories[0]?.id || '');
+  const [day,    setDay]    = useState(saved?.day    || 5);
+
+  const handleSave = () => {
+    if (!amount || Number(amount) <= 0) { showToast('請輸入薪資金額', 'error'); return; }
+    localStorage.setItem(SALARY_DEFAULT_KEY, JSON.stringify({ amount: Number(amount), catId, day: parseInt(day) }));
+    showToast('預設薪資已儲存'); onClose();
+  };
+  const handleClear = () => {
+    if (!confirm('確定清除預設薪資設定？')) return;
+    localStorage.removeItem(SALARY_DEFAULT_KEY);
+    showToast('已清除'); onClose();
+  };
+
+  return (
+    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 360 }}>
+        <div className="modal-header">
+          <h3>薪資設定</h3>
+          <button className="icon-btn" onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
+        </div>
+        <div className="form-group">
+          <label className="form-label">月薪金額</label>
+          <input className="form-input" type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" />
+        </div>
+        <div className="form-group">
+          <label className="form-label">收入分類</label>
+          <select className="form-select" value={catId} onChange={e => setCatId(e.target.value)}>
+            {lifeIncomeCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">每月幾號入帳</label>
+          <input className="form-input" type="number" min="1" max="28" value={day} onChange={e => setDay(e.target.value)} />
+        </div>
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={handleClear}>清除設定</button>
+          <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleSave}>
+            <i className="fa-solid fa-check"></i> 儲存
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Expense / Income Modal ────────────────────────────────────────────────────
+function ExpenseModal({ lifeCategories, lifeIncomeCategories, paymentMethods, currentMonth, initial, onClose, onSave }) {
+  const isEdit   = !!(initial?.id && initial?.type);
+  const initType = initial?.type || 'expense';
+  const [type,     setType]     = useState(initType);
+  const [catId,    setCatId]    = useState(initType !== 'income' ? (initial?.categoryId || lifeCategories[0]?.id || '') : (lifeCategories[0]?.id || ''));
+  const [incCatId, setIncCatId] = useState(initType === 'income' ? (initial?.categoryId || lifeIncomeCategories[0]?.id || '') : (lifeIncomeCategories[0]?.id || ''));
+  const [date,     setDate]     = useState(initial?.date || currentMonth + '-' + String(new Date().getDate()).padStart(2, '0'));
+  const [note,     setNote]     = useState(initial?.note || '');
+  const [pmId,     setPmId]     = useState(initial?.paymentMethod || paymentMethods[0]?.id || 'cash');
+  const [showCalc, setShowCalc] = useState(false);
+  const calc = useCalc(initial?.amount || '0');
+
+  const amount = parseFloat(calc.cur) || 0;
+
+  const handleSubmit = () => {
+    if (!amount || amount <= 0 || !date) { showToast('請輸入金額', 'error'); return; }
+    const entry = {
+      id: initial?.id || crypto.randomUUID(),
+      type, amount,
+      categoryId: type === 'income' ? incCatId : catId,
+      date, note: note.trim(),
+      ...(type === 'expense' ? { paymentMethod: pmId } : {}),
+    };
+    onSave(entry);
+  };
+
+  return (
+    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 400 }}>
+        <div className="modal-header">
+          <h3 id="lifeExpModalTitle">
+            {isEdit ? (type === 'income' ? '編輯收入' : '編輯支出') : (type === 'income' ? '新增收入' : '新增支出')}
+          </h3>
+          <button className="icon-btn" onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
+        </div>
+
+        {!isEdit && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <button className={`btn${type === 'expense' ? ' btn-primary' : ' btn-ghost'}`} style={{ flex: 1 }} onClick={() => setType('expense')}>
+              <i className="fa-solid fa-minus"></i> 支出
+            </button>
+            <button className={`btn${type === 'income' ? ' btn-primary' : ' btn-ghost'}`} style={{ flex: 1 }} onClick={() => setType('income')}>
+              <i className="fa-solid fa-plus"></i> 收入
+            </button>
+          </div>
+        )}
+
+        <div className="form-group">
+          <label className="form-label">金額</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div className="form-input" style={{ flex: 1, cursor: 'pointer', fontFamily: 'monospace', fontSize: '1.1rem', minHeight: 40, display: 'flex', alignItems: 'center' }}
+              onClick={() => setShowCalc(v => !v)}>
+              {parseFloat(calc.cur || 0).toLocaleString()}
+            </div>
+            <button className="icon-btn" onClick={() => setShowCalc(v => !v)} title="計算機">
+              <i className="fa-solid fa-calculator"></i>
+            </button>
+          </div>
+        </div>
+
+        {showCalc && (
+          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 12, marginBottom: 12 }}>
+            <div style={{ textAlign: 'right', fontFamily: 'monospace', fontSize: '1.4rem', padding: '4px 8px', marginBottom: 8, background: 'var(--bg-secondary)', borderRadius: 8, minHeight: 40 }}>
+              {parseFloat(calc.cur || 0).toLocaleString()}
+            </div>
+            {[
+              ['7','8','9','÷'],
+              ['4','5','6','×'],
+              ['1','2','3','−'],
+              ['.','0','⌫','+'],
+            ].map((row, ri) => (
+              <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 4, marginBottom: 4 }}>
+                {row.map(k => (
+                  <button key={k} className="btn btn-ghost" style={{ padding: '8px 0', fontFamily: 'monospace' }}
+                    onClick={() => {
+                      if ('0123456789.'.includes(k)) calc.digit(k);
+                      else if (k === '⌫') calc.back();
+                      else calc.operator(k);
+                    }}>
+                    {k}
+                  </button>
+                ))}
+              </div>
+            ))}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+              <button className="btn btn-ghost" style={{ padding: '10px 0' }} onClick={calc.clear}>C</button>
+              <button className="btn btn-primary" style={{ padding: '10px 0' }} onClick={() => { calc.equal(); setShowCalc(false); }}>
+                = 確認
+              </button>
+            </div>
+          </div>
+        )}
+
+        {type === 'expense' ? (
+          <div className="form-group">
+            <label className="form-label">分類</label>
+            <select className="form-select" value={catId} onChange={e => setCatId(e.target.value)}>
+              {lifeCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+        ) : (
+          <div className="form-group">
+            <label className="form-label">收入類別</label>
+            <select className="form-select" value={incCatId} onChange={e => setIncCatId(e.target.value)}>
+              {lifeIncomeCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+        )}
+
+        {type === 'expense' && (
+          <div className="form-group">
+            <label className="form-label">付款方式</label>
+            <select className="form-select" value={pmId} onChange={e => setPmId(e.target.value)}>
+              {paymentMethods.map(pm => <option key={pm.id} value={pm.id}>{pm.name}</option>)}
+            </select>
+          </div>
+        )}
+
+        <div className="form-group">
+          <label className="form-label">日期</label>
+          <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">備註（選填）</label>
+          <input className="form-input" value={note} onChange={e => setNote(e.target.value)} placeholder="備註…" />
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
+          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>取消</button>
+          <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleSubmit}>
+            <i className="fa-solid fa-check"></i> {isEdit ? '儲存' : '新增'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main LifeTab ─────────────────────────────────────────────────────────────
+export default function LifeTab() {
+  const {
+    items, lifeExpenses, lifeCategories, lifeIncomeCategories,
+    lifeBudgets, lifeCurrentMonth, paymentMethods,
+    addLifeExpense, updateLifeExpense, deleteLifeExpense, setLifeCurrentMonth,
+  } = useAppStore();
+
+  const [selectedCatId, setSelectedCatId] = useState(null);
+  const [sortMode,      setSortMode]      = useState('date-desc');
+  const [lifeView,      setLifeView]      = useState('exp');
+  const [page,          setPage]          = useState(1);
+  const [expModal,      setExpModal]      = useState(null);
+  const [newType,       setNewType]       = useState('expense');
+  const [showSalary,    setShowSalary]    = useState(false);
+  const ym = lifeCurrentMonth;
+
+  // Reset page when month or filter changes
+  useEffect(() => { setPage(1); }, [ym, selectedCatId]);
+
+  // ── Auto-apply salary ──
+  useEffect(() => {
+    try {
+      const s = JSON.parse(localStorage.getItem(SALARY_DEFAULT_KEY));
+      if (!s) return;
+      const alreadyApplied = lifeExpenses.some(e =>
+        (e.date || '').startsWith(ym) && (e._autoSalary || e._salaryDefault) && e.categoryId === s.catId
+      );
+      if (alreadyApplied) return;
+      const d = new Date(ym + '-' + String(s.day).padStart(2, '0'));
+      const dow = d.getDay();
+      if (dow === 0) d.setDate(d.getDate() - 2);
+      else if (dow === 6) d.setDate(d.getDate() - 1);
+      addLifeExpense({
+        id: crypto.randomUUID(), type: 'income',
+        categoryId: s.catId, amount: s.amount,
+        date: d.toISOString().split('T')[0],
+        note: '薪資 (自動)', _autoSalary: true,
+      });
+    } catch {}
+  }, [ym]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Auto-apply daily expenses ──
+  useEffect(() => {
+    try {
+      const list = JSON.parse(localStorage.getItem(DAILY_EXP_KEY) || '[]');
+      list.forEach(rule => {
+        if (!lifeExpenses.some(e => e._autoDailyId === rule.id && (e.date || '').startsWith(ym))) {
+          addLifeExpense({
+            id: crypto.randomUUID(), type: 'expense',
+            categoryId: rule.catId, amount: rule.amount,
+            date: ym + '-01', note: rule.name, _autoDailyId: rule.id,
+          });
+        }
+      });
+    } catch {}
+  }, [ym]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Computed stats ──
+  const tInc   = lifeExpenses.filter(e => e.type === 'income' && (e.date || '').startsWith(ym)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const tExp   = lifeExpenses.filter(e => e.type !== 'income' && (e.date || '').startsWith(ym)).reduce((s, e) => s + (Number(e.amount) || 0), 0);
+  const tFix   = getMonthlyFixedTotal(items, ym);
+  const remain = tInc - tExp - tFix;
+  const pct    = tInc > 0 ? Math.min(Math.round(((tExp + tFix) / tInc) * 100), 100) : 0;
+
+  // ── Category summary ──
+  const catSummary = lifeCategories.map(cat => {
+    const spent  = lifeExpenses.filter(e => e.categoryId === cat.id && (e.date || '').startsWith(ym) && e.type !== 'income').reduce((s, e) => s + (Number(e.amount) || 0), 0);
+    const budget = lifeBudgets[cat.id + '|' + ym] || 0;
+    return { ...cat, spent, budget, isOver: budget > 0 && spent > budget };
+  }).filter(c => c.spent > 0);
+
+  // ── Reward map ──
+  const rewardMap = {};
+  lifeExpenses.forEach(e => {
+    if (e.type === 'income' && e._linkedExpenseId) {
+      const m = (e.note || '').match(/\(([^)]*%)\)/);
+      rewardMap[e._linkedExpenseId] = { amount: e.amount, rate: m ? m[1] : '' };
+    }
+  });
+
+  // ── Filtered + sorted list ──
+  const visibleEntries = lifeExpenses
+    .filter(e => {
+      if (!(e.date || '').startsWith(ym)) return false;
+      if (e.type === 'income' && e._linkedExpenseId) return false;
+      if (selectedCatId !== null) return e.categoryId === selectedCatId;
+      return true;
+    })
+    .sort((a, b) =>
+      sortMode === 'date-desc'
+        ? (b.date.localeCompare(a.date) || (b.id || '').localeCompare(a.id || ''))
+        : (a.date.localeCompare(b.date) || (a.id || '').localeCompare(b.id || ''))
+    );
+
+  const totalPages = Math.ceil(visibleEntries.length / PAGE_SIZE);
+  const pageItems  = visibleEntries.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // ── Month nav ──
+  const changeMonth = (delta) => {
+    const [y, m] = ym.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    setLifeCurrentMonth(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'));
+    setSelectedCatId(null);
+  };
+
+  // ── CRUD handlers ──
+  const handleSaveExp = (entry) => {
+    if (entry.id && lifeExpenses.find(e => e.id === entry.id)) {
+      updateLifeExpense(entry.id, entry);
+      showToast('已更新');
+    } else {
+      addLifeExpense(entry);
+      showToast('已儲存');
+    }
+    setExpModal(null);
+  };
+  const handleDelete = (id) => {
+    if (!confirm('確定刪除？')) return;
+    deleteLifeExpense(id);
+    showToast('已刪除');
+  };
+  const openEdit = (entry) => setExpModal(entry);
+  const openNew  = (type)  => { setNewType(type); setExpModal({}); };
+
+  return (
+    <div className="tab-content">
+      {/* Month nav */}
+      <div className="month-nav">
+        <button className="icon-btn" onClick={() => changeMonth(-1)}><i className="fa-solid fa-chevron-left"></i></button>
+        <span className="month-nav-label" id="lifeMonthDisplay">{lifeMonthLabel(ym)}</span>
+        <button className="icon-btn" onClick={() => changeMonth(1)}><i className="fa-solid fa-chevron-right"></i></button>
+      </div>
+
+      {/* Life Hero Card */}
+      <div className="life-hero-card">
+        <div className="hero-main">
+          <div className="hero-label">生活費結餘</div>
+          <div className={`hero-amount${remain < 0 ? ' stat-negative' : ' stat-positive'}`} id="lifeMonthRemain">
+            NT$ {formatAmount(Math.abs(Math.round(remain)), 'income')}{remain < 0 ? ' (超支)' : ''}
+          </div>
+          <div className="progress-wrap-hero">
+            <div className="progress-bar">
+              <div className={`progress-fill${pct >= 100 ? ' over-budget' : ''}`} id="lifeOverallProgress" style={{ width: pct + '%' }}></div>
+            </div>
+            <span className={`progress-pct${pct >= 100 ? ' over-budget' : ''}`} id="lifeOverallPct">支出 {pct}%</span>
+          </div>
+        </div>
+        <div className="hero-details">
+          <div className="hero-detail-item">
+            <div className="detail-label">
+              <i className="fa-solid fa-hand-holding-dollar"></i> 本月實際收入
+              <button className="icon-btn" onClick={() => setShowSalary(true)} title="設定預設薪資" style={{ fontSize: '0.8rem', padding: '2px 4px', marginLeft: 4 }}>
+                <i className="fa-solid fa-gear"></i>
+              </button>
+            </div>
+            <div className="detail-value stat-positive" id="lifeMonthBudget">NT$ {formatAmount(tInc, 'income')}</div>
+          </div>
+          <div className="hero-detail-item">
+            <div className="detail-label"><i className="fa-solid fa-lock"></i> 本月固定支出</div>
+            <div className="detail-value stat-negative" id="lifeMonthFixed">NT$ {Math.round(tFix).toLocaleString()}</div>
+          </div>
+          <div className="hero-detail-item">
+            <div className="detail-label"><i className="fa-solid fa-leaf"></i> 本月生活支出</div>
+            <div className="detail-value stat-negative" id="lifeMonthSpent">NT$ {tExp.toLocaleString()}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Shared container: 收支明細 / 預算分類 */}
+      <div className="life-shared-container">
+        <div className="life-tabs-header">
+          <button className={`life-subtab-btn${lifeView === 'exp' ? ' active' : ''}`} onClick={() => setLifeView('exp')}>
+            <i className="fa-solid fa-list-ul"></i> 收支明細
+          </button>
+          <button className={`life-subtab-btn${lifeView === 'cat' ? ' active' : ''}`} onClick={() => setLifeView('cat')}>
+            <i className="fa-solid fa-shapes"></i> 預算分類
+          </button>
+        </div>
+
+        {/* 收支明細 */}
+        <div className={`life-view-content${lifeView === 'exp' ? ' active' : ''}`}>
+          <div className="life-detail-panel" style={{ width: '100%' }}>
+            <div className="life-detail-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px' }}>
+              <h3 id="lifeDetailTitle" style={{ margin: 0 }}>
+                <i className="fa-solid fa-book"></i>{' '}
+                {selectedCatId ? (lifeCategories.find(c => c.id === selectedCatId)?.name || '全部明細') : '全部明細'}
+              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button className="icon-btn" id="lifeExpSortBtn"
+                  title={sortMode === 'date-desc' ? '新到舊' : '舊到新'}
+                  onClick={() => { setSortMode(s => s === 'date-desc' ? 'date-asc' : 'date-desc'); setPage(1); }}>
+                  <i className={`fa-solid ${sortMode === 'date-desc' ? 'fa-arrow-down-short-wide' : 'fa-arrow-up-short-wide'}`}></i>
+                </button>
+                {selectedCatId !== null && (
+                  <button className="icon-btn" id="lifeClearFilter" onClick={() => { setSelectedCatId(null); setPage(1); }} title="清除篩選">
+                    <i className="fa-solid fa-xmark"></i>
+                  </button>
+                )}
+                <button className="icon-btn" onClick={() => openNew('expense')} title="新增支出">
+                  <i className="fa-solid fa-minus"></i>
+                </button>
+                <button className="icon-btn" onClick={() => openNew('income')} title="新增收入">
+                  <i className="fa-solid fa-plus"></i>
+                </button>
+              </div>
+            </div>
+
+            <div id="lifeExpList" style={{ maxHeight: 500, overflowY: 'auto', paddingRight: 4 }}>
+              {pageItems.length === 0 ? (
+                <div className="empty-state"><strong>本月尚無記錄</strong></div>
+              ) : pageItems.map(e => {
+                const day = parseInt((e.date || '').split('-')[2]);
+                const rw  = rewardMap[e.id];
+                if (e.type === 'income') {
+                  const cat = lifeIncomeCategories.find(c => c.id === e.categoryId) || { name: '收入', color: '#3D7A5A' };
+                  return (
+                    <div key={e.id} className="life-income-row">
+                      <div className="life-income-date">{day}</div>
+                      <div className="life-income-arrow" style={{ background: cat.color }}></div>
+                      <div className="life-exp-info">
+                        <div className="life-item-main-line">
+                          <span className="life-item-cat-name">{cat.name}</span>
+                          {e.note && <><span className="life-item-note-sep">·</span><span className="life-item-note">{e.note}</span></>}
+                        </div>
+                      </div>
+                      <div className="life-exp-amount-wrap">
+                        <div className="life-income-amount">+ NT$ {formatAmount(e.amount, 'income')}</div>
+                      </div>
+                      <div className="life-item-actions">
+                        <button className="icon-btn" onClick={() => openEdit(e)}><i className="fa-solid fa-pen"></i></button>
+                        <button className="icon-btn delete" onClick={() => handleDelete(e.id)}><i className="fa-solid fa-trash"></i></button>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  const cat    = lifeCategories.find(c => c.id === e.categoryId) || { name: '支出', color: '#6B6B6B' };
+                  const pmMeta = paymentMethods.find(p => p.id === e.paymentMethod);
+                  const isCard = pmMeta?.type === 'card' || e.paymentMethod === 'card' || e.paymentMethod === 'credit_card_default';
+                  return (
+                    <div key={e.id} className="life-exp-row">
+                      <div className="life-exp-date">{day}</div>
+                      <div className="life-exp-dot" style={{ background: cat.color }}></div>
+                      <div className="life-exp-info">
+                        <div className="life-item-main-line">
+                          <span className="life-item-cat-name">{cat.name}</span>
+                          {e.note && <><span className="life-item-note-sep">·</span><span className="life-item-note" title={e.note}>{e.note}</span></>}
+                          {isCard && <i className="fa-solid fa-credit-card" style={{ fontSize: '0.7rem', opacity: 0.6, marginLeft: 4 }}></i>}
+                        </div>
+                      </div>
+                      <div className="life-exp-amount-wrap">
+                        <div className="life-exp-amount stat-negative">- NT$ {Number(e.amount).toLocaleString()}</div>
+                        {rw && (
+                          <div className="life-exp-reward-inline">
+                            <i className="fa-solid fa-gift"></i> +{rw.amount.toLocaleString()}{rw.rate ? ` (${rw.rate})` : ''}
+                          </div>
+                        )}
+                      </div>
+                      <div className="life-item-actions">
+                        <button className="icon-btn" onClick={() => openEdit(e)}><i className="fa-solid fa-pen"></i></button>
+                        <button className="icon-btn delete" onClick={() => handleDelete(e.id)}><i className="fa-solid fa-trash"></i></button>
+                      </div>
+                    </div>
+                  );
+                }
+              })}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 4, padding: '12px 0', flexWrap: 'wrap' }}>
+                <button className="pagination-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+                  <i className="fa-solid fa-chevron-left"></i>
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+                  <button key={p} className={`pagination-btn${page === p ? ' active' : ''}`} onClick={() => setPage(p)}>{p}</button>
+                ))}
+                <button className="pagination-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+                  <i className="fa-solid fa-chevron-right"></i>
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 預算分類 */}
+        <div className={`life-view-content${lifeView === 'cat' ? ' active' : ''}`}>
+          <div className="life-sidebar" style={{ width: '100%' }}>
+            <div className="life-sidebar-header">
+              <span className="life-sidebar-title">分類</span>
+            </div>
+            <div className="life-cat-list">
+              <div className={`life-cat-row${selectedCatId === null ? ' active' : ''}`}
+                onClick={() => { setSelectedCatId(null); setPage(1); setLifeView('exp'); }}>
+                <div className="life-cat-row-left">
+                  <div className="life-cat-dot" style={{ background: 'var(--text-muted)' }}></div>
+                  <div className="life-cat-row-info"><div className="life-cat-row-name">全部支出</div></div>
+                </div>
+                <div className="life-cat-row-right">
+                  <span className="life-cat-row-amt">NT$ {tExp.toLocaleString()}</span>
+                </div>
+              </div>
+              {catSummary.map(cat => {
+                const barPct = cat.budget > 0 ? Math.min(Math.round((cat.spent / cat.budget) * 100), 100) : 0;
+                return (
+                  <div key={cat.id}
+                    className={`life-cat-row${selectedCatId === cat.id ? ' active' : ''}${cat.isOver ? ' over-budget-row' : ''}`}
+                    onClick={() => { setSelectedCatId(cat.id); setPage(1); setLifeView('exp'); }}>
+                    <div className="life-cat-row-left">
+                      <div className="life-cat-dot" style={{ background: cat.color }}></div>
+                      <div className="life-cat-row-info">
+                        <div className="life-cat-row-name">{cat.name}</div>
+                        {cat.budget > 0 && (
+                          <div className="life-cat-mini-bar">
+                            <div className="life-cat-mini-fill" style={{ width: barPct + '%', background: cat.isOver ? 'var(--danger-color)' : 'var(--primary-color)' }}></div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="life-cat-row-right">
+                      <span className={`life-cat-row-amt${cat.isOver ? ' over text-danger' : ''}`}>NT$ {cat.spent.toLocaleString()}</span>
+                      {cat.budget > 0 && <span className="life-cat-row-budget-hint">/ {cat.budget.toLocaleString()}</span>}
+                      {cat.isOver && <i className="fa-solid fa-triangle-exclamation" style={{ color: 'var(--danger-color)', fontSize: '0.75rem' }}></i>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* FAB */}
+      <button className="fab" onClick={() => openNew('expense')}>
+        <i className="fa-solid fa-plus"></i>
+      </button>
+
+      {/* Modals */}
+      {expModal !== null && (
+        <ExpenseModal
+          lifeCategories={lifeCategories}
+          lifeIncomeCategories={lifeIncomeCategories}
+          paymentMethods={paymentMethods}
+          currentMonth={ym}
+          initial={expModal.id ? expModal : { type: newType }}
+          onClose={() => setExpModal(null)}
+          onSave={handleSaveExp}
+        />
+      )}
+      {showSalary && <SalaryModal lifeIncomeCategories={lifeIncomeCategories} onClose={() => setShowSalary(false)} />}
+    </div>
+  );
+}

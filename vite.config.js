@@ -1,6 +1,8 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
+  plugins: [react()],
   root: './',
   build: {
     outDir: 'dist',
@@ -11,6 +13,6 @@ export default defineConfig({
     open: true,
   },
   css: {
-    devSourcemap: true, // maps DevTools rules back to source module (e.g. life.css:42)
+    devSourcemap: true,
   },
 });

@@ -27,14 +27,14 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 2px;
-    background: var(--primary-color);
-    opacity: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+    opacity: 0.22;
     transition: opacity 0.2s;
 }
 
 .stat-card:hover::after {
-    opacity: 0.5;
+    opacity: 1;
 }
 
 .stat-title {
@@ -189,10 +189,8 @@
     width: auto !important;
     height: 38px !important;
     font-size: 0.9rem !important;
-    padding: 0 12px !important;
+    padding: 0 28px 0 12px !important;
     margin: 0 !important;
-    display: flex;
-    align-items: center;
 }
 
 .chart-header h3 i {
