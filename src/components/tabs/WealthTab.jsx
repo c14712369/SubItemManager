@@ -205,7 +205,7 @@ function BankModal({ initial, onClose, onSave }) {
           <input className="form-input" autoFocus value={bank} onChange={e => handleSearch(e.target.value)} onFocus={() => setDropdown(BANK_NAMES)} onBlur={() => setTimeout(() => setDropdown([]), 150)} placeholder="搜尋或輸入…" />
           {dropdown.length > 0 && (
             <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8, zIndex: 100, maxHeight: 200, overflowY: 'auto' }}>
-              {dropdown.slice(0, 12).map((b, i) => (
+              {dropdown.map((b, i) => (
                 <div key={i} style={{ padding: '8px 12px', cursor: 'pointer', fontSize: '0.9rem' }} onMouseDown={() => { setBank(b); setDropdown([]); }}>{b}</div>
               ))}
             </div>
