@@ -603,8 +603,8 @@ export default function WealthTab() {
             {/* CAGR auto-fetch */}
             <div className="form-group" style={{ marginBottom: 4, position: 'relative' }} id="cagrSearchWrap">
               <label className="form-label" style={{ fontSize: '0.75rem' }}>CAGR 自動抓取</label>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-                <div style={{ position: 'relative', flex: '1 1 120px', minWidth: 0 }}>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
                   <input className="form-input" id="wealthInvestTickerSearch" value={cagrSearch} onChange={e => handleCagrSearch(e.target.value)} placeholder="代號搜尋…" />
                   {cagrDropdown.length > 0 && (
                     <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 6, zIndex: 100 }}>
@@ -616,7 +616,7 @@ export default function WealthTab() {
                     </div>
                   )}
                 </div>
-                <select className="form-select" id="wealthInvestRangeSelect" style={{ flex: '0 0 80px' }} value={cagrYears}
+                <select className="form-select" id="wealthInvestRangeSelect" style={{ flex: '0 0 64px', paddingLeft: 8, paddingRight: 24 }} value={cagrYears}
                   onChange={e => {
                     setCagrYears(e.target.value);
                     if (selectedCagrSymbol.current) refreshCagrNow(selectedCagrSymbol.current, e.target.value);
