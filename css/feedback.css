@@ -118,3 +118,19 @@
     color: #fff;
 }
 
+.toast.warning {
+    background: var(--accent-color);
+    color: #fff;
+}
+
+/* 手機版：Toast 顯示在底部導覽列上方 */
+@media (max-width: 768px) {
+    .toast {
+        bottom: calc(72px + env(safe-area-inset-bottom) + 12px);
+        right: 12px;
+        left: 12px;
+        max-width: none;
+        min-width: 0;
+    }
+}
+

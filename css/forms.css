@@ -157,6 +157,26 @@
     color: var(--text-main);
 }
 
+/* ── 手機版 Modal：從底部滑入的 sheet 樣式 ── */
+@media (max-width: 600px) {
+    .modal-overlay {
+        align-items: flex-end;
+    }
+
+    .modal-overlay .modal {
+        width: 100%;
+        max-width: 100% !important;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        border-bottom: none;
+        transform: translateY(40px);
+        max-height: 88vh;
+    }
+
+    .modal-overlay.active .modal {
+        transform: translateY(0);
+    }
+}
+
 /* ?�?� Link Button ?�?� */
 .link-btn {
     color: var(--primary-color);

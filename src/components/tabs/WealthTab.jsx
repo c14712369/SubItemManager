@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { useAppStore } from '../../store/appStore';
 import { fetchWithCache, formatAmount, showToast } from '../../lib/utils';
+import AnimatedNumber from '../../lib/AnimatedNumber';
 import { WEALTH_PARAMS_KEY } from '../../lib/constants';
 
 Chart.register(...registerables);
@@ -22,9 +23,18 @@ const STOCK_LIST = [
   { symbol: '2892', name: '第一金', suffix: '.TW' },
   { symbol: '2880', name: '華南金', suffix: '.TW' },
   { symbol: '2881', name: '富邦金', suffix: '.TW' },
-  { symbol: '0050', name: '元大台灣50', suffix: '.TW' },
-  { symbol: '0056', name: '元大高股息', suffix: '.TW' },
-  { symbol: '006208', name: '富邦台50', suffix: '.TW' },
+  { symbol: '0050',   name: '元大台灣50',       suffix: '.TW' },
+  { symbol: '0056',   name: '元大高股息',        suffix: '.TW' },
+  { symbol: '006208', name: '富邦台50',          suffix: '.TW' },
+  { symbol: '00662',  name: '富邦NASDAQ',        suffix: '.TW' },
+  { symbol: '00631L', name: '元大台灣50正2',      suffix: '.TW' },
+  { symbol: '00646',  name: '元大S&P500',        suffix: '.TW' },
+  { symbol: '00878',  name: '國泰永續高股息',      suffix: '.TW' },
+  { symbol: '00919',  name: '群益台灣精選高息',    suffix: '.TW' },
+  { symbol: '00929',  name: '復華台灣科技優息',    suffix: '.TW' },
+  { symbol: '00940',  name: '元大台灣價值高息',    suffix: '.TW' },
+  { symbol: '00679B', name: '元大美債20年',       suffix: '.TW' },
+  { symbol: '00687B', name: '國泰20年美債',       suffix: '.TW' },
   { symbol: 'SPY', name: 'S&P 500 ETF', suffix: '' },
   { symbol: 'QQQ', name: 'Nasdaq 100 ETF', suffix: '' },
   { symbol: 'VTI', name: 'Vanguard Total Market', suffix: '' },
@@ -154,10 +164,10 @@ function HoldingModal({ onClose, onSave }) {
           <input className="form-input" type="number" min="0" step="any" value={shares} onChange={e => setShares(e.target.value)} placeholder="0" />
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>取消</button>
           <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleSave}>
             <i className="fa-solid fa-check"></i> 新增
           </button>
+          <button className="btn" style={{ flex: 1, background: 'var(--bg-color)', color: 'var(--text-muted)', border: '1px solid var(--border-color)' }} onClick={onClose}>取消</button>
         </div>
       </div>
     </div>
@@ -282,27 +292,6 @@ function WealthChart({ labels, cashData, investData, totalData, targetFV }) {
 }
 
 // ── Animated Number ───────────────────────────────────────────────────────────
-function AnimatedNumber({ value }) {
-  const [display, setDisplay] = useState(0);
-  useEffect(() => {
-    let start = null;
-    const duration = 800; // ms
-    const initial = display;
-    const diff = value - initial;
-    if (diff === 0) return;
-    
-    const step = (timestamp) => {
-      if (!start) start = timestamp;
-      const progress = Math.min((timestamp - start) / duration, 1);
-      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-      setDisplay(initial + diff * easeOutQuart);
-      if (progress < 1) window.requestAnimationFrame(step);
-      else setDisplay(value);
-    };
-    window.requestAnimationFrame(step);
-  }, [value]);
-  return <>{formatAmount(Math.round(display), 'asset')}</>;
-}
 
 // ── Main WealthTab ────────────────────────────────────────────────────────────
 export default function WealthTab() {
@@ -472,7 +461,7 @@ export default function WealthTab() {
   return (
     <div className="tab-content">
       {/* Total assets card */}
-      <div className="wealth-total-card chart-section" style={{ display: 'block', padding: '28px 32px', background: 'linear-gradient(135deg, var(--card-bg) 60%, rgba(193,123,46,0.06) 100%)' }}>
+      <div className="wealth-total-card chart-section" style={{ display: 'block', padding: '28px 32px', background: 'linear-gradient(135deg, var(--card-bg) 60%, rgba(193,123,46,0.06) 100%)', marginBottom: 12 }}>
         {/* Label + amount */}
         <div className="wealth-total-label" style={{ marginBottom: 6 }}>
           <i className="fa-solid fa-vault"></i> 當前資產總額
@@ -496,7 +485,7 @@ export default function WealthTab() {
               <i className="fa-solid fa-chart-line" style={{ color: '#3b82f6' }}></i> 投資市值
             </div>
             <div id="wealthTotalInvestSub" style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', fontWeight: 700, color: '#3b82f6' }}>
-              NT$ {formatAmount(Math.round(totalInvest), 'asset')}
+              NT$ <AnimatedNumber value={Math.round(totalInvest)} format={v => formatAmount(v, 'asset')} />
             </div>
             {totalAssets > 0 && (
               <div id="wealthTotalInvestPct" style={{ fontSize: '0.72rem', color: '#3b82f6', opacity: 0.75, marginTop: 3 }}>
@@ -509,7 +498,7 @@ export default function WealthTab() {
               <i className="fa-solid fa-building-columns" style={{ color: '#10b981' }}></i> 現金存款
             </div>
             <div id="wealthTotalCashSub" style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', fontWeight: 700, color: '#10b981' }}>
-              NT$ {formatAmount(Math.round(totalCash), 'asset')}
+              NT$ <AnimatedNumber value={Math.round(totalCash)} format={v => formatAmount(v, 'asset')} />
             </div>
             {totalAssets > 0 && (
               <div id="wealthTotalCashPct" style={{ fontSize: '0.72rem', color: '#10b981', opacity: 0.75, marginTop: 3 }}>
@@ -548,7 +537,7 @@ export default function WealthTab() {
                 return (
                   <div key={h.id} className="wealth-row" data-id={h.id}>
                     <div className="wealth-row-left">
-                      <span className="wealth-row-symbol" style={{ color: 'var(--text-main)', fontWeight: 800 }}>{h.symbol}</span>
+                      <span className="wealth-row-symbol" style={{ background: symbolColor(h.symbol), color: '#fff', fontWeight: 700, padding: '2px 8px', borderRadius: 6, fontSize: '0.8rem', letterSpacing: '0.04em', display: 'inline-block', flexShrink: 0 }}>{h.symbol}</span>
                       <span className="wealth-row-name">{h.name || ''}</span>
                     </div>
                     <div className="wealth-row-mid">
@@ -577,13 +566,15 @@ export default function WealthTab() {
       {/* Bank accounts panel */}
       <div className="wealth-panel chart-section">
         <div className="wealth-panel-header">
-          <div>
-            <h3 className="wealth-panel-title"><i className="fa-solid fa-building-columns"></i> 銀行現金</h3>
-            <div className="wealth-panel-total">現金合計：<strong id="bankTotalValue">NT$ {formatAmount(Math.round(totalCash), 'asset')}</strong></div>
+          <div style={{ width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h3 className="wealth-panel-title" style={{ margin: 0 }}><i className="fa-solid fa-building-columns"></i> 銀行現金</h3>
+              <button className="btn btn-primary btn-sm" style={{ flex: 'none' }} onClick={() => { setEditBankId(null); setShowBankModal(true); }}>
+                <i className="fa-solid fa-plus"></i> 新增
+              </button>
+            </div>
+            <div className="wealth-panel-total" style={{ marginTop: 4 }}>現金合計：<strong id="bankTotalValue">NT$ {formatAmount(Math.round(totalCash), 'asset')}</strong></div>
           </div>
-          <button className="btn btn-primary btn-sm" onClick={() => { setEditBankId(null); setShowBankModal(true); }}>
-            <i className="fa-solid fa-plus"></i> 新增
-          </button>
         </div>
         <div id="bankAccountsList">
           {wealthBankAccounts.length === 0

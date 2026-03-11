@@ -2,6 +2,17 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAppStore } from '../../store/appStore';
 import { lifeMonthLabel, calculateExpenseForMonth, formatAmount, showToast } from '../../lib/utils';
 import { SALARY_DEFAULT_KEY, DAILY_EXP_KEY } from '../../lib/constants';
+import AnimatedNumber from '../../lib/AnimatedNumber';
+
+// 進度條：從 0 滑動至目標寬度
+function BarFill({ value, className, id }) {
+  const [w, setW] = useState(0);
+  useEffect(() => {
+    const t = setTimeout(() => setW(value), 60);
+    return () => clearTimeout(t);
+  }, [value]);
+  return <div id={id} className={className} style={{ width: `${w}%` }} />;
+}
 
 const PAGE_SIZE = 20;
 
@@ -302,7 +313,9 @@ export default function LifeTab() {
   const {
     items, lifeExpenses, lifeCategories, lifeIncomeCategories,
     lifeBudgets, lifeCurrentMonth, paymentMethods,
+    lifePendingCatId,
     addLifeExpense, updateLifeExpense, deleteLifeExpense, setLifeCurrentMonth,
+    setLifePendingCatId,
   } = useAppStore();
 
   const [selectedCatId, setSelectedCatId] = useState(null);
@@ -316,6 +329,14 @@ export default function LifeTab() {
 
   // Reset page when month or filter changes
   useEffect(() => { setPage(1); }, [ym, selectedCatId]);
+
+  // Apply cross-tab category filter (from AnalysisTab click)
+  useEffect(() => {
+    if (!lifePendingCatId) return;
+    setSelectedCatId(lifePendingCatId);
+    setLifeView('exp');
+    setLifePendingCatId(null);
+  }, [lifePendingCatId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Auto-apply salary ──
   useEffect(() => {
@@ -436,13 +457,17 @@ export default function LifeTab() {
         <div className="hero-main">
           <div className="hero-label">生活費結餘</div>
           <div className={`hero-amount${remain < 0 ? ' stat-negative' : ' stat-positive'}`} id="lifeMonthRemain">
-            NT$ {formatAmount(Math.abs(Math.round(remain)), 'income')}{remain < 0 ? ' (超支)' : ''}
+            NT$ <AnimatedNumber value={Math.abs(Math.round(remain))} format={v => formatAmount(v, 'income')} />{remain < 0 ? ' (超支)' : ''}
           </div>
           <div className="progress-wrap-hero">
             <div className="progress-bar">
-              <div className="progress-fill" id="lifeOverallProgress" style={{ width: Math.min(pct, 100) + '%', background: pct >= 100 ? 'var(--danger-color)' : pct >= 80 ? '#f59e0b' : 'var(--success-color)', transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1), background 0.5s' }}></div>
+              <BarFill
+                id="lifeOverallProgress"
+                className={`progress-fill ${pct >= 100 ? 'over-budget' : pct >= 80 ? 'high' : pct >= 60 ? 'medium' : 'low'}`}
+                value={Math.min(pct, 100)}
+              />
             </div>
-            <span className="progress-pct" id="lifeOverallPct" style={{ color: pct >= 100 ? 'var(--danger-color)' : pct >= 80 ? '#f59e0b' : 'var(--text-muted)' }}>支出 {pct}%</span>
+            <span className={`progress-pct ${pct >= 100 ? 'over-budget' : pct >= 80 ? 'high' : ''}`} id="lifeOverallPct">支出 {pct}%</span>
           </div>
         </div>
         <div className="hero-details">
@@ -453,15 +478,15 @@ export default function LifeTab() {
                 <i className="fa-solid fa-gear"></i>
               </button>
             </div>
-            <div className="detail-value stat-positive" id="lifeMonthBudget">NT$ {formatAmount(tInc, 'income')}</div>
+            <div className="detail-value stat-positive" id="lifeMonthBudget">NT$ <AnimatedNumber value={Math.round(tInc)} format={v => formatAmount(v, 'income')} /></div>
           </div>
           <div className="hero-detail-item">
             <div className="detail-label"><i className="fa-solid fa-lock"></i> 本月固定支出</div>
-            <div className="detail-value stat-negative" id="lifeMonthFixed">NT$ {Math.round(tFix).toLocaleString()}</div>
+            <div className="detail-value stat-negative" id="lifeMonthFixed">NT$ <AnimatedNumber value={Math.round(tFix)} /></div>
           </div>
           <div className="hero-detail-item">
             <div className="detail-label"><i className="fa-solid fa-leaf"></i> 本月生活支出</div>
-            <div className="detail-value stat-negative" id="lifeMonthSpent">NT$ {tExp.toLocaleString()}</div>
+            <div className="detail-value stat-negative" id="lifeMonthSpent">NT$ <AnimatedNumber value={Math.round(tExp)} /></div>
           </div>
         </div>
       </div>
@@ -496,18 +521,16 @@ export default function LifeTab() {
                     <i className="fa-solid fa-xmark"></i>
                   </button>
                 )}
-                <button className="icon-btn" onClick={() => openNew('expense')} title="新增支出">
-                  <i className="fa-solid fa-minus"></i>
-                </button>
-                <button className="icon-btn" onClick={() => openNew('income')} title="新增收入">
-                  <i className="fa-solid fa-plus"></i>
-                </button>
               </div>
             </div>
 
             <div id="lifeExpList" style={{ maxHeight: 500, overflowY: 'auto', paddingRight: 4 }}>
               {pageItems.length === 0 ? (
-                <div className="empty-state"><strong>本月尚無記錄</strong></div>
+                <div className="empty-state">
+                  <span className="empty-icon"><i className="fa-regular fa-note-sticky"></i></span>
+                  <strong>本月尚無記錄</strong>
+                  <p>點右上角 + 新增收支</p>
+                </div>
               ) : pageItems.map(e => {
                 const day = parseInt((e.date || '').split('-')[2]);
                 const rw  = rewardMap[e.id];
@@ -611,7 +634,10 @@ export default function LifeTab() {
                         <div className="life-cat-row-name">{cat.name}</div>
                         {cat.budget > 0 && (
                           <div className="life-cat-mini-bar">
-                            <div className="life-cat-mini-fill" style={{ width: barPct + '%', background: cat.isOver ? 'var(--danger-color)' : barPct >= 80 ? '#f59e0b' : 'var(--success-color)' }}></div>
+                            <BarFill
+                              className={`life-cat-mini-fill ${cat.isOver ? 'over' : barPct >= 80 ? 'high' : barPct >= 60 ? 'medium' : 'low'}`}
+                              value={barPct}
+                            />
                           </div>
                         )}
                       </div>

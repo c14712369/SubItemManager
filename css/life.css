@@ -220,12 +220,16 @@
     height: 100%;
     background: var(--primary-color);
     border-radius: 3px;
-    transition: width 0.5s ease;
+    transition: width 1s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.5s ease;
 }
 
-.progress-fill.over-budget {
-    background: var(--danger-color);
-}
+.progress-fill.low    { background: var(--success-color); }
+.progress-fill.medium { background: var(--accent-color); }
+.progress-fill.high   { background: #d97706; }
+.progress-fill.over-budget { background: var(--danger-color); }
+
+.progress-pct.high    { color: #d97706; }
+.progress-pct.over-budget { color: var(--danger-color); }
 
 .progress-pct {
     font-size: 0.75rem;
@@ -233,10 +237,6 @@
     color: var(--text-muted);
     min-width: 35px;
     text-align: right;
-}
-
-.progress-pct.over-budget {
-    color: var(--danger-color);
 }
 
 /* ?�?� Budget Grid & Card ?�?� */

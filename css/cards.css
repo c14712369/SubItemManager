@@ -120,6 +120,12 @@
     transform: translateX(4px);
 }
 
+@media (hover: none) {
+    .item-row:hover {
+        transform: none;
+    }
+}
+
 .item-row--ended {
     opacity: 0.6;
 }

@@ -126,3 +126,29 @@
     align-self: center;
 }
 
+/* ── Tab page transition ── */
+@keyframes tabEnter {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Skeleton shimmer ── */
+@keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position:  200% center; }
+}
+
+.skeleton-box {
+    background: linear-gradient(
+        90deg,
+        var(--border-color) 25%,
+        color-mix(in srgb, var(--card-bg) 60%, transparent) 50%,
+        var(--border-color) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+    border-radius: var(--radius-sm);
+    color: transparent !important;
+    user-select: none;
+}
+

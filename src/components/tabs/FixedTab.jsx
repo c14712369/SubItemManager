@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAppStore } from '../../store/appStore';
 import { getCycleLabel, toMonthlyAmount, fetchWithCache, showToast } from '../../lib/utils';
 import { DEFAULT_CATS } from '../../lib/constants';
@@ -230,18 +230,20 @@ export default function FixedTab() {
     setCategories, setFixedSortMode,
   } = useAppStore();
 
-  const [search, setSearch]         = useState('');
   const [statusFilter, setStatus]   = useState('all');
   const [modalItem, setModalItem]   = useState(null);   // null=closed, {}=new, item=edit
   const [showCatModal, setCatModal] = useState(false);
+  const [page, setPage]             = useState(1);
+  const [listMinH, setListMinH]     = useState(null);
+  const listRef                     = useRef(null);
+
+  const PAGE_SIZE = 5;
 
   const now = new Date(); now.setHours(0, 0, 0, 0);
 
   // ── Filter + Sort ──
   const filtered = items
     .filter(item => {
-      const q = search.toLowerCase();
-      if (!item.name.toLowerCase().includes(q) && !(item.note || '').toLowerCase().includes(q)) return false;
       const ended = item.endDate && new Date(item.endDate) < now;
       if (statusFilter === 'active' && ended) return false;
       if (statusFilter === 'ended'  && !ended) return false;
@@ -251,10 +253,28 @@ export default function FixedTab() {
       if (fixedSortMode === 'amount-desc') return b.amount - a.amount;
       if (fixedSortMode === 'amount-asc')  return a.amount - b.amount;
       if (fixedSortMode === 'date-desc')   return new Date(b.startDate) - new Date(a.startDate);
+      if (fixedSortMode === 'date-asc')    return new Date(a.startDate) - new Date(b.startDate);
       const ai = categories.findIndex(c => c.id === a.categoryId);
       const bi = categories.findIndex(c => c.id === b.categoryId);
       return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
     });
+
+  // ── Pagination ──
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  const pageItems  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // 搜尋/篩選/排序變動時回到第一頁
+  useEffect(() => { setPage(1); }, [statusFilter, fixedSortMode]);
+
+  // 鎖住完整一頁的高度，防止切換頁面時容器跳動
+  useEffect(() => {
+    if (!listRef.current) return;
+    if (pageItems.length === PAGE_SIZE) {
+      setListMinH(listRef.current.offsetHeight);
+    } else if (filtered.length <= PAGE_SIZE) {
+      setListMinH(null);
+    }
+  });
 
   // ── Totals ──
   const activeItems = items.filter(i => !(i.endDate && new Date(i.endDate) < now));
@@ -267,7 +287,15 @@ export default function FixedTab() {
     if (!catMap[cat.id]) catMap[cat.id] = { name: cat.name, color: cat.color, monthly: 0 };
     catMap[cat.id].monthly += toMonthlyAmount(item);
   });
-  const summaryRows = Object.values(catMap).sort((a, b) => b.monthly - a.monthly);
+  const summaryRows = Object.values(catMap).sort((a, b) => {
+    if (fixedSortMode === 'amount-asc') return a.monthly - b.monthly;
+    if (fixedSortMode === 'category') {
+      const ai = categories.findIndex(c => c.name === a.name);
+      const bi = categories.findIndex(c => c.name === b.name);
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    }
+    return b.monthly - a.monthly; // amount-desc / date-desc → 金額高到低
+  });
 
   // ── Handlers ──
   const handleSaveItem = (data) => {
@@ -314,36 +342,54 @@ export default function FixedTab() {
   return (
     <div className="tab-content">
       {/* Toolbar */}
-      <div className="toolbar">
-        <div className="search-filter">
-          <input className="form-input" placeholder="搜尋名稱或備註…" value={search} onChange={e => setSearch(e.target.value)} />
-          <select className="form-select" value={statusFilter} onChange={e => setStatus(e.target.value)}>
-            <option value="all">全部</option>
-            <option value="active">進行中</option>
-            <option value="ended">已結束</option>
-          </select>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <select className="form-select" style={{ width: 'auto' }} value={fixedSortMode} onChange={e => setFixedSortMode(e.target.value)}>
-            <option value="category">依分類</option>
-            <option value="amount-desc">金額高→低</option>
-            <option value="amount-asc">金額低→高</option>
-            <option value="date-desc">最新在上</option>
-          </select>
-          <button className="icon-btn" title="管理分類" onClick={() => setCatModal(true)}>
-            <i className="fa-solid fa-tags"></i>
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 24 }}>
+        <div className="sort-chips" style={{ flex: '0 0 auto' }}>
+          <button className={`sort-chip${fixedSortMode === 'category' ? ' active' : ''}`}
+            onClick={() => setFixedSortMode('category')}>
+            <i className="fa-solid fa-layer-group"></i> 分類
+          </button>
+          <button
+            className={`sort-chip${fixedSortMode === 'amount-desc' || fixedSortMode === 'amount-asc' ? ' active' : ''}`}
+            onClick={() => {
+              if (fixedSortMode === 'amount-desc') setFixedSortMode('amount-asc');
+              else setFixedSortMode('amount-desc');
+            }}>
+            金額 {fixedSortMode === 'amount-asc' ? '↑' : '↓'}
+          </button>
+          <button
+            className={`sort-chip${fixedSortMode === 'date-desc' || fixedSortMode === 'date-asc' ? ' active' : ''}`}
+            onClick={() => {
+              if (fixedSortMode === 'date-desc') setFixedSortMode('date-asc');
+              else setFixedSortMode('date-desc');
+            }}>
+            <i className="fa-regular fa-calendar"></i> {fixedSortMode === 'date-asc' ? '最舊' : '最新'}
           </button>
         </div>
+        <button className="icon-btn" style={{ flexShrink: 0, marginLeft: 'auto' }} title="管理分類" onClick={() => setCatModal(true)}>
+          <i className="fa-solid fa-tags"></i>
+        </button>
       </div>
 
       {/* Two-column layout */}
       <div className="fixed-layout">
         <div className="fixed-list-col">
-        <div className="fixed-list" id="itemsList">
+        {/* Status filter above list */}
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}>
+          <div className="type-toggle" style={{ flexShrink: 0 }}>
+            <button className={`type-btn${statusFilter === 'all'    ? ' active' : ''}`} style={{ whiteSpace: 'nowrap' }} onClick={() => setStatus('all')}>全部</button>
+            <button className={`type-btn${statusFilter === 'active' ? ' active' : ''}`} style={{ whiteSpace: 'nowrap' }} onClick={() => setStatus('active')}>進行中</button>
+            <button className={`type-btn${statusFilter === 'ended'  ? ' active' : ''}`} style={{ whiteSpace: 'nowrap' }} onClick={() => setStatus('ended')}>已結束</button>
+          </div>
+        </div>
+        <div ref={listRef} className="fixed-list" id="itemsList" style={listMinH ? { minHeight: listMinH } : {}}>
           {filtered.length === 0 ? (
-            <div className="empty-state"><h3>沒有相符項目</h3></div>
+            <div className="empty-state">
+              <span className="empty-icon"><i className="fa-regular fa-credit-card"></i></span>
+              <strong>沒有相符項目</strong>
+              <p>嘗試調整搜尋條件或篩選器</p>
+            </div>
           ) : (
-            filtered.map(item => {
+            pageItems.map(item => {
               const cat   = categories.find(c => c.id === item.categoryId) || categories[categories.length - 1];
               const ended = item.endDate && new Date(item.endDate) < now;
               const dateRange = item.endDate ? `${item.startDate} ~ ${item.endDate}` : item.startDate;
@@ -379,6 +425,21 @@ export default function FixedTab() {
             })
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 4, padding: '12px 0', flexWrap: 'wrap' }}>
+            <button className="pagination-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+              <i className="fa-solid fa-chevron-left"></i>
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
+              <button key={p} className={`pagination-btn${page === p ? ' active' : ''}`} onClick={() => setPage(p)}>{p}</button>
+            ))}
+            <button className="pagination-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+              <i className="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        )}
         </div>
 
         {/* Summary sidebar */}
@@ -387,10 +448,14 @@ export default function FixedTab() {
             <div className="fixed-summary-panel chart-section" style={{ padding: 16 }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '0.95rem', fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <i className="fa-solid fa-chart-pie" style={{ color: 'var(--primary-color)' }}></i> 支出彙總
+                <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: 400, color: 'var(--text-muted)', fontFamily: 'var(--font-sans)' }}>
+                  {{ category: '依分類', 'amount-desc': '金額高→低', 'amount-asc': '金額低→高', 'date-desc': '金額高→低', 'date-asc': '金額高→低' }[fixedSortMode]}
+                </span>
               </h3>
-              <div id="fixedSummaryContent">
-                {summaryRows.map(c => (
-                  <div key={c.name} className="fixed-summary-row">
+              <div id="fixedSummaryContent" key={fixedSortMode}>
+                {summaryRows.map((c, i) => (
+                  <div key={c.name} className="fixed-summary-row"
+                    style={{ animation: `tabEnter 0.18s cubic-bezier(0.2,0,0,1) ${i * 35}ms both` }}>
                     <span className="fixed-summary-dot" style={{ background: c.color }}></span>
                     <span className="fixed-summary-name">{c.name}</span>
                     <span className="fixed-summary-amount">NT$ {Math.round(c.monthly).toLocaleString()}</span>

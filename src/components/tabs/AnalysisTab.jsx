@@ -73,7 +73,7 @@ function useChart(ref) {
 export default function AnalysisTab() {
   const {
     items, categories, lifeExpenses, lifeCategories,
-    setActiveTab, setLifeCurrentMonth,
+    setActiveTab, setLifeCurrentMonth, setLifePendingCatId,
   } = useAppStore();
 
   const now    = new Date();
@@ -136,7 +136,7 @@ export default function AnalysisTab() {
     }
     const labels = [], data = [], colors = [];
     Object.values(dataMap).forEach(d => { labels.push(d.label); data.push(d.amount); colors.push(d.color); });
-    const title = chartType === 'year' ? `${chartYear} 年度支出 (${labels.length} 分類)` : `${ym} 月度支出 (${labels.length} 分類)`;
+    const title = chartType === 'year' ? `${chartYear} 年度支出（${labels.length} 分類）` : `月度支出（${labels.length} 分類）`;
     if (data.length > 0) {
       if (chartShape === 'pie') {
         expChart.create({ type: 'pie', data: { labels, datasets: [{ data, backgroundColor: colors, borderWidth: 1 }] },
@@ -177,7 +177,7 @@ export default function AnalysisTab() {
         responsive: true, maintainAspectRatio: false,
         plugins: {
           legend: { display: false },
-          title: { display: true, text: `${ym} 分類支出統計（點擊篩選明細）`, color: tc(), font: { size: 14 } },
+          title: { display: false },
           tooltip: { callbacks: { label: ctx => 'NT$ ' + ctx.raw.toLocaleString() } },
         },
         scales: { y: { ticks: { color: tc(), callback: v => 'NT$' + v.toLocaleString() }, grid: { color: gc() } }, x: { ticks: { color: tc() }, grid: { display: false } } },
@@ -185,6 +185,7 @@ export default function AnalysisTab() {
           if (!elements?.length) return;
           const cat = lifeCategories.find(c => c.name === labels[elements[0].index]);
           if (!cat) return;
+          setLifePendingCatId(cat.id);
           setLifeCurrentMonth(ym);
           setActiveTab('life');
         },
@@ -238,6 +239,26 @@ export default function AnalysisTab() {
           <input type="month" className="form-input" id="analysisGlobalMonth" value={ym} onChange={e => setYm(e.target.value)} />
           <button className="icon-btn" onClick={() => changeMonth(1)}><i className="fa-solid fa-chevron-right"></i></button>
         </div>
+        {/* 月對月趨勢比較（固定高度，不影響下方容器） */}
+        <div style={{ minHeight: '1.6rem', marginTop: 6 }}>
+          {(() => {
+            const [y, m] = ym.split('-').map(Number);
+            const prev = new Date(y, m - 2, 1);
+            const prevYm = prev.getFullYear() + '-' + String(prev.getMonth() + 1).padStart(2, '0');
+            const currLife = getLifeExpForMonth(lifeExpenses, ym);
+            const prevLife = getLifeExpForMonth(lifeExpenses, prevYm);
+            if (!prevLife) return null;
+            const delta = currLife - prevLife;
+            const pct   = Math.round(Math.abs(delta / prevLife) * 100);
+            const up    = delta > 0;
+            return (
+              <div style={{ fontSize: '0.8rem', color: up ? 'var(--danger-color)' : 'var(--success-color)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                <i className={`fa-solid fa-arrow-trend-${up ? 'up' : 'down'}`}></i>
+                生活費較上月 {up ? '+' : '-'}{pct}%（{up ? '+' : '-'}NT$ {Math.abs(Math.round(delta)).toLocaleString()}）
+              </div>
+            );
+          })()}
+        </div>
       </div>
 
       {/* Charts row: expense + life category side by side */}
@@ -253,18 +274,17 @@ export default function AnalysisTab() {
                 <button id="chartShapePieBtn" className={`type-btn${chartShape === 'pie' ? ' active' : ''}`} onClick={() => setChartShape('pie')} title="圓餅圖"><i className="fa-solid fa-chart-pie"></i></button>
                 <button id="chartShapeBarBtn" className={`type-btn${chartShape === 'bar' ? ' active' : ''}`} onClick={() => setChartShape('bar')} title="長條圖"><i className="fa-solid fa-chart-simple"></i></button>
               </div>
+              <div style={{ width: 90, flexShrink: 0 }}>
+                {chartType === 'year' && (
+                  <select id="chartYearSelect" className="form-select chart-select" style={{ width: '100%', margin: 0 }} value={chartYear} onChange={e => setChartYear(Number(e.target.value))}>
+                    {chartYears.map(y => <option key={y} value={y}>{y} 年</option>)}
+                  </select>
+                )}
+              </div>
               <div className="type-toggle">
                 <button id="chartTypeYearBtn" className={`type-btn${chartType === 'year'  ? ' active' : ''}`} onClick={() => setChartType('year')}>按年</button>
                 <button id="chartTypeMonthBtn" className={`type-btn${chartType === 'month' ? ' active' : ''}`} onClick={() => setChartType('month')}>按月</button>
               </div>
-              {chartType === 'year' && (
-                <select id="chartYearSelect" className="form-select chart-select" value={chartYear} onChange={e => setChartYear(Number(e.target.value))}>
-                  {chartYears.map(y => <option key={y} value={y}>{y} 年</option>)}
-                </select>
-              )}
-              {chartType === 'month' && (
-                <input type="month" id="chartMonthSelect" className="form-input chart-select" value={ym} onChange={e => setYm(e.target.value)} />
-              )}
             </div>
           </div>
           <div className="chart-container"><canvas ref={expChartRef}></canvas></div>
@@ -289,7 +309,11 @@ export default function AnalysisTab() {
           <div className="chart-header">
             <h3><i className="fa-solid fa-bars"></i> 生活費分類分析</h3>
           </div>
-          <div className="chart-container"><canvas ref={lifeCatRef}></canvas></div>
+          <div className="chart-container" style={{ cursor: 'pointer' }}><canvas ref={lifeCatRef}></canvas></div>
+          <div style={{ marginTop: 10, fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
+            <i className="fa-solid fa-hand-pointer" style={{ color: 'var(--primary-color)', opacity: 0.7 }}></i>
+            點擊長條，可跳轉至生活費分頁並篩選該分類明細
+          </div>
         </div>
       </div>
 

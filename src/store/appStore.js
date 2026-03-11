@@ -51,6 +51,7 @@ const initState = {
 
   // UI
   activeTab: 'life',
+  lifePendingCatId: null,
 };
 
 // ─── store ─────────────────────────────────────────────────────────────────
@@ -59,6 +60,7 @@ export const useAppStore = create((set, get) => ({
 
   // ── UI ──
   setActiveTab: (tab) => set({ activeTab: tab }),
+  setLifePendingCatId: (id) => set({ lifePendingCatId: id }),
 
   togglePrivacy: () => {
     const next = !get().isPrivacyMode;
