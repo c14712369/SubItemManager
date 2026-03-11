@@ -3561,7 +3561,7 @@ video {
     }
 
     #wealthInvestRangeSelect {
-        width: 100% !important;
+        /* width: 100% !important; removed to allow inline placement */
     }
 }
 

@@ -43,11 +43,24 @@ function useCalc(initialVal = '0') {
     else if (op === '÷') res = b !== 0 ? first / b : 0;
     setCur(String(parseFloat(res.toFixed(4))));
     setOp(null); setFirst(null); setFresh(true);
+    if (navigator.vibrate) navigator.vibrate(50);
   }, [op, first, cur]);
-  const back  = useCallback(() => setCur(p => p.length > 1 ? p.slice(0, -1) : '0'), []);
-  const clear = useCallback(() => setCur('0'), []);
+  const back  = useCallback(() => {
+    setCur(p => {
+      if (p.length > 1) return p.slice(0, -1);
+      // If we backspace the last digit and there's no operation, clear everything just in case
+      if (!op) { setFirst(null); setOp(null); }
+      return '0';
+    });
+  }, [op]);
+  const clear = useCallback(() => {
+    setCur('0');
+    setFirst(null);
+    setOp(null);
+    setFresh(false);
+  }, []);
 
-  return { cur, reset, digit, operator, equal, back, clear };
+  return { cur, first, op, reset, digit, operator, equal, back, clear };
 }
 
 // ── Salary Modal ─────────────────────────────────────────────────────────────
@@ -104,12 +117,15 @@ function SalaryModal({ lifeIncomeCategories, onClose }) {
 function ExpenseModal({ lifeCategories, lifeIncomeCategories, paymentMethods, currentMonth, initial, onClose, onSave }) {
   const isEdit   = !!(initial?.id && initial?.type);
   const initType = initial?.type || 'expense';
+  
+  const lastSaved = !isEdit ? (() => { try { return JSON.parse(localStorage.getItem('LAST_EXPENSE_ENTRY')) || {}; } catch { return {}; } })() : {};
+  
   const [type,     setType]     = useState(initType);
-  const [catId,    setCatId]    = useState(initType !== 'income' ? (initial?.categoryId || lifeCategories[0]?.id || '') : (lifeCategories[0]?.id || ''));
-  const [incCatId, setIncCatId] = useState(initType === 'income' ? (initial?.categoryId || lifeIncomeCategories[0]?.id || '') : (lifeIncomeCategories[0]?.id || ''));
+  const [catId,    setCatId]    = useState(initType !== 'income' ? (initial?.categoryId || lastSaved.catId || lifeCategories[0]?.id || '') : (lifeCategories[0]?.id || ''));
+  const [incCatId, setIncCatId] = useState(initType === 'income' ? (initial?.categoryId || lastSaved.incCatId || lifeIncomeCategories[0]?.id || '') : (lifeIncomeCategories[0]?.id || ''));
   const [date,     setDate]     = useState(initial?.date || currentMonth + '-' + String(new Date().getDate()).padStart(2, '0'));
   const [note,     setNote]     = useState(initial?.note || '');
-  const [pmId,     setPmId]     = useState(initial?.paymentMethod || paymentMethods[0]?.id || 'cash');
+  const [pmId,     setPmId]     = useState(initial?.paymentMethod || lastSaved.pmId || paymentMethods[0]?.id || 'cash');
   const [showCalc, setShowCalc] = useState(false);
   const calc = useCalc(initial?.amount || '0');
 
@@ -117,6 +133,10 @@ function ExpenseModal({ lifeCategories, lifeIncomeCategories, paymentMethods, cu
 
   const handleSubmit = () => {
     if (!amount || amount <= 0 || !date) { showToast('請輸入金額', 'error'); return; }
+    if (navigator.vibrate) navigator.vibrate(50);
+    if (!isEdit) {
+      localStorage.setItem('LAST_EXPENSE_ENTRY', JSON.stringify({ catId, incCatId, pmId }));
+    }
     const entry = {
       id: initial?.id || crypto.randomUUID(),
       type, amount,
@@ -128,8 +148,8 @@ function ExpenseModal({ lifeCategories, lifeIncomeCategories, paymentMethods, cu
   };
 
   return (
-    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 400 }}>
+    <div className="modal-overlay active" style={{ alignItems: 'flex-start', paddingTop: '10vh' }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 400, margin: '0 auto' }}>
         <div className="modal-header">
           <h3 id="lifeExpModalTitle">
             {isEdit ? (type === 'income' ? '編輯收入' : '編輯支出') : (type === 'income' ? '新增收入' : '新增支出')}
@@ -138,61 +158,34 @@ function ExpenseModal({ lifeCategories, lifeIncomeCategories, paymentMethods, cu
         </div>
 
         {!isEdit && (
-          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-            <button className={`btn${type === 'expense' ? ' btn-primary' : ' btn-ghost'}`} style={{ flex: 1 }} onClick={() => setType('expense')}>
-              <i className="fa-solid fa-minus"></i> 支出
+          <div style={{ display: 'flex', background: 'var(--bg-color)', borderRadius: 'var(--radius)', padding: 4, marginBottom: 20, border: '1px solid var(--border-color)' }}>
+            <button style={{ flex: 1, padding: '10px 0', border: 'none', borderRadius: 6, background: type === 'expense' ? 'var(--card-bg)' : 'transparent', color: type === 'expense' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: type === 'expense' ? 'var(--shadow-sm)' : 'none', fontWeight: type === 'expense' ? 600 : 500, transition: 'all 0.2s', fontSize: '0.95rem' }} onClick={() => setType('expense')}>
+              支出
             </button>
-            <button className={`btn${type === 'income' ? ' btn-primary' : ' btn-ghost'}`} style={{ flex: 1 }} onClick={() => setType('income')}>
-              <i className="fa-solid fa-plus"></i> 收入
+            <button style={{ flex: 1, padding: '10px 0', border: 'none', borderRadius: 6, background: type === 'income' ? 'var(--card-bg)' : 'transparent', color: type === 'income' ? 'var(--text-main)' : 'var(--text-muted)', boxShadow: type === 'income' ? 'var(--shadow-sm)' : 'none', fontWeight: type === 'income' ? 600 : 500, transition: 'all 0.2s', fontSize: '0.95rem' }} onClick={() => setType('income')}>
+              收入
             </button>
           </div>
         )}
 
         <div className="form-group">
-          <label className="form-label">金額</label>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <div className="form-input" style={{ flex: 1, cursor: 'pointer', fontFamily: 'monospace', fontSize: '1.1rem', minHeight: 40, display: 'flex', alignItems: 'center' }}
-              onClick={() => setShowCalc(v => !v)}>
-              {parseFloat(calc.cur || 0).toLocaleString()}
-            </div>
-            <button className="icon-btn" onClick={() => setShowCalc(v => !v)} title="計算機">
-              <i className="fa-solid fa-calculator"></i>
+          <label className="form-label">日期</label>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            <button className="icon-btn" style={{ background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', width: 42, height: 42, flexShrink: 0 }} onClick={() => {
+              const d = new Date(date); d.setDate(d.getDate() - 1);
+              setDate(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+            }}>
+              <i className="fa-solid fa-chevron-left" style={{ color: 'var(--text-main)' }}></i>
+            </button>
+            <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} style={{ flex: 1, textAlign: 'center' }} />
+            <button className="icon-btn" style={{ background: 'var(--bg-color)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius)', width: 42, height: 42, flexShrink: 0 }} onClick={() => {
+              const d = new Date(date); d.setDate(d.getDate() + 1);
+              setDate(d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+            }}>
+              <i className="fa-solid fa-chevron-right" style={{ color: 'var(--text-main)' }}></i>
             </button>
           </div>
         </div>
-
-        {showCalc && (
-          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 12, marginBottom: 12 }}>
-            <div style={{ textAlign: 'right', fontFamily: 'monospace', fontSize: '1.4rem', padding: '4px 8px', marginBottom: 8, background: 'var(--bg-secondary)', borderRadius: 8, minHeight: 40 }}>
-              {parseFloat(calc.cur || 0).toLocaleString()}
-            </div>
-            {[
-              ['7','8','9','÷'],
-              ['4','5','6','×'],
-              ['1','2','3','−'],
-              ['.','0','⌫','+'],
-            ].map((row, ri) => (
-              <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 4, marginBottom: 4 }}>
-                {row.map(k => (
-                  <button key={k} className="btn btn-ghost" style={{ padding: '8px 0', fontFamily: 'monospace' }}
-                    onClick={() => {
-                      if ('0123456789.'.includes(k)) calc.digit(k);
-                      else if (k === '⌫') calc.back();
-                      else calc.operator(k);
-                    }}>
-                    {k}
-                  </button>
-                ))}
-              </div>
-            ))}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
-              <button className="btn btn-ghost" style={{ padding: '10px 0' }} onClick={calc.clear}>C</button>
-              <button className="btn btn-primary" style={{ padding: '10px 0' }} onClick={() => { calc.equal(); setShowCalc(false); }}>
-                = 確認
-              </button>
-            </div>
-          </div>
-        )}
 
         {type === 'expense' ? (
           <div className="form-group">
@@ -210,6 +203,75 @@ function ExpenseModal({ lifeCategories, lifeIncomeCategories, paymentMethods, cu
           </div>
         )}
 
+        <div className="form-group">
+          <label className="form-label">金額</label>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <div className="form-input" style={{ flex: 1, cursor: 'pointer', fontFamily: 'monospace', fontSize: '1.1rem', minHeight: 40, display: 'flex', alignItems: 'center' }}
+              onClick={() => setShowCalc(v => !v)}>
+              {parseFloat(calc.cur || 0).toLocaleString()}
+            </div>
+            <button className="icon-btn" onClick={() => setShowCalc(v => !v)} title="計算機">
+              <i className="fa-solid fa-calculator"></i>
+            </button>
+          </div>
+        </div>
+
+        {showCalc && (
+          <>
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }} onClick={() => setShowCalc(false)} />
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '90%', maxWidth: 320, zIndex: 10000, background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 16, padding: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.15)' }}>
+              <div style={{ padding: '8px 12px', marginBottom: 16, background: 'var(--bg-color)', borderRadius: 8, border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', height: 60, boxSizing: 'border-box', position: 'relative' }}>
+                <div style={{ position: 'absolute', top: 6, right: 12, fontSize: '0.75rem', color: 'var(--secondary-color)', fontFamily: 'monospace' }}>
+                  {calc.first != null && calc.op ? `${calc.first} ${calc.op}` : ''}
+                </div>
+                <div style={{ fontFamily: 'monospace', fontSize: '1.8rem', color: 'var(--text-main)', fontWeight: 600, lineHeight: 1 }}>
+                  {parseFloat(calc.cur || 0).toLocaleString()}
+                </div>
+              </div>
+              {[
+                ['7','8','9','÷'],
+                ['4','5','6','×'],
+                ['1','2','3','−'],
+                ['.','0','⌫','+'],
+              ].map((row, ri) => (
+                <div key={ri} style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginBottom: 6 }}>
+                  {row.map(k => {
+                    const isOp = ['÷','×','−','+'].includes(k);
+                    const isAction = k === '⌫';
+                    return (
+                      <button key={k} className="btn" style={{
+                          padding: '12px 0',
+                          fontFamily: 'monospace',
+                          fontSize: '1.2rem',
+                          background: isOp ? 'var(--card-bg)' : isAction ? 'var(--card-bg)' : 'var(--bg-color)',
+                          color: isOp ? 'var(--primary-color)' : isAction ? 'var(--secondary-color)' : 'var(--text-main)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: 8,
+                          fontWeight: 600,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center'
+                        }}
+                        onClick={() => {
+                          if ('0123456789.'.includes(k)) calc.digit(k);
+                          else if (k === '⌫') calc.back();
+                          else calc.operator(k);
+                        }}>
+                        {k}
+                      </button>
+                    );
+                  })}
+                </div>
+              ))}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 6, marginTop: 8 }}>
+                <button className="btn" style={{ padding: '12px 0', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8, color: 'var(--secondary-color)', fontWeight: 700, fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={calc.clear}>C</button>
+                <button className="btn" style={{ padding: '12px 0', background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 8, color: 'var(--primary-color)', fontWeight: 700, fontSize: '1.2rem', fontFamily: 'monospace', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={calc.equal}>=</button>
+                <button className="btn btn-primary" style={{ padding: '12px 0', borderRadius: 8, fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setShowCalc(false)}>
+                  確認
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
         {type === 'expense' && (
           <div className="form-group">
             <label className="form-label">付款方式</label>
@@ -220,19 +282,15 @@ function ExpenseModal({ lifeCategories, lifeIncomeCategories, paymentMethods, cu
         )}
 
         <div className="form-group">
-          <label className="form-label">日期</label>
-          <input className="form-input" type="date" value={date} onChange={e => setDate(e.target.value)} />
-        </div>
-        <div className="form-group">
           <label className="form-label">備註（選填）</label>
           <input className="form-input" value={note} onChange={e => setNote(e.target.value)} placeholder="備註…" />
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>取消</button>
-          <button className="btn btn-primary" style={{ flex: 2 }} onClick={handleSubmit}>
+          <button className="btn btn-primary" style={{ flex: 1 }} onClick={handleSubmit}>
             <i className="fa-solid fa-check"></i> {isEdit ? '儲存' : '新增'}
           </button>
+          <button className="btn" style={{ flex: 1, background: 'var(--bg-color)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }} onClick={onClose}>取消</button>
         </div>
       </div>
     </div>
@@ -382,9 +440,9 @@ export default function LifeTab() {
           </div>
           <div className="progress-wrap-hero">
             <div className="progress-bar">
-              <div className={`progress-fill${pct >= 100 ? ' over-budget' : ''}`} id="lifeOverallProgress" style={{ width: pct + '%' }}></div>
+              <div className="progress-fill" id="lifeOverallProgress" style={{ width: Math.min(pct, 100) + '%', background: pct >= 100 ? 'var(--danger-color)' : pct >= 80 ? '#f59e0b' : 'var(--success-color)', transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1), background 0.5s' }}></div>
             </div>
-            <span className={`progress-pct${pct >= 100 ? ' over-budget' : ''}`} id="lifeOverallPct">支出 {pct}%</span>
+            <span className="progress-pct" id="lifeOverallPct" style={{ color: pct >= 100 ? 'var(--danger-color)' : pct >= 80 ? '#f59e0b' : 'var(--text-muted)' }}>支出 {pct}%</span>
           </div>
         </div>
         <div className="hero-details">
@@ -553,7 +611,7 @@ export default function LifeTab() {
                         <div className="life-cat-row-name">{cat.name}</div>
                         {cat.budget > 0 && (
                           <div className="life-cat-mini-bar">
-                            <div className="life-cat-mini-fill" style={{ width: barPct + '%', background: cat.isOver ? 'var(--danger-color)' : 'var(--primary-color)' }}></div>
+                            <div className="life-cat-mini-fill" style={{ width: barPct + '%', background: cat.isOver ? 'var(--danger-color)' : barPct >= 80 ? '#f59e0b' : 'var(--success-color)' }}></div>
                           </div>
                         )}
                       </div>

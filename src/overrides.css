@@ -46,7 +46,7 @@
   font-size: 1.5rem;
   box-shadow: 0 4px 15px rgba(193, 123, 46, 0.4);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s, box-shadow 0.2s;
   z-index: 899;
 }
 .fab:hover {
@@ -58,3 +58,15 @@
   .fab { bottom: 80px; right: 16px; width: 48px; height: 48px; font-size: 1.2rem; }
 }
 
+body.scrolling-down .fab {
+  transform: translateY(150px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Override greedy !important rule from legacy CSS */
+@media (max-width: 480px) {
+  #cagrSearchWrap > div {
+    flex-direction: row !important;
+  }
+}

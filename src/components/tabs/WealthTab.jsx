@@ -281,6 +281,29 @@ function WealthChart({ labels, cashData, investData, totalData, targetFV }) {
   return <canvas ref={chartRef}></canvas>;
 }
 
+// ── Animated Number ───────────────────────────────────────────────────────────
+function AnimatedNumber({ value }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    let start = null;
+    const duration = 800; // ms
+    const initial = display;
+    const diff = value - initial;
+    if (diff === 0) return;
+    
+    const step = (timestamp) => {
+      if (!start) start = timestamp;
+      const progress = Math.min((timestamp - start) / duration, 1);
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      setDisplay(initial + diff * easeOutQuart);
+      if (progress < 1) window.requestAnimationFrame(step);
+      else setDisplay(value);
+    };
+    window.requestAnimationFrame(step);
+  }, [value]);
+  return <>{formatAmount(Math.round(display), 'asset')}</>;
+}
+
 // ── Main WealthTab ────────────────────────────────────────────────────────────
 export default function WealthTab() {
   const {
@@ -455,7 +478,7 @@ export default function WealthTab() {
           <i className="fa-solid fa-vault"></i> 當前資產總額
         </div>
         <div className="wealth-total-amount" id="wealthTotalAssetsDisplay" style={{ marginBottom: 20 }}>
-          NT$ {formatAmount(Math.round(totalAssets), 'asset')}
+          NT$ <AnimatedNumber value={totalAssets} />
         </div>
 
         {/* Ratio bar */}
@@ -584,7 +607,7 @@ export default function WealthTab() {
       <div className="wealth-panel chart-section" style={{ gridColumn: '1/-1' }}>
         <div className="wealth-panel-header"><span style={{ fontWeight: 600 }}>資產試算</span></div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="wealth-form-grid">
           {/* Investment */}
           <div>
             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#3b82f6', marginBottom: 8 }}>投資部位</div>
@@ -603,9 +626,9 @@ export default function WealthTab() {
             {/* CAGR auto-fetch */}
             <div className="form-group" style={{ marginBottom: 4, position: 'relative' }} id="cagrSearchWrap">
               <label className="form-label" style={{ fontSize: '0.75rem' }}>CAGR 自動抓取</label>
-              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                <div style={{ position: 'relative', flex: 1, minWidth: 0 }}>
-                  <input className="form-input" id="wealthInvestTickerSearch" value={cagrSearch} onChange={e => handleCagrSearch(e.target.value)} placeholder="代號搜尋…" />
+              <div style={{ display: 'flex', width: '100%', gap: 8, alignItems: 'center' }}>
+                <div style={{ position: 'relative', flex: '3 1 0%', minWidth: 0 }}>
+                  <input className="form-input" id="wealthInvestTickerSearch" value={cagrSearch} onChange={e => handleCagrSearch(e.target.value)} placeholder="代號搜尋…" style={{ width: '100%', fontSize: '16px' }} />
                   {cagrDropdown.length > 0 && (
                     <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg)', border: '1px solid var(--border-color)', borderRadius: 6, zIndex: 100 }}>
                       {cagrDropdown.map((s, i) => (
@@ -616,7 +639,8 @@ export default function WealthTab() {
                     </div>
                   )}
                 </div>
-                <select className="form-select" id="wealthInvestRangeSelect" style={{ flex: '0 0 64px', paddingLeft: 8, paddingRight: 24 }} value={cagrYears}
+                <div style={{ flex: '1 1 0%', minWidth: 0 }}>
+                  <select className="form-select" id="wealthInvestRangeSelect" style={{ width: '100%', paddingLeft: 8, paddingRight: 24 }} value={cagrYears}
                   onChange={e => {
                     setCagrYears(e.target.value);
                     if (selectedCagrSymbol.current) refreshCagrNow(selectedCagrSymbol.current, e.target.value);
@@ -625,6 +649,7 @@ export default function WealthTab() {
                   <option value="5">5 年</option>
                   <option value="10">10 年</option>
                 </select>
+                </div>
               </div>
               {cagrLabel && (
                 <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--primary-color)', marginTop: 4 }}>

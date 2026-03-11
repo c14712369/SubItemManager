@@ -18,6 +18,18 @@ const observer = new MutationObserver(() => {
 });
 observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
 
+// 監聽滾動事件以隱藏/顯示 FAB
+let lastScrollY = window.scrollY;
+window.addEventListener('scroll', () => {
+  const currentScrollY = window.scrollY;
+  if (currentScrollY > lastScrollY && currentScrollY > 50) {
+    document.body.classList.add('scrolling-down');
+  } else {
+    document.body.classList.remove('scrolling-down');
+  }
+  lastScrollY = currentScrollY;
+}, { passive: true });
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
