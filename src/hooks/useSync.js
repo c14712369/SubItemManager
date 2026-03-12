@@ -34,7 +34,7 @@ function exportState(store) {
 
 export function useSync() {
   const store = useAppStore();
-  const { setCurrentUser, setIsSyncing, loadFromCloud } = store;
+  const { setCurrentUser, setIsSyncing, loadFromCloud, lastLocalUpdate } = store;
   const isFetching = useRef(false);
   const syncTimer  = useRef(null);
   const lastSync   = useRef(0);
@@ -67,6 +67,13 @@ export function useSync() {
     syncTimer.current = setTimeout(() => pushToCloud(), 1500);
   }, [pushToCloud]);
 
+  // 全自動背景同步：監聽 store 的時間戳變動
+  useEffect(() => {
+    if (lastLocalUpdate > 0) {
+      triggerSync();
+    }
+  }, [lastLocalUpdate, triggerSync]);
+
   // ── pull from Supabase ─────────────────────────────────────────────────
   const pullFromCloud = useCallback(async () => {
     const user = useAppStore.getState().currentUser;
@@ -93,23 +100,42 @@ export function useSync() {
         const cloudTs = new Date(data.updated_at).getTime();
         const localTs = parseInt(localStorage.getItem('last_local_update') || '0', 10);
         const s = useAppStore.getState();
+        
+        // 核心安全邏輯：計算資料筆數
         const localCount = (s.items?.length || 0) + (s.lifeExpenses?.length || 0) + (s.projects?.length || 0);
         const cloudData  = data.app_data;
         const cloudCount = (cloudData.items?.length || 0) + (cloudData.lifeExpenses?.length || 0) + (cloudData.projects?.length || 0);
-        const localHasData  = localCount > 0;
-        const cloudHasMore  = cloudCount > 5 && localCount < cloudCount * 0.5;
+        
+        const localIsEmpty = localCount === 0;
+        const cloudHasData = cloudCount > 0;
+        
+        // 如果地端是空的，但雲端有資料 -> 強制拉取還原（防止蓋掉雲端）
+        if (localIsEmpty && cloudHasData) {
+          console.log('偵測到地端資料異常遺失，優先從雲端還原...');
+          loadFromCloud(cloudData);
+          return;
+        }
 
-        if (localHasData && localTs > cloudTs && !cloudHasMore) {
-          // 本地較新 → 推上去
+        // 如果地端資料量明顯異常（少於雲端的一半），且雲端有一定規模 -> 也不自動覆蓋雲端
+        const dataScaleAnomaly = cloudCount > 10 && localCount < cloudCount * 0.5;
+        if (dataScaleAnomaly && localTs > cloudTs) {
+          console.warn('地端資料量明顯異常少於雲端，暫停自動推送。');
+          loadFromCloud(cloudData);
+          return;
+        }
+
+        if (localCount > 0 && localTs > cloudTs) {
+          // 本地較新 -> 推上去
           isFetching.current = false;
           window._appInitializing = false;
           await pushToCloud(true);
           return;
         }
-        // 雲端較新或資料量更多 → 拉下來
+        
+        // 否則，載入雲端
         loadFromCloud(cloudData);
       } else {
-        // 首次登入 → 推本地
+        // 雲端無資料 -> 推送本地
         isFetching.current = false;
         window._appInitializing = false;
         await pushToCloud(true);

@@ -11,10 +11,12 @@ import {
 // ─── helpers ───────────────────────────────────────────────────────────────
 const load  = (key, fallback) => { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; } catch { return fallback; } };
 const save  = (key, val) => localStorage.setItem(key, JSON.stringify(val));
-const stamp = () => { localStorage.setItem('last_local_update', Date.now().toString()); };
 
 // ─── initial state from localStorage ──────────────────────────────────────
 const initState = {
+  // Sync
+  lastLocalUpdate: parseInt(localStorage.getItem('last_local_update') || '0', 10),
+
   // Fixed expenses
   items:      load(STORAGE_KEY, []),
   categories: load(CAT_KEY, DEFAULT_CATS.map(c => ({ ...c }))),
@@ -55,109 +57,121 @@ const initState = {
 };
 
 // ─── store ─────────────────────────────────────────────────────────────────
-export const useAppStore = create((set, get) => ({
-  ...initState,
+export const useAppStore = create((set, get) => {
+  const stamp = () => {
+    const now = Date.now();
+    localStorage.setItem('last_local_update', now.toString());
+    set({ lastLocalUpdate: now });
+  };
 
-  // ── UI ──
-  setActiveTab: (tab) => set({ activeTab: tab }),
-  setLifePendingCatId: (id) => set({ lifePendingCatId: id }),
+  return {
+    ...initState,
 
-  togglePrivacy: () => {
-    const next = !get().isPrivacyMode;
-    localStorage.setItem('privacy_mode', next);
-    set({ isPrivacyMode: next });
-  },
+    // ── UI ──
+    setActiveTab: (tab) => set({ activeTab: tab }),
+    setLifePendingCatId: (id) => set({ lifePendingCatId: id }),
 
-  setTheme: (theme) => {
-    localStorage.setItem(THEME_KEY, theme);
-    set({ theme });
-    if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
-    else document.documentElement.removeAttribute('data-theme');
-  },
+    togglePrivacy: () => {
+      const next = !get().isPrivacyMode;
+      localStorage.setItem('privacy_mode', next);
+      set({ isPrivacyMode: next });
+    },
 
-  // ── Fixed Expenses ──
-  setItems: (items) => { save(STORAGE_KEY, items); stamp(); set({ items }); },
-  addItem:  (item)  => { const next = [...get().items, item]; save(STORAGE_KEY, next); stamp(); set({ items: next }); },
-  updateItem: (id, data) => {
-    const next = get().items.map(i => i.id === id ? { ...i, ...data } : i);
-    save(STORAGE_KEY, next); stamp(); set({ items: next });
-  },
-  deleteItem: (id) => {
-    const next = get().items.filter(i => i.id !== id);
-    save(STORAGE_KEY, next); stamp(); set({ items: next });
-  },
-  setCategories: (categories) => { save(CAT_KEY, categories); stamp(); set({ categories }); },
-  setFixedSortMode: (mode) => { localStorage.setItem(FIXED_SORT_KEY, mode); set({ fixedSortMode: mode }); },
+    setTheme: (theme) => {
+      localStorage.setItem(THEME_KEY, theme);
+      set({ theme });
+      if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      else document.documentElement.removeAttribute('data-theme');
+    },
 
-  // ── Life Expenses ──
-  setLifeExpenses: (lifeExpenses) => { save(LIFE_EXP_KEY, lifeExpenses); stamp(); set({ lifeExpenses }); },
-  addLifeExpense:  (entry) => {
-    const next = [...get().lifeExpenses, entry];
-    save(LIFE_EXP_KEY, next); stamp(); set({ lifeExpenses: next });
-  },
-  updateLifeExpense: (id, data) => {
-    const next = get().lifeExpenses.map(e => e.id === id ? { ...e, ...data } : e);
-    save(LIFE_EXP_KEY, next); stamp(); set({ lifeExpenses: next });
-  },
-  deleteLifeExpense: (id) => {
-    const next = get().lifeExpenses.filter(e => e.id !== id && e._linkedExpenseId !== id);
-    save(LIFE_EXP_KEY, next); stamp(); set({ lifeExpenses: next });
-  },
-  setLifeCategories:       (c) => { save(LIFE_CAT_KEY,     c); stamp(); set({ lifeCategories: c }); },
-  setLifeIncomeCategories: (c) => { save(LIFE_INC_CAT_KEY, c); stamp(); set({ lifeIncomeCategories: c }); },
-  setLifeBudgets:          (b) => { save(LIFE_BDG_KEY,     b); stamp(); set({ lifeBudgets: b }); },
-  setLifeCurrentMonth:     (m) => set({ lifeCurrentMonth: m }),
+    // ── Fixed Expenses ──
+    setItems: (items) => { save(STORAGE_KEY, items); stamp(); set({ items }); },
+    addItem:  (item)  => { const next = [...get().items, item]; save(STORAGE_KEY, next); stamp(); set({ items: next }); },
+    updateItem: (id, data) => {
+      const next = get().items.map(i => i.id === id ? { ...i, ...data } : i);
+      save(STORAGE_KEY, next); stamp(); set({ items: next });
+    },
+    deleteItem: (id) => {
+      const next = get().items.filter(i => i.id !== id);
+      save(STORAGE_KEY, next); stamp(); set({ items: next });
+    },
+    setCategories: (categories) => { save(CAT_KEY, categories); stamp(); set({ categories }); },
+    setFixedSortMode: (mode) => { localStorage.setItem(FIXED_SORT_KEY, mode); set({ fixedSortMode: mode }); },
 
-  // ── Projects ──
-  setProjects:          (p) => { save(PROJECTS_KEY,    p); stamp(); set({ projects: p }); },
-  setProjectExpenses:   (p) => { save(PROJECT_EXP_KEY, p); stamp(); set({ projectExpenses: p }); },
-  setProjectCategories: (p) => { save(PROJECT_CAT_KEY, p); stamp(); set({ projectCategories: p }); },
+    // ── Life Expenses ──
+    setLifeExpenses: (lifeExpenses) => { save(LIFE_EXP_KEY, lifeExpenses); stamp(); set({ lifeExpenses }); },
+    addLifeExpense:  (entry) => {
+      const next = [...get().lifeExpenses, entry];
+      save(LIFE_EXP_KEY, next); stamp(); set({ lifeExpenses: next });
+    },
+    updateLifeExpense: (id, data) => {
+      const next = get().lifeExpenses.map(e => e.id === id ? { ...e, ...data } : e);
+      save(LIFE_EXP_KEY, next); stamp(); set({ lifeExpenses: next });
+    },
+    deleteLifeExpense: (id) => {
+      const next = get().lifeExpenses.filter(e => e.id !== id && e._linkedExpenseId !== id);
+      save(LIFE_EXP_KEY, next); stamp(); set({ lifeExpenses: next });
+    },
+    setLifeCategories:       (c) => { save(LIFE_CAT_KEY,     c); stamp(); set({ lifeCategories: c }); },
+    setLifeIncomeCategories: (c) => { save(LIFE_INC_CAT_KEY, c); stamp(); set({ lifeIncomeCategories: c }); },
+    setLifeBudgets:          (b) => { save(LIFE_BDG_KEY,     b); stamp(); set({ lifeBudgets: b }); },
+    setLifeCurrentMonth:     (m) => set({ lifeCurrentMonth: m }),
 
-  // ── Wealth ──
-  setWealthHoldings:     (w) => { save(WEALTH_HOLDINGS_KEY, w); stamp(); set({ wealthHoldings: w }); },
-  setWealthBankAccounts: (w) => { save(WEALTH_BANKS_KEY,    w); stamp(); set({ wealthBankAccounts: w }); },
-  setWealthParams:       (w) => { save(WEALTH_PARAMS_KEY,   w); stamp(); set({ wealthParams: w }); },
+    // ── Projects ──
+    setProjects:          (p) => { save(PROJECTS_KEY,    p); stamp(); set({ projects: p }); },
+    setProjectExpenses:   (p) => { save(PROJECT_EXP_KEY, p); stamp(); set({ projectExpenses: p }); },
+    setProjectCategories: (p) => { save(PROJECT_CAT_KEY, p); stamp(); set({ projectCategories: p }); },
 
-  // ── Settings ──
-  setEstimatedIncome: (v) => { localStorage.setItem(INCOME_KEY, v); stamp(); set({ estimatedIncome: v }); },
-  setPaymentMethods:  (p) => { save(PAYMENT_KEY, p); stamp(); set({ paymentMethods: p }); },
+    // ── Wealth ──
+    setWealthHoldings:     (w) => { save(WEALTH_HOLDINGS_KEY, w); stamp(); set({ wealthHoldings: w }); },
+    setWealthBankAccounts: (w) => { save(WEALTH_BANKS_KEY,    w); stamp(); set({ wealthBankAccounts: w }); },
+    setWealthParams:       (w) => { save(WEALTH_PARAMS_KEY,   w); stamp(); set({ wealthParams: w }); },
 
-  // ── Auth ──
-  setCurrentUser: (user) => set({ currentUser: user }),
-  setIsSyncing:   (v)    => set({ isSyncing: v }),
+    // ── Settings ──
+    setEstimatedIncome: (v) => { localStorage.setItem(INCOME_KEY, v); stamp(); set({ estimatedIncome: v }); },
+    setPaymentMethods:  (p) => { save(PAYMENT_KEY, p); stamp(); set({ paymentMethods: p }); },
 
-  // ── Bulk load (用於雲端同步下載後覆寫) ──
-  loadFromCloud: (data) => {
-    if (data.items)                save(STORAGE_KEY,        data.items);
-    if (data.categories)           save(CAT_KEY,            data.categories);
-    if (data.lifeExpenses)         save(LIFE_EXP_KEY,       data.lifeExpenses);
-    if (data.lifeCategories)       save(LIFE_CAT_KEY,       data.lifeCategories);
-    if (data.lifeIncomeCategories) save(LIFE_INC_CAT_KEY,   data.lifeIncomeCategories);
-    if (data.lifeBudgets)          save(LIFE_BDG_KEY,       data.lifeBudgets);
-    if (data.projects)             save(PROJECTS_KEY,       data.projects);
-    if (data.projectExpenses)      save(PROJECT_EXP_KEY,    data.projectExpenses);
-    if (data.projectCategories)    save(PROJECT_CAT_KEY,    data.projectCategories);
-    if (data.wealthHoldings)       save(WEALTH_HOLDINGS_KEY,data.wealthHoldings);
-    if (data.wealthBankAccounts)   save(WEALTH_BANKS_KEY,   data.wealthBankAccounts);
-    if (data.settings?.wealthParams)    save(WEALTH_PARAMS_KEY, data.settings.wealthParams);
-    if (data.settings?.estimatedIncome) localStorage.setItem(INCOME_KEY, data.settings.estimatedIncome);
-    if (data.settings?.theme)           localStorage.setItem(THEME_KEY, data.settings.theme);
+    // ── Auth ──
+    setCurrentUser: (user) => set({ currentUser: user }),
+    setIsSyncing:   (v)    => set({ isSyncing: v }),
 
-    set({
-      items:                data.items                ?? get().items,
-      categories:           data.categories           ?? get().categories,
-      lifeExpenses:         data.lifeExpenses         ?? get().lifeExpenses,
-      lifeCategories:       data.lifeCategories       ?? get().lifeCategories,
-      lifeIncomeCategories: data.lifeIncomeCategories ?? get().lifeIncomeCategories,
-      lifeBudgets:          data.lifeBudgets          ?? get().lifeBudgets,
-      projects:             data.projects             ?? get().projects,
-      projectExpenses:      data.projectExpenses      ?? get().projectExpenses,
-      projectCategories:    data.projectCategories    ?? get().projectCategories,
-      wealthHoldings:       data.wealthHoldings       ?? get().wealthHoldings,
-      wealthBankAccounts:   data.wealthBankAccounts   ?? get().wealthBankAccounts,
-      wealthParams:         data.settings?.wealthParams  ?? get().wealthParams,
-      estimatedIncome:      data.settings?.estimatedIncome ?? get().estimatedIncome,
-      theme:                data.settings?.theme      ?? get().theme,
-    });
-  },
-}));
+    // ── Bulk load (用於雲端同步下載後覆寫) ──
+    loadFromCloud: (data) => {
+      if (data.items)                save(STORAGE_KEY,        data.items);
+      if (data.categories)           save(CAT_KEY,            data.categories);
+      if (data.lifeExpenses)         save(LIFE_EXP_KEY,       data.lifeExpenses);
+      if (data.lifeCategories)       save(LIFE_CAT_KEY,       data.lifeCategories);
+      if (data.lifeIncomeCategories) save(LIFE_INC_CAT_KEY,   data.lifeIncomeCategories);
+      if (data.lifeBudgets)          save(LIFE_BDG_KEY,       data.lifeBudgets);
+      if (data.projects)             save(PROJECTS_KEY,       data.projects);
+      if (data.projectExpenses)      save(PROJECT_EXP_KEY,    data.projectExpenses);
+      if (data.projectCategories)    save(PROJECT_CAT_KEY,    data.projectCategories);
+      if (data.wealthHoldings)       save(WEALTH_HOLDINGS_KEY,data.wealthHoldings);
+      if (data.wealthBankAccounts)   save(WEALTH_BANKS_KEY,   data.wealthBankAccounts);
+      if (data.settings?.wealthParams)    save(WEALTH_PARAMS_KEY, data.settings.wealthParams);
+      if (data.settings?.estimatedIncome) localStorage.setItem(INCOME_KEY, data.settings.estimatedIncome);
+      if (data.settings?.theme)           localStorage.setItem(THEME_KEY, data.settings.theme);
+
+      const now = Date.now();
+      localStorage.setItem('last_local_update', now.toString());
+
+      set({
+        lastLocalUpdate:      now,
+        items:                data.items                ?? get().items,
+        categories:           data.categories           ?? get().categories,
+        lifeExpenses:         data.lifeExpenses         ?? get().lifeExpenses,
+        lifeCategories:       data.lifeCategories       ?? get().lifeCategories,
+        lifeIncomeCategories: data.lifeIncomeCategories ?? get().lifeIncomeCategories,
+        lifeBudgets:          data.lifeBudgets          ?? get().lifeBudgets,
+        projects:             data.projects             ?? get().projects,
+        projectExpenses:      data.projectExpenses      ?? get().projectExpenses,
+        projectCategories:    data.projectCategories    ?? get().projectCategories,
+        wealthHoldings:       data.wealthHoldings       ?? get().wealthHoldings,
+        wealthBankAccounts:   data.wealthBankAccounts   ?? get().wealthBankAccounts,
+        wealthParams:         data.settings?.wealthParams  ?? get().wealthParams,
+        estimatedIncome:      data.settings?.estimatedIncome ?? get().estimatedIncome,
+        theme:                data.settings?.theme      ?? get().theme,
+      });
+    },
+  };
+});
