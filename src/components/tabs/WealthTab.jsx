@@ -467,7 +467,7 @@ export default function WealthTab() {
           <i className="fa-solid fa-vault"></i> 當前資產總額
         </div>
         <div className="wealth-total-amount" id="wealthTotalAssetsDisplay" style={{ marginBottom: 20 }}>
-          NT$ <AnimatedNumber value={totalAssets} />
+          NT$ <AnimatedNumber value={totalAssets} format={v => formatAmount(v, 'asset')} effect="scroll" />
         </div>
 
         {/* Ratio bar */}
@@ -485,7 +485,7 @@ export default function WealthTab() {
               <i className="fa-solid fa-chart-line" style={{ color: '#3b82f6' }}></i> 投資市值
             </div>
             <div id="wealthTotalInvestSub" style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', fontWeight: 700, color: '#3b82f6' }}>
-              NT$ <AnimatedNumber value={Math.round(totalInvest)} format={v => formatAmount(v, 'asset')} />
+              NT$ <AnimatedNumber value={Math.round(totalInvest)} format={v => formatAmount(v, 'asset')} effect="scroll" />
             </div>
             {totalAssets > 0 && (
               <div id="wealthTotalInvestPct" style={{ fontSize: '0.72rem', color: '#3b82f6', opacity: 0.75, marginTop: 3 }}>
@@ -498,7 +498,7 @@ export default function WealthTab() {
               <i className="fa-solid fa-building-columns" style={{ color: '#10b981' }}></i> 現金存款
             </div>
             <div id="wealthTotalCashSub" style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', fontWeight: 700, color: '#10b981' }}>
-              NT$ <AnimatedNumber value={Math.round(totalCash)} format={v => formatAmount(v, 'asset')} />
+              NT$ <AnimatedNumber value={Math.round(totalCash)} format={v => formatAmount(v, 'asset')} effect="scroll" />
             </div>
             {totalAssets > 0 && (
               <div id="wealthTotalCashPct" style={{ fontSize: '0.72rem', color: '#10b981', opacity: 0.75, marginTop: 3 }}>
@@ -517,7 +517,7 @@ export default function WealthTab() {
         <div className="wealth-panel-header">
           <div>
             <h3 className="wealth-panel-title"><i className="fa-solid fa-chart-line"></i> 投資持股</h3>
-            <div className="wealth-panel-total">總市值：<strong id="holdingsTotalValue">NT$ {formatAmount(Math.round(totalInvest), 'asset')}</strong></div>
+            <div className="wealth-panel-total">總市值：<strong id="holdingsTotalValue">NT$ <AnimatedNumber value={Math.round(totalInvest)} format={v => formatAmount(v, 'asset')} effect="scroll" /></strong></div>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             <button className="btn btn-secondary btn-sm" onClick={handleRefreshAll} title="全部更新股價">
@@ -543,11 +543,11 @@ export default function WealthTab() {
                     <div className="wealth-row-mid">
                       <span className="wealth-row-detail" style={{ color: 'var(--text-muted)' }}>{h.shares.toLocaleString()} 股</span>
                       <span className="wealth-row-price" style={{ color: 'var(--primary-color)' }}>
-                        {h.lastPrice ? `NT$ ${formatAmount(h.lastPrice, 'asset')}` : '—'}
+                        {h.lastPrice ? <>NT$ <AnimatedNumber value={h.lastPrice} format={v => formatAmount(v, 'asset')} effect="scroll" /></> : '—'}
                       </span>
                       {timeStr && <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 1 }}>{timeStr}</span>}
                     </div>
-                    <div className="wealth-row-value" style={{ color: 'var(--text-main)', fontWeight: 800 }}>{h.lastPrice ? `NT$ ${formatAmount(Math.round(value), 'asset')}` : '—'}</div>
+                    <div className="wealth-row-value" style={{ color: 'var(--text-main)', fontWeight: 800 }}>{h.lastPrice ? <>NT$ <AnimatedNumber value={Math.round(value)} format={v => formatAmount(v, 'asset')} effect="scroll" /></> : '—'}</div>
                     <div className="wealth-row-actions">
                       <button className="icon-btn" title="更新股價" onClick={() => handleRefreshPrice(h.id)}>
                         <i className={`fa-solid fa-rotate${fetchingId === h.id ? ' fa-spin' : ''}`}></i>
@@ -573,7 +573,7 @@ export default function WealthTab() {
                 <i className="fa-solid fa-plus"></i> 新增
               </button>
             </div>
-            <div className="wealth-panel-total" style={{ marginTop: 4 }}>現金合計：<strong id="bankTotalValue">NT$ {formatAmount(Math.round(totalCash), 'asset')}</strong></div>
+            <div className="wealth-panel-total" style={{ marginTop: 4 }}>現金合計：<strong id="bankTotalValue">NT$ <AnimatedNumber value={Math.round(totalCash)} format={v => formatAmount(v, 'asset')} effect="scroll" /></strong></div>
           </div>
         </div>
         <div id="bankAccountsList">
@@ -583,7 +583,7 @@ export default function WealthTab() {
                 <div key={a.id} className="wealth-row">
                   <div className="wealth-row-left"><span className="wealth-row-symbol" style={{ fontSize: '0.9rem' }}>{a.bankName}</span></div>
                   <div className="wealth-row-mid"><span className="wealth-row-detail">利率 {a.rate || 0}%</span></div>
-                  <div className="wealth-row-value">NT$ {formatAmount(Math.round(a.balance || 0), 'asset')}</div>
+                  <div className="wealth-row-value">NT$ <AnimatedNumber value={Math.round(a.balance || 0)} format={v => formatAmount(v, 'asset')} effect="scroll" /></div>
                   <div className="wealth-row-actions">
                     <button className="icon-btn" title="編輯" onClick={() => { setEditBankId(a.id); setShowBankModal(true); }}><i className="fa-solid fa-pen"></i></button>
                     <button className="icon-btn delete" title="刪除" onClick={() => handleDeleteBank(a.id)}><i className="fa-solid fa-trash"></i></button>
@@ -604,7 +604,7 @@ export default function WealthTab() {
             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#3b82f6', marginBottom: 8 }}>投資部位</div>
             <div className="form-group" style={{ marginBottom: 8 }}>
               <label className="form-label" style={{ fontSize: '0.75rem' }}>現有資產</label>
-              <div className="form-input" id="wealthInvestCurrentDisplay" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center' }}>NT$ {formatAmount(Math.round(totalInvest), 'asset')}</div>
+              <div className="form-input" id="wealthInvestCurrentDisplay" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center' }}>NT$ <AnimatedNumber value={Math.round(totalInvest)} format={v => formatAmount(v, 'asset')} /></div>
             </div>
             <div className="form-group" style={{ marginBottom: 8 }}>
               <label className="form-label" style={{ fontSize: '0.75rem' }}>每月投入（NT$）</label>
@@ -656,7 +656,7 @@ export default function WealthTab() {
             <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#10b981', marginBottom: 8 }}>現金 / 存款</div>
             <div className="form-group" style={{ marginBottom: 8 }}>
               <label className="form-label" style={{ fontSize: '0.75rem' }}>現有資產</label>
-              <div className="form-input" id="wealthCashCurrentDisplay" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center' }}>NT$ {formatAmount(Math.round(totalCash), 'asset')}</div>
+              <div className="form-input" id="wealthCashCurrentDisplay" style={{ fontSize: '0.85rem', display: 'flex', alignItems: 'center' }}>NT$ <AnimatedNumber value={Math.round(totalCash)} format={v => formatAmount(v, 'asset')} /></div>
             </div>
             <div className="form-group" style={{ marginBottom: 8 }}>
               <label className="form-label" style={{ fontSize: '0.75rem' }}>每月存入（NT$）</label>
@@ -680,9 +680,9 @@ export default function WealthTab() {
           <div style={{ fontSize: '1.6rem', fontWeight: 700, color: 'var(--primary-color)' }} id="wealthResultText">{simulation.result}</div>
           {simulation.curInv != null && (
             <div id="wealthSummaryText" style={{ marginTop: 8, fontSize: '0.85rem' }}>
-              <div>總結累積：<strong>NT$ {formatAmount(Math.round((simulation.curInv || 0) + (simulation.curCash || 0)), 'asset')}</strong></div>
+              <div>總結累積：<strong>NT$ <AnimatedNumber value={Math.round((simulation.curInv || 0) + (simulation.curCash || 0))} format={v => formatAmount(v, 'asset')} /></strong></div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                現金：NT$ {formatAmount(Math.round(simulation.curCash || 0), 'asset')} ｜ 投資：NT$ {formatAmount(Math.round(simulation.curInv || 0), 'asset')}
+                現金：NT$ <AnimatedNumber value={Math.round(simulation.curCash || 0)} format={v => formatAmount(v, 'asset')} /> ｜ 投資：NT$ <AnimatedNumber value={Math.round(simulation.curInv || 0)} format={v => formatAmount(v, 'asset')} />
               </div>
             </div>
           )}

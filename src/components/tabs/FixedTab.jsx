@@ -2,6 +2,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAppStore } from '../../store/appStore';
 import { getCycleLabel, toMonthlyAmount, fetchWithCache, showToast } from '../../lib/utils';
 import { DEFAULT_CATS } from '../../lib/constants';
+import IconRenderer from '../../lib/IconRenderer';
+import CategoryManageModal from '../modals/CategoryManageModal';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const CYCLES = [
   { value: 'monthly',     label: '每月' },
@@ -63,7 +66,7 @@ function ItemModal({ categories, onClose, onSave, initial }) {
 
   return (
     <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className={`modal${shake ? ' shake' : ''}`} style={{ maxWidth: 480 }}>
+      <div className={`modal${shake ? ' shake' : ''}`} style={{ maxWidth: 480 }} onPointerDown={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{isEdit ? '編輯項目' : '新增項目'}</h3>
           <button className="icon-btn" onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
@@ -125,98 +128,6 @@ function ItemModal({ categories, onClose, onSave, initial }) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
-  );
-}
-
-// ── Category Modal ──────────────────────────────────────────────────────────
-function CategoryModal({ categories, onClose, onSave }) {
-  const [cats, setCats]         = useState(categories);
-  const [editId, setEditId]     = useState('');
-  const [catName, setCatName]   = useState('');
-  const [catColor, setCatColor] = useState('#4f46e5');
-  const dragSrc = useRef(null);
-
-  const handleSave = () => {
-    if (!catName.trim()) return;
-    if (editId) {
-      setCats(prev => prev.map(c => c.id === editId ? { ...c, name: catName, color: catColor } : c));
-    } else {
-      setCats(prev => [...prev, { id: 'cat_' + Date.now(), name: catName, color: catColor }]);
-    }
-    setCatName(''); setCatColor('#4f46e5'); setEditId('');
-  };
-
-  const handleEdit = (cat) => { setEditId(cat.id); setCatName(cat.name); setCatColor(cat.color); };
-  const handleDelete = (id) => {
-    if (!confirm('刪除此分類？關聯的項目將變為「其他」。')) return;
-    setCats(prev => prev.filter(c => c.id !== id));
-    if (editId === id) { setCatName(''); setCatColor('#4f46e5'); setEditId(''); }
-  };
-
-  const handleDragStart = (e, idx) => { dragSrc.current = idx; e.dataTransfer.effectAllowed = 'move'; };
-  const handleDragOver  = (e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; };
-  const handleDrop      = (e, idx) => {
-    e.preventDefault();
-    const src = dragSrc.current;
-    if (src == null || src === idx) return;
-    setCats(prev => {
-      const next = [...prev];
-      const [item] = next.splice(src, 1);
-      next.splice(idx, 0, item);
-      return next;
-    });
-    dragSrc.current = null;
-  };
-
-  return (
-    <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 420 }}>
-        <div className="modal-header">
-          <h3>管理分類</h3>
-          <button className="icon-btn" onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
-        </div>
-        <div id="categoryList" style={{ marginBottom: 16 }}>
-          {cats.map((cat, idx) => (
-            <div key={cat.id} className="category-item" draggable
-              onDragStart={e => handleDragStart(e, idx)}
-              onDragOver={handleDragOver}
-              onDrop={e => handleDrop(e, idx)}
-            >
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <i className="fa-solid fa-grip-lines handle" style={{ color: 'var(--text-muted)', marginRight: 10, cursor: 'grab' }}></i>
-                <div className="color-dot" style={{ background: cat.color }}></div>
-                <span>{cat.name}</span>
-              </div>
-              <div style={{ display: 'flex', gap: 5 }}>
-                <button className="icon-btn" onClick={() => handleEdit(cat)}><i className="fa-solid fa-pen"></i></button>
-                {!DEFAULT_CATS.find(d => d.id === cat.id) && (
-                  <button className="icon-btn delete" onClick={() => handleDelete(cat.id)}><i className="fa-solid fa-trash"></i></button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input type="color" value={catColor} onChange={e => setCatColor(e.target.value)} style={{ width: 36, height: 36, border: 'none', borderRadius: 6, cursor: 'pointer', padding: 2 }} />
-          <input className="form-input" style={{ flex: 1 }} value={catName} onChange={e => setCatName(e.target.value)}
-            placeholder="分類名稱…" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleSave())} />
-          <button className="icon-btn" onClick={handleSave}>
-            <i className={`fa-solid ${editId ? 'fa-check' : 'fa-plus'}`}></i>
-          </button>
-          {editId && (
-            <button className="icon-btn" onClick={() => { setEditId(''); setCatName(''); setCatColor('#4f46e5'); }}>
-              <i className="fa-solid fa-xmark"></i>
-            </button>
-          )}
-        </div>
-        <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <button className="btn btn-ghost" style={{ flex: 1 }} onClick={onClose}>取消</button>
-          <button className="btn btn-primary" style={{ flex: 2 }} onClick={() => { onSave(cats); onClose(); }}>
-            <i className="fa-solid fa-check"></i> 儲存分類
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -284,7 +195,7 @@ export default function FixedTab() {
   const catMap = {};
   activeItems.forEach(item => {
     const cat = categories.find(c => c.id === item.categoryId) || categories[categories.length - 1];
-    if (!catMap[cat.id]) catMap[cat.id] = { name: cat.name, color: cat.color, monthly: 0 };
+    if (!catMap[cat.id]) catMap[cat.id] = { name: cat.name, color: cat.color, icon: cat.icon, monthly: 0 };
     catMap[cat.id].monthly += toMonthlyAmount(item);
   });
   const summaryRows = Object.values(catMap).sort((a, b) => {
@@ -311,6 +222,7 @@ export default function FixedTab() {
 
   const handleDelete = (id) => {
     if (!confirm('確定刪除？')) return;
+    if (navigator.vibrate) navigator.vibrate(50);
     deleteItem(id);
     showToast('刪除成功');
   };
@@ -325,6 +237,7 @@ export default function FixedTab() {
   };
 
   const openEdit = (item) => {
+    if (navigator.vibrate) navigator.vibrate(50);
     setModalItem({
       id: item.id, name: item.name,
       categoryId: item.categoryId,
@@ -341,46 +254,79 @@ export default function FixedTab() {
 
   return (
     <div className="tab-content">
-      {/* Toolbar */}
-      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 24 }}>
-        <div className="sort-chips" style={{ flex: '0 0 auto' }}>
-          <button className={`sort-chip${fixedSortMode === 'category' ? ' active' : ''}`}
-            onClick={() => setFixedSortMode('category')}>
-            <i className="fa-solid fa-layer-group"></i> 分類
-          </button>
-          <button
-            className={`sort-chip${fixedSortMode === 'amount-desc' || fixedSortMode === 'amount-asc' ? ' active' : ''}`}
-            onClick={() => {
-              if (fixedSortMode === 'amount-desc') setFixedSortMode('amount-asc');
-              else setFixedSortMode('amount-desc');
-            }}>
-            金額 {fixedSortMode === 'amount-asc' ? '↑' : '↓'}
-          </button>
-          <button
-            className={`sort-chip${fixedSortMode === 'date-desc' || fixedSortMode === 'date-asc' ? ' active' : ''}`}
-            onClick={() => {
-              if (fixedSortMode === 'date-desc') setFixedSortMode('date-asc');
-              else setFixedSortMode('date-desc');
-            }}>
-            <i className="fa-regular fa-calendar"></i> {fixedSortMode === 'date-asc' ? '最舊' : '最新'}
+      {/* 整合式工具列 */}
+      <div className="fixed-toolbar-card" style={{ 
+        background: 'var(--card-bg)', 
+        borderRadius: 'var(--radius)', 
+        padding: '16px', 
+        marginBottom: '20px', 
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-sm)'
+      }}>
+        {/* 第一層：狀態與設定 */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', gap: '8px' }}>
+          <div className="type-toggle" style={{ 
+            flex: 'none', 
+            background: 'var(--bg-color)', 
+            padding: '3px', 
+            borderRadius: '8px',
+            display: 'flex',
+            flexWrap: 'nowrap' // 確保文字不換行
+          }}>
+            <button className={`type-btn${statusFilter === 'all'    ? ' active' : ''}`} style={{ fontSize: '0.82rem', padding: '6px 10px', whiteSpace: 'nowrap' }} onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setStatus('all'); }}>全部</button>
+            <button className={`type-btn${statusFilter === 'active' ? ' active' : ''}`} style={{ fontSize: '0.82rem', padding: '6px 10px', whiteSpace: 'nowrap' }} onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setStatus('active'); }}>進行中</button>
+            <button className={`type-btn${statusFilter === 'ended'  ? ' active' : ''}`} style={{ fontSize: '0.82rem', padding: '6px 10px', whiteSpace: 'nowrap' }} onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setStatus('ended'); }}>已結束</button>
+          </div>
+          <button className="icon-btn" style={{ 
+            width: '36px', 
+            height: '36px', 
+            flexShrink: 0,
+            background: 'var(--bg-color)', 
+            borderRadius: '8px',
+            border: '1px solid var(--border-color)'
+          }} title="管理分類" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setCatModal(true); }}>
+            <i className="fa-solid fa-tags" style={{ fontSize: '0.9rem', color: 'var(--primary-color)' }}></i>
           </button>
         </div>
-        <button className="icon-btn" style={{ flexShrink: 0, marginLeft: 'auto' }} title="管理分類" onClick={() => setCatModal(true)}>
-          <i className="fa-solid fa-tags"></i>
-        </button>
+
+        {/* 第二層：排序選項 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflowX: 'auto', paddingBottom: '2px' }}>
+          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontWeight: 600 }}>
+            <i className="fa-solid fa-arrow-down-wide-short" style={{ marginRight: '4px' }}></i>排序：
+          </span>
+          <div className="sort-chips" style={{ display: 'flex', gap: '6px' }}>
+            <button className={`sort-chip${fixedSortMode === 'category' ? ' active' : ''}`}
+              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+              onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setFixedSortMode('category'); }}>
+              分類
+            </button>
+            <button
+              className={`sort-chip${fixedSortMode === 'amount-desc' || fixedSortMode === 'amount-asc' ? ' active' : ''}`}
+              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+              onClick={() => {
+                if (navigator.vibrate) navigator.vibrate(50);
+                if (fixedSortMode === 'amount-desc') setFixedSortMode('amount-asc');
+                else setFixedSortMode('amount-desc');
+              }}>
+              金額 {fixedSortMode === 'amount-asc' ? '↑' : '↓'}
+            </button>
+            <button
+              className={`sort-chip${fixedSortMode === 'date-desc' || fixedSortMode === 'date-asc' ? ' active' : ''}`}
+              style={{ fontSize: '0.75rem', padding: '4px 10px' }}
+              onClick={() => {
+                if (navigator.vibrate) navigator.vibrate(50);
+                if (fixedSortMode === 'date-desc') setFixedSortMode('date-asc');
+                else setFixedSortMode('date-desc');
+              }}>
+              日期 {fixedSortMode === 'date-asc' ? '最舊' : '最新'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Two-column layout */}
       <div className="fixed-layout">
         <div className="fixed-list-col">
-        {/* Status filter above list */}
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 10 }}>
-          <div className="type-toggle" style={{ flexShrink: 0 }}>
-            <button className={`type-btn${statusFilter === 'all'    ? ' active' : ''}`} style={{ whiteSpace: 'nowrap' }} onClick={() => setStatus('all')}>全部</button>
-            <button className={`type-btn${statusFilter === 'active' ? ' active' : ''}`} style={{ whiteSpace: 'nowrap' }} onClick={() => setStatus('active')}>進行中</button>
-            <button className={`type-btn${statusFilter === 'ended'  ? ' active' : ''}`} style={{ whiteSpace: 'nowrap' }} onClick={() => setStatus('ended')}>已結束</button>
-          </div>
-        </div>
         <div ref={listRef} className="fixed-list" id="itemsList" style={listMinH ? { minHeight: listMinH } : {}}>
           {filtered.length === 0 ? (
             <div className="empty-state">
@@ -389,40 +335,55 @@ export default function FixedTab() {
               <p>嘗試調整搜尋條件或篩選器</p>
             </div>
           ) : (
-            pageItems.map(item => {
-              const cat   = categories.find(c => c.id === item.categoryId) || categories[categories.length - 1];
-              const ended = item.endDate && new Date(item.endDate) < now;
-              const dateRange = item.endDate ? `${item.startDate} ~ ${item.endDate}` : item.startDate;
-              return (
-                <div key={item.id} className={`item-row${ended ? ' item-row--ended' : ''}`} style={{ '--cat-color': cat.color + '14' }}>
-                  <div className="item-row-bar" style={{ background: cat.color }}></div>
-                  <div className="item-row-main">
-                    <div className="item-row-name">
-                      {item.name}
-                      {ended && <span className="item-row-badge item-row-badge--ended">已結束</span>}
+            <AnimatePresence mode="popLayout">
+              {pageItems.map((item, idx) => {
+                const cat   = categories.find(c => c.id === item.categoryId) || categories[categories.length - 1];
+                const ended = item.endDate && new Date(item.endDate) < now;
+                const dateRange = item.endDate ? `${item.startDate} ~ ${item.endDate}` : item.startDate;
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.15, delay: idx * 0.01, ease: "easeOut" }}
+                    className={`item-row${ended ? ' item-row--ended' : ''}`}
+                    style={{ '--cat-color': cat.color + '14' }}
+                  >
+                    <div className="item-row-bar" style={{ background: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {cat.icon && <IconRenderer name={cat.icon} size={14} color="#fff" style={{ marginTop: 8 }} />}
                     </div>
-                    <div className="item-row-tags">
-                      <span className="item-row-cat" style={{ background: cat.color + '20', color: cat.color }}>{cat.name}</span>
-                      <span className="item-row-cycle">{getCycleLabel(item.cycle)}</span>
+                    <div className="item-row-main">
+                      <div className="item-row-name">
+                        {item.name}
+                        {ended && <span className="item-row-badge item-row-badge--ended">已結束</span>}
+                      </div>
+                      <div className="item-row-tags">
+                        <span className="item-row-cat" style={{ background: cat.color + '20', color: cat.color }}>
+                          {cat.icon && <IconRenderer name={cat.icon} size={12} style={{ marginRight: 4, display: 'inline-block', verticalAlign: 'middle' }} />}
+                          {cat.name}
+                        </span>
+                        <span className="item-row-cycle">{getCycleLabel(item.cycle)}</span>
+                      </div>
+                      <div className="item-row-date">
+                        <i className="fa-regular fa-calendar" style={{ marginRight: 3 }}></i>{dateRange}
+                      </div>
+                      {item.note && <div className="item-row-note" style={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis' }}><i className="fa-regular fa-comment"></i> {item.note}</div>}
                     </div>
-                    <div className="item-row-date">
-                      <i className="fa-regular fa-calendar" style={{ marginRight: 3 }}></i>{dateRange}
+                    <div className="item-row-amount">
+                      {item.currency && item.currency !== 'TWD'
+                        ? <>{item.currency} {(item.originalAmount || 0).toLocaleString()} <span style={{ fontSize: '0.8em', color: 'var(--text-muted)' }}>(≈NT${item.amount.toLocaleString()})</span></>
+                        : <>NT$ {(item.amount || 0).toLocaleString()}</>
+                      }
                     </div>
-                    {item.note && <div className="item-row-note"><i className="fa-regular fa-comment"></i> {item.note}</div>}
-                  </div>
-                  <div className="item-row-amount">
-                    {item.currency && item.currency !== 'TWD'
-                      ? <>{item.currency} {(item.originalAmount || 0).toLocaleString()} <span style={{ fontSize: '0.8em', color: 'var(--text-muted)' }}>(≈NT${item.amount.toLocaleString()})</span></>
-                      : <>NT$ {(item.amount || 0).toLocaleString()}</>
-                    }
-                  </div>
-                  <div className="item-row-actions">
-                    <button className="icon-btn" title="編輯" onClick={() => openEdit(item)}><i className="fa-solid fa-pen"></i></button>
-                    <button className="icon-btn delete" title="刪除" onClick={() => handleDelete(item.id)}><i className="fa-solid fa-trash"></i></button>
-                  </div>
-                </div>
-              );
-            })
+                    <div className="item-row-actions">
+                      <button className="icon-btn" title="編輯" onClick={() => openEdit(item)}><i className="fa-solid fa-pen"></i></button>
+                      <button className="icon-btn delete" title="刪除" onClick={() => handleDelete(item.id)}><i className="fa-solid fa-trash"></i></button>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           )}
         </div>
 
@@ -444,7 +405,12 @@ export default function FixedTab() {
 
         {/* Summary sidebar */}
         {summaryRows.length > 0 && (
-          <div className="fixed-summary-col">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            className="fixed-summary-col"
+          >
             <div className="fixed-summary-panel chart-section" style={{ padding: 16 }}>
               <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '0.95rem', fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <i className="fa-solid fa-chart-pie" style={{ color: 'var(--primary-color)' }}></i> 支出彙總
@@ -454,12 +420,19 @@ export default function FixedTab() {
               </h3>
               <div id="fixedSummaryContent" key={fixedSortMode}>
                 {summaryRows.map((c, i) => (
-                  <div key={c.name} className="fixed-summary-row"
-                    style={{ animation: `tabEnter 0.18s cubic-bezier(0.2,0,0,1) ${i * 35}ms both` }}>
-                    <span className="fixed-summary-dot" style={{ background: c.color }}></span>
+                  <motion.div 
+                    key={c.name} 
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="fixed-summary-row"
+                  >
+                    <span className="fixed-summary-dot" style={{ background: c.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {c.icon && <IconRenderer name={c.icon} size={10} color="#fff" />}
+                    </span>
                     <span className="fixed-summary-name">{c.name}</span>
                     <span className="fixed-summary-amount">NT$ {Math.round(c.monthly).toLocaleString()}</span>
-                  </div>
+                  </motion.div>
                 ))}
                 <div className="fixed-summary-total">
                   <span>每月合計</span>
@@ -468,12 +441,12 @@ export default function FixedTab() {
                 <div className="fixed-summary-yearly">每年估計 NT$ {Math.round(totalMonthly * 12).toLocaleString()}</div>
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 
       {/* FAB */}
-      <button className="fab" onClick={() => setModalItem({ ...EMPTY_FORM, categoryId: categories[0]?.id || '' })}>
+      <button className="fab" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setModalItem({ ...EMPTY_FORM, categoryId: categories[0]?.id || '' }); }}>
         <i className="fa-solid fa-plus"></i>
       </button>
 
@@ -487,10 +460,13 @@ export default function FixedTab() {
         />
       )}
       {showCatModal && (
-        <CategoryModal
+        <CategoryManageModal
           categories={categories}
+          type="expense"
           onClose={() => setCatModal(false)}
-          onSave={handleSaveCategories}
+          onSave={(cats) => {
+            handleSaveCategories(cats);
+          }}
         />
       )}
     </div>

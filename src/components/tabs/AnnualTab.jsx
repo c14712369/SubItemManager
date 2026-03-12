@@ -2,6 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { useAppStore } from '../../store/appStore';
 import { formatAmount, prefetchFXRates, calculateExpenseForMonth } from '../../lib/utils';
+import AnimatedNumber from '../../lib/AnimatedNumber';
+import { motion, AnimatePresence } from 'framer-motion';
 
 Chart.register(...registerables);
 
@@ -143,12 +145,6 @@ export default function AnnualTab() {
   // cleanup on unmount
   useEffect(() => () => { barChart.current?.destroy(); pieChart.current?.destroy(); }, []);
 
-  const summaryItems = [
-    { label: '全年總收入', val: totals.income,  type: 'income',  cls: 'stat-positive' },
-    { label: '全年總支出', val: totals.expense, type: 'expense', cls: 'stat-negative' },
-    { label: '全年結餘',   val: totals.balance, type: totals.balance < 0 ? 'expense' : 'asset', cls: totals.balance >= 0 ? 'stat-positive' : 'stat-negative' },
-  ];
-
   const prevYear = () => { const i = years.indexOf(year); if (i < years.length - 1) setYear(years[i + 1]); };
   const nextYear = () => { const i = years.indexOf(year); if (i > 0) setYear(years[i - 1]); };
 
@@ -173,20 +169,40 @@ export default function AnnualTab() {
         </div>
 
         <div className="dashboard" style={{ marginBottom: 16 }}>
-          <div className="stat-card" style={{ padding: 16 }}>
-            <div className="stat-title">年度總收入</div>
-            <div className="stat-value stat-positive" id="annualTotalIncome">NT$ {formatAmount(Math.round(totals.income), 'income')}</div>
-          </div>
-          <div className="stat-card" style={{ padding: 16 }}>
-            <div className="stat-title">年度總支出</div>
-            <div className="stat-value stat-negative" id="annualTotalExpense">NT$ {Math.round(totals.expense).toLocaleString()}</div>
-          </div>
-          <div className="stat-card" style={{ padding: 16 }}>
-            <div className="stat-title">年度總結餘</div>
-            <div className={`stat-value${totals.balance >= 0 ? ' stat-positive' : ' stat-negative'}`} id="annualTotalBalance">
-              NT$ {formatAmount(Math.abs(Math.round(totals.balance)), 'income')}{totals.balance < 0 ? ' (負)' : ''}
-            </div>
-          </div>
+          <AnimatePresence mode="popLayout">
+            <motion.div 
+              key="annual-income"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="stat-card" style={{ padding: 16 }}
+            >
+              <div className="stat-title">年度總收入</div>
+              <div className="stat-value stat-positive" id="annualTotalIncome">NT$ <AnimatedNumber value={Math.round(totals.income)} format={v => formatAmount(v, 'income')} /></div>
+            </motion.div>
+            <motion.div 
+              key="annual-expense"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.05 }}
+              className="stat-card" style={{ padding: 16 }}
+            >
+              <div className="stat-title">年度總支出</div>
+              <div className="stat-value stat-negative" id="annualTotalExpense">NT$ <AnimatedNumber value={Math.round(totals.expense)} /></div>
+            </motion.div>
+            <motion.div 
+              key="annual-balance"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+              className="stat-card" style={{ padding: 16 }}
+            >
+              <div className="stat-title">年度總結餘</div>
+              <div className={`stat-value${totals.balance >= 0 ? ' stat-positive' : ' stat-negative'}`} id="annualTotalBalance">
+                NT$ <AnimatedNumber value={Math.abs(Math.round(totals.balance))} format={v => formatAmount(v, 'income')} />{totals.balance < 0 ? ' (負)' : ''}
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         <div className="chart-container" style={{ height: 350, overflowX: 'auto', overflowY: 'hidden' }}>

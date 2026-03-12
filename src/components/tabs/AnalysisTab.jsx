@@ -229,7 +229,7 @@ export default function AnalysisTab() {
   return (
     <div className="tab-content">
       {/* Header with title + month nav */}
-      <div className="analysis-header" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+      <div className="analysis-header" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 0 }}>
         <div className="analysis-title-group" style={{ alignItems: 'center' }}>
           <h2><i className="fa-solid fa-chart-pie" style={{ color: 'var(--primary-color)', marginRight: 8 }}></i>收支分析</h2>
           <div className="analysis-subtitle">月度固定支出、生活費與預算追蹤</div>

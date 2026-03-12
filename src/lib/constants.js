@@ -22,36 +22,36 @@ export const WEALTH_BANKS_KEY   = 'wealthBanks_v1';
 
 // Default data
 export const DEFAULT_CATS = [
-  { id: 'cat_ent',   name: '娛樂', color: '#8b5cf6' },
-  { id: 'cat_work',  name: '工作', color: '#3b82f6' },
-  { id: 'cat_life',  name: '生活', color: '#10b981' },
-  { id: 'cat_ins',   name: '保險', color: '#f59e0b' },
-  { id: 'cat_other', name: '其他', color: '#94a3b8' },
+  { id: 'cat_ent',   name: '娛樂', color: '#8b5cf6', icon: 'Gamepad2' },
+  { id: 'cat_work',  name: '工作', color: '#3b82f6', icon: 'Briefcase' },
+  { id: 'cat_life',  name: '生活', color: '#10b981', icon: 'Home' },
+  { id: 'cat_ins',   name: '保險', color: '#f59e0b', icon: 'ShieldCheck' },
+  { id: 'cat_other', name: '其他', color: '#94a3b8', icon: 'MoreHorizontal' },
 ];
 
 export const DEFAULT_LIFE_CATS = [
-  { id: 'lc_food',   name: '飲食', color: '#C17B2E' },
-  { id: 'lc_trans',  name: '交通', color: '#2A6475' },
-  { id: 'lc_util',   name: '水電費', color: '#5A9E7A' },
-  { id: 'lc_ent',    name: '娛樂', color: '#8B5CF6' },
-  { id: 'lc_health', name: '醫療', color: '#D46060' },
-  { id: 'lc_other',  name: '其他', color: '#8A8A8A' },
+  { id: 'lc_food',   name: '飲食', color: '#C17B2E', icon: 'Utensils' },
+  { id: 'lc_trans',  name: '交通', color: '#2A6475', icon: 'Bus' },
+  { id: 'lc_util',   name: '水電費', color: '#5A9E7A', icon: 'Zap' },
+  { id: 'lc_ent',    name: '娛樂', color: '#8B5CF6', icon: 'Gamepad2' },
+  { id: 'lc_health', name: '醫療', color: '#D46060', icon: 'Pill' },
+  { id: 'lc_other',  name: '其他', color: '#8A8A8A', icon: 'MoreHorizontal' },
 ];
 
 export const DEFAULT_LIFE_INC_CATS = [
-  { id: 'lc_inc_salary', name: '薪資', color: '#5A9E7A' },
-  { id: 'lc_inc_bonus',  name: '獎金', color: '#C17B2E' },
-  { id: 'lc_inc_invest', name: '投資', color: '#2A6475' },
-  { id: 'lc_inc_other',  name: '其他', color: '#8A8A8A' },
+  { id: 'lc_inc_salary', name: '薪資', color: '#5A9E7A', icon: 'Landmark' },
+  { id: 'lc_inc_bonus',  name: '獎金', color: '#C17B2E', icon: 'Gift' },
+  { id: 'lc_inc_invest', name: '投資', color: '#2A6475', icon: 'TrendingUp' },
+  { id: 'lc_inc_other',  name: '其他', color: '#8A8A8A', icon: 'MoreHorizontal' },
 ];
 
 export const DEFAULT_PROJECT_CATS = [
-  { id: 'pc_trans',  name: '交通', color: '#2A6475' },
-  { id: 'pc_stay',   name: '住宿', color: '#5A9E7A' },
-  { id: 'pc_food',   name: '飲食', color: '#C17B2E' },
-  { id: 'pc_ticket', name: '門票', color: '#8B5CF6' },
-  { id: 'pc_shop',   name: '購物', color: '#D46060' },
-  { id: 'pc_other',  name: '其他', color: '#8A8A8A' },
+  { id: 'pc_trans',  name: '交通', color: '#2A6475', icon: 'Plane' },
+  { id: 'pc_stay',   name: '住宿', color: '#5A9E7A', icon: 'BedDouble' },
+  { id: 'pc_food',   name: '飲食', color: '#C17B2E', icon: 'Utensils' },
+  { id: 'pc_ticket', name: '門票', color: '#8B5CF6', icon: 'Ticket' },
+  { id: 'pc_shop',   name: '購物', color: '#D46060', icon: 'ShoppingBag' },
+  { id: 'pc_other',  name: '其他', color: '#8A8A8A', icon: 'MoreHorizontal' },
 ];
 
 export const DEFAULT_PAYMENT_METHODS = [

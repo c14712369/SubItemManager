@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useAppStore } from '../../store/appStore';
-import { showToast } from '../../lib/utils';
+import { showToast, formatAmount } from '../../lib/utils';
+import AnimatedNumber from '../../lib/AnimatedNumber';
+import { motion, AnimatePresence } from 'framer-motion';
 
 // ── Project Modal ─────────────────────────────────────────────────────────────
 function ProjectModal({ initial, onClose, onSave }) {
@@ -18,7 +20,7 @@ function ProjectModal({ initial, onClose, onSave }) {
 
   return (
     <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 400 }}>
+      <div className="modal" style={{ maxWidth: 400 }} onPointerDown={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 id="projectModalTitle">{isEdit ? '編輯企劃專案' : '新增企劃專案'}</h3>
           <button className="icon-btn" onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
@@ -71,13 +73,14 @@ function ProjectDetailModal({ project, projectExpenses, projectCategories, onClo
 
   const handleAddExp = () => {
     if (!expName.trim() || !(parseFloat(expAmt) > 0)) { showToast('請填寫名稱與金額', 'error'); return; }
+    if (navigator.vibrate) navigator.vibrate(50);
     onAddExp({ id: crypto.randomUUID(), projectId: project.id, categoryId: expCatId, name: expName.trim(), amount: parseFloat(expAmt), date: expDate, createdAt: new Date().toISOString() });
     setExpName(''); setExpAmt('');
   };
 
   return (
     <div className="modal-overlay active" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 480 }}>
+      <div className="modal" style={{ maxWidth: 480 }} onPointerDown={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 id="projectDetailTitle">{project.name} — 專案明細</h3>
           <button className="icon-btn" onClick={onClose}><i className="fa-solid fa-xmark"></i></button>
@@ -85,15 +88,15 @@ function ProjectDetailModal({ project, projectExpenses, projectCategories, onClo
 
         {/* Budget summary */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.9rem' }}>
-          <span>已花費：<b id="detailProjectSpent">NT$ {spent.toLocaleString()}</b></span>
-          <span style={{ color: 'var(--text-muted)' }}>總預算：NT$ {(Number(project.budget) || 0).toLocaleString()}</span>
+          <span>已花費：<b id="detailProjectSpent">NT$ <AnimatedNumber value={spent} /></b></span>
+          <span style={{ color: 'var(--text-muted)' }}>總預算：NT$ <AnimatedNumber value={Number(project.budget) || 0} /></span>
         </div>
         <div style={{ height: 6, background: 'var(--bg-secondary)', borderRadius: 3, marginBottom: 4 }}>
           <div id="detailProjectProgress" style={{ height: '100%', borderRadius: 3, width: pct + '%', background: pct >= 100 ? 'var(--danger-color)' : 'var(--primary-color)', transition: 'width .3s' }}></div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 16 }}>
-          <span id="detailProjectPct" style={{ color: 'var(--text-muted)' }}>支出 {Math.round((spent / (project.budget || 1)) * 100)}%</span>
-          <span id="detailProjectRemain" style={{ color: rem < 0 ? 'var(--danger-color)' : 'var(--text-color)' }}>剩餘：NT$ {rem.toLocaleString()}</span>
+          <span id="detailProjectPct" style={{ color: 'var(--text-muted)' }}>支出 <AnimatedNumber value={Math.round((spent / (project.budget || 1)) * 100)} />%</span>
+          <span id="detailProjectRemain" style={{ color: rem < 0 ? 'var(--danger-color)' : 'var(--text-color)' }}>剩餘：NT$ <AnimatedNumber value={rem} /></span>
         </div>
 
         {/* Add expense form */}
@@ -131,7 +134,7 @@ function ProjectDetailModal({ project, projectExpenses, projectCategories, onClo
                     </div>
                     <div className="item-cost" style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ color: 'var(--danger-color)', fontWeight: 600 }}>NT$ {(Number(e.amount) || 0).toLocaleString()}</span>
-                      <button className="icon-btn delete" onClick={() => { if (confirm('確定刪除？')) onDeleteExp(e.id); }} title="刪除">
+                      <button className="icon-btn delete" onClick={() => { if (confirm('確定刪除？')) { if (navigator.vibrate) navigator.vibrate(50); onDeleteExp(e.id); } }} title="刪除">
                         <i className="fa-solid fa-trash-can"></i>
                       </button>
                     </div>
@@ -194,6 +197,7 @@ export default function ProjectsTab() {
 
   const handleDeleteProject = (id) => {
     if (!confirm('確定要刪除此專案嗎？相關的支出明細也會一併刪除。')) return;
+    if (navigator.vibrate) navigator.vibrate(50);
     setProjects(projects.filter(p => p.id !== id));
     setProjectExpenses(projectExpenses.filter(e => e.projectId !== id));
     showToast('專案已刪除');
@@ -221,17 +225,27 @@ export default function ProjectsTab() {
             <h3><i className="fa-solid fa-piggy-bank"></i> 專案預備金總覽 (每月應存)</h3>
           </div>
           <div className="items-grid">
-            {savingsItems.map(s => (
-              <div key={s.id} className="stat-card category-card" style={{ padding: 20 }}>
-                <div className="stat-title" style={{ marginBottom: 12, fontSize: '1.1rem', fontWeight: 'bold' }}>{s.name}</div>
-                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>{s.startDate} ({s.infoText})</div>
-                <div style={{ fontSize: '0.9rem', marginBottom: 12 }}>資金缺口：<b>NT$ {s.remain.toLocaleString()}</b></div>
-                <div style={{ paddingTop: 12, borderTop: '1px solid var(--border-color)' }}>
-                  <span style={{ fontSize: '1.6rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>NT$ {s.monthlySave.toLocaleString()}</span>
-                  <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginLeft: 4 }}>/月</span>
-                </div>
-              </div>
-            ))}
+            <AnimatePresence mode="popLayout">
+              {savingsItems.map((s, idx) => (
+                <motion.div 
+                  key={s.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2, delay: idx * 0.02 }}
+                  className="stat-card category-card" 
+                  style={{ padding: 20 }}
+                >
+                  <div className="stat-title" style={{ marginBottom: 12, fontSize: '1.1rem', fontWeight: 'bold' }}>{s.name}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>{s.startDate} ({s.infoText})</div>
+                  <div style={{ fontSize: '0.9rem', marginBottom: 12 }}>資金缺口：<b>NT$ <AnimatedNumber value={s.remain} effect="scroll" /></b></div>
+                  <div style={{ paddingTop: 12, borderTop: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '1.6rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>NT$ <AnimatedNumber value={s.monthlySave} effect="scroll" /></span>
+                    <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginLeft: 4 }}>/月</span>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </div>
         </div>
       )}
@@ -244,7 +258,7 @@ export default function ProjectsTab() {
           <option value="ended">已結束</option>
         </select>
         <div style={{ flex: 1 }}></div>
-        <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => setProjModal({})}>
+        <button className="btn btn-primary" style={{ whiteSpace: 'nowrap' }} onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setProjModal({}); }}>
           <i className="fa-solid fa-plus"></i> 新增企劃專案
         </button>
       </div>
@@ -255,44 +269,54 @@ export default function ProjectsTab() {
           <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
             目前沒有專案。點擊上方「新增企劃專案」開始建立。
           </div>
-        ) : filtered.map(p => {
-            const exps  = projectExpenses.filter(e => e.projectId === p.id);
-            const spent = exps.reduce((s, e) => s + (Number(e.amount) || 0), 0);
-            const rem   = (Number(p.budget) || 0) - spent;
-            const pct   = p.budget > 0 ? Math.min(100, (spent / p.budget) * 100) : 0;
-            return (
-              <div key={p.id} className="stat-card category-card" style={{ cursor: 'pointer', position: 'relative' }}
-                onClick={() => setDetailProj(p)}>
-                {/* Actions (stop propagation) */}
-                <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
-                  <button className="icon-btn" title="編輯" onClick={() => setProjModal(p)}><i className="fa-solid fa-pen"></i></button>
-                  <button className="icon-btn delete" title="刪除" onClick={() => handleDeleteProject(p.id)}><i className="fa-solid fa-trash-can"></i></button>
-                </div>
-                <div className="stat-title" style={{ marginBottom: 8, fontSize: '1.05rem', fontWeight: 'bold', paddingRight: 60 }}>
-                  {p.name}
-                  <span className={`status-badge${p.status === 'ended' ? ' ended' : ''}`} style={{ marginLeft: 8 }}>{p.status === 'ended' ? '已結束' : '進行中'}</span>
-                </div>
-                <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10 }}>
-                  {p.startDate}{p.endDate ? ` ~ ${p.endDate}` : ''}
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '0.88rem' }}>
-                  <span>已花費：<b>NT$ {spent.toLocaleString()}</b></span>
-                  <span style={{ color: 'var(--text-muted)' }}>總預算：NT$ {(Number(p.budget) || 0).toLocaleString()}</span>
-                </div>
-                <div style={{ height: 6, background: 'var(--bg-secondary)', borderRadius: 3, marginBottom: 4 }}>
-                  <div style={{ height: '100%', borderRadius: 3, width: pct + '%', background: pct >= 100 ? 'var(--danger-color)' : 'var(--primary-color)' }}></div>
-                </div>
-                <div style={{ textAlign: 'right', fontSize: '0.78rem', color: rem < 0 ? 'var(--danger-color)' : 'var(--text-muted)' }}>
-                  剩餘：NT$ {rem.toLocaleString()}
-                </div>
-              </div>
-            );
-          })
-        }
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {filtered.map((p, idx) => {
+              const exps  = projectExpenses.filter(e => e.projectId === p.id);
+              const spent = exps.reduce((s, e) => s + (Number(e.amount) || 0), 0);
+              const rem   = (Number(p.budget) || 0) - spent;
+              const pct   = p.budget > 0 ? Math.min(100, (spent / p.budget) * 100) : 0;
+              return (
+                <motion.div 
+                  key={p.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.2, delay: idx * 0.02 }}
+                  className="stat-card category-card" style={{ cursor: 'pointer', position: 'relative' }}
+                  onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setDetailProj(p); }}
+                >
+                  {/* Actions (stop propagation) */}
+                  <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                    <button className="icon-btn" title="編輯" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setProjModal(p); }}><i className="fa-solid fa-pen"></i></button>
+                    <button className="icon-btn delete" title="刪除" onClick={() => handleDeleteProject(p.id)}><i className="fa-solid fa-trash-can"></i></button>
+                  </div>
+                  <div className="stat-title" style={{ marginBottom: 8, fontSize: '1.05rem', fontWeight: 'bold', paddingRight: 60 }}>
+                    {p.name}
+                    <span className={`status-badge${p.status === 'ended' ? ' ended' : ''}`} style={{ marginLeft: 8 }}>{p.status === 'ended' ? '已結束' : '進行中'}</span>
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: 10 }}>
+                    {p.startDate}{p.endDate ? ` ~ ${p.endDate}` : ''}
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '0.88rem' }}>
+                    <span>已花費：<b>NT$ <AnimatedNumber value={spent} /></b></span>
+                    <span style={{ color: 'var(--text-muted)' }}>總預算：NT$ <AnimatedNumber value={Number(p.budget) || 0} /></span>
+                  </div>
+                  <div style={{ height: 6, background: 'var(--bg-secondary)', borderRadius: 3, marginBottom: 4 }}>
+                    <div style={{ height: '100%', borderRadius: 3, width: pct + '%', background: pct >= 100 ? 'var(--danger-color)' : 'var(--primary-color)' }}></div>
+                  </div>
+                  <div style={{ textAlign: 'right', fontSize: '0.78rem', color: rem < 0 ? 'var(--danger-color)' : 'var(--text-muted)' }}>
+                    剩餘：NT$ <AnimatedNumber value={rem} />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        )}
       </div>
 
       {/* FAB */}
-      <button className="fab" onClick={() => setProjModal({})}>
+      <button className="fab" onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setProjModal({}); }}>
         <i className="fa-solid fa-plus"></i>
       </button>
 

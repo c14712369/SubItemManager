@@ -86,7 +86,7 @@ export const useAppStore = create((set, get) => ({
     const next = get().items.filter(i => i.id !== id);
     save(STORAGE_KEY, next); stamp(); set({ items: next });
   },
-  setCategories: (categories) => { save(CAT_KEY, categories); set({ categories }); },
+  setCategories: (categories) => { save(CAT_KEY, categories); stamp(); set({ categories }); },
   setFixedSortMode: (mode) => { localStorage.setItem(FIXED_SORT_KEY, mode); set({ fixedSortMode: mode }); },
 
   // ── Life Expenses ──
@@ -103,24 +103,24 @@ export const useAppStore = create((set, get) => ({
     const next = get().lifeExpenses.filter(e => e.id !== id && e._linkedExpenseId !== id);
     save(LIFE_EXP_KEY, next); stamp(); set({ lifeExpenses: next });
   },
-  setLifeCategories:       (c) => { save(LIFE_CAT_KEY,     c); set({ lifeCategories: c }); },
-  setLifeIncomeCategories: (c) => { save(LIFE_INC_CAT_KEY, c); set({ lifeIncomeCategories: c }); },
-  setLifeBudgets:          (b) => { save(LIFE_BDG_KEY,     b); set({ lifeBudgets: b }); },
+  setLifeCategories:       (c) => { save(LIFE_CAT_KEY,     c); stamp(); set({ lifeCategories: c }); },
+  setLifeIncomeCategories: (c) => { save(LIFE_INC_CAT_KEY, c); stamp(); set({ lifeIncomeCategories: c }); },
+  setLifeBudgets:          (b) => { save(LIFE_BDG_KEY,     b); stamp(); set({ lifeBudgets: b }); },
   setLifeCurrentMonth:     (m) => set({ lifeCurrentMonth: m }),
 
   // ── Projects ──
   setProjects:          (p) => { save(PROJECTS_KEY,    p); stamp(); set({ projects: p }); },
   setProjectExpenses:   (p) => { save(PROJECT_EXP_KEY, p); stamp(); set({ projectExpenses: p }); },
-  setProjectCategories: (p) => { save(PROJECT_CAT_KEY, p); set({ projectCategories: p }); },
+  setProjectCategories: (p) => { save(PROJECT_CAT_KEY, p); stamp(); set({ projectCategories: p }); },
 
   // ── Wealth ──
   setWealthHoldings:     (w) => { save(WEALTH_HOLDINGS_KEY, w); stamp(); set({ wealthHoldings: w }); },
   setWealthBankAccounts: (w) => { save(WEALTH_BANKS_KEY,    w); stamp(); set({ wealthBankAccounts: w }); },
-  setWealthParams:       (w) => { save(WEALTH_PARAMS_KEY,   w); set({ wealthParams: w }); },
+  setWealthParams:       (w) => { save(WEALTH_PARAMS_KEY,   w); stamp(); set({ wealthParams: w }); },
 
   // ── Settings ──
-  setEstimatedIncome: (v) => { localStorage.setItem(INCOME_KEY, v); set({ estimatedIncome: v }); },
-  setPaymentMethods:  (p) => { save(PAYMENT_KEY, p); set({ paymentMethods: p }); },
+  setEstimatedIncome: (v) => { localStorage.setItem(INCOME_KEY, v); stamp(); set({ estimatedIncome: v }); },
+  setPaymentMethods:  (p) => { save(PAYMENT_KEY, p); stamp(); set({ paymentMethods: p }); },
 
   // ── Auth ──
   setCurrentUser: (user) => set({ currentUser: user }),
