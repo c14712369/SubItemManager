@@ -315,12 +315,12 @@ export default function WealthTab() {
   const [target,     setTarget]     = useState(savedParams.target     || '10000000');
 
   // CAGR auto-fetch
-  const [cagrSearch,   setCagrSearch]   = useState('');
+  const [cagrSearch,   setCagrSearch]   = useState(savedParams.cagrSearch || '');
   const [cagrDropdown, setCagrDropdown] = useState([]);
-  const [cagrStatus,   setCagrStatus]   = useState('');
-  const [cagrYears,    setCagrYears]    = useState('5');
-  const [cagrLabel,    setCagrLabel]    = useState('');   // display ticker near year select
-  const selectedCagrSymbol = useRef('');
+  const [cagrStatus,   setCagrStatus]   = useState(savedParams.cagrStatus || '');
+  const [cagrYears,    setCagrYears]    = useState(savedParams.cagrYears || '5');
+  const [cagrLabel,    setCagrLabel]    = useState(savedParams.cagrLabel || '');   // display ticker near year select
+  const selectedCagrSymbol = useRef(savedParams.selectedCagrSymbol || '');
 
   // Derived values
   const totalInvest = wealthHoldings.reduce((s, h) => s + h.shares * (h.lastPrice || 0), 0);
@@ -329,10 +329,10 @@ export default function WealthTab() {
 
   // ── Save params ──
   const saveParams = useCallback((patch = {}) => {
-    const params = { invRate, invMonthly, cashRate, cashMonthly, target, ...patch };
+    const params = { invRate, invMonthly, cashRate, cashMonthly, target, cagrSearch, cagrYears, cagrLabel, selectedCagrSymbol: selectedCagrSymbol.current, cagrStatus, ...patch };
     localStorage.setItem(WEALTH_PARAMS_KEY, JSON.stringify(params));
     setWealthParams(params);
-  }, [invRate, invMonthly, cashRate, cashMonthly, target, setWealthParams]);
+  }, [invRate, invMonthly, cashRate, cashMonthly, target, cagrSearch, cagrYears, cagrLabel, cagrStatus, setWealthParams]);
 
   // ── Calc simulation ──
   const simulation = useMemo(() => {
@@ -431,30 +431,43 @@ export default function WealthTab() {
   // ── CAGR autocomplete ──
   const handleCagrSearch = (q) => {
     setCagrSearch(q);
+    saveParams({ cagrSearch: q });
+    if (!q) {
+      setCagrLabel('');
+      selectedCagrSymbol.current = '';
+      saveParams({ cagrSearch: '', cagrLabel: '', selectedCagrSymbol: '' });
+    }
     const lower = q.toLowerCase();
     setCagrDropdown(lower ? STOCK_LIST.filter(s => s.symbol.toLowerCase().startsWith(lower) || s.name.toLowerCase().includes(lower)).slice(0, 6) : []);
   };
 
   const selectCagrStock = (stock) => {
     const sym = stock.symbol + (stock.suffix || '');
+    const newSearch = `${stock.symbol} ${stock.name}`;
     selectedCagrSymbol.current = sym;
-    setCagrSearch(`${stock.symbol} ${stock.name}`);
-    setCagrLabel(`${stock.symbol} ${stock.name}`);
+    setCagrSearch(newSearch);
+    setCagrLabel(newSearch);
     setCagrDropdown([]);
+    saveParams({ cagrSearch: newSearch, cagrLabel: newSearch, selectedCagrSymbol: sym });
     refreshCagrNow(sym);
   };
 
   const refreshCagrNow = async (sym, overrideYears) => {
     const yrs = parseInt(overrideYears ?? cagrYears) || 5;
-    setCagrStatus(`正在計算 ${yrs}Y 年化報酬率…`);
+    const loadingMsg = `正在計算 ${yrs}Y 年化報酬率…`;
+    setCagrStatus(loadingMsg);
+    saveParams({ cagrStatus: loadingMsg });
     const cagr = await fetchCAGR(sym, yrs);
     if (cagr !== null) {
       const pct = (cagr * 100).toFixed(2);
+      const successMsg = `過去 ${yrs}Y 年化報酬率: ${pct}%`;
       setInvRate(pct);
-      setCagrStatus(`過去 ${yrs}Y 年化報酬率: ${pct}%`);
-      saveParams({ invRate: pct });
+      setCagrStatus(successMsg);
+      saveParams({ invRate: pct, cagrStatus: successMsg });
     } else {
-      setCagrStatus('無法取得數據，請手動輸入');
+      const failMsg = '無法取得數據，請手動輸入';
+      setCagrStatus(failMsg);
+      saveParams({ cagrStatus: failMsg });
     }
   };
 
@@ -634,6 +647,7 @@ export default function WealthTab() {
                   <select className="form-select" id="wealthInvestRangeSelect" style={{ width: '100%', paddingLeft: 8, paddingRight: 24 }} value={cagrYears}
                   onChange={e => {
                     setCagrYears(e.target.value);
+                    saveParams({ cagrYears: e.target.value });
                     if (selectedCagrSymbol.current) refreshCagrNow(selectedCagrSymbol.current, e.target.value);
                   }}>
                   <option value="3">3 年</option>

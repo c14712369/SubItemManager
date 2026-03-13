@@ -114,17 +114,7 @@
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.item-row:hover {
-    border-color: var(--primary-color);
-    box-shadow: var(--shadow-sm);
-    transform: translateX(4px);
-}
 
-@media (hover: none) {
-    .item-row:hover {
-        transform: none;
-    }
-}
 
 .item-row--ended {
     opacity: 0.6;
@@ -228,6 +218,26 @@
     gap: 2px;
     padding: 6px 8px;
     flex-shrink: 0;
+}
+
+/* Hover effects for desktop */
+@media (hover: hover) {
+    .item-row:hover {
+        background-color: var(--bg-secondary);
+        border-color: var(--border-color);
+        box-shadow: var(--shadow-sm);
+    }
+
+    .item-row-actions {
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        pointer-events: none;
+    }
+
+    .item-row:hover .item-row-actions {
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
 
 @media (max-width: 600px) {

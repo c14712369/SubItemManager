@@ -24,10 +24,7 @@
   outline: none;
 }
 
-/* item-row: category color tint on hover via --cat-color CSS custom property */
-.item-row:hover {
-  background: var(--cat-color, var(--hover-bg));
-}
+
 
 /* FAB alias — React components use .fab, CSS only has .fab-global */
 .fab {
