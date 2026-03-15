@@ -22,14 +22,14 @@ export default function AnimatedNumber({ value, format, duration = 700, effect =
     const revealed = wasHiddenRef.current;
     wasHiddenRef.current = false;
 
-    // For non-scroll effects, we just snap to the target value immediately
-    if (effect !== 'scroll') {
+    // For non-scroll effects or when just revealed from hidden state, snap to target value immediately
+    if (effect !== 'scroll' || revealed) {
       setDisplay(value);
       prevValueRef.current = value;
       return;
     }
 
-    const initial = revealed ? 0 : prevValueRef.current;
+    const initial = prevValueRef.current;
     const diff = value - initial;
     
     if (diff === 0 && !revealed) {

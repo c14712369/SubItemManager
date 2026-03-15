@@ -195,7 +195,7 @@ export default function FixedTab() {
   const catMap = {};
   activeItems.forEach(item => {
     const cat = categories.find(c => c.id === item.categoryId) || categories[categories.length - 1];
-    if (!catMap[cat.id]) catMap[cat.id] = { name: cat.name, color: cat.color, icon: cat.icon, monthly: 0 };
+    if (!catMap[cat.id]) catMap[cat.id] = { name: cat.name, color: cat.color, icon: cat.icon, iconColor: cat.iconColor, monthly: 0 };
     catMap[cat.id].monthly += toMonthlyAmount(item);
   });
   const summaryRows = Object.values(catMap).sort((a, b) => {
@@ -351,7 +351,7 @@ export default function FixedTab() {
                     style={{ '--cat-color': cat.color + '14' }}
                   >
                     <div className="item-row-bar" style={{ background: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {cat.icon && <IconRenderer name={cat.icon} size={14} color="#fff" style={{ marginTop: 8 }} />}
+                      {cat.icon && <IconRenderer name={cat.icon} size={14} color={cat.iconColor || "#fff"} style={{ marginTop: 8 }} />}
                     </div>
                     <div className="item-row-main">
                       <div className="item-row-name">
@@ -428,7 +428,7 @@ export default function FixedTab() {
                     className="fixed-summary-row"
                   >
                     <span className="fixed-summary-dot" style={{ background: c.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {c.icon && <IconRenderer name={c.icon} size={10} color="#fff" />}
+                      {c.icon && <IconRenderer name={c.icon} size={10} color={c.iconColor || "#fff"} />}
                     </span>
                     <span className="fixed-summary-name">{c.name}</span>
                     <span className="fixed-summary-amount">NT$ {Math.round(c.monthly).toLocaleString()}</span>

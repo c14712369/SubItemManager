@@ -339,8 +339,8 @@
 }
 
 .life-exp-dot {
-    width: 8px;
-    height: 8px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     flex-shrink: 0;
 }
@@ -472,8 +472,8 @@
 }
 
 .life-income-arrow {
-    width: 8px;
-    height: 8px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     background: var(--success-color);
     flex-shrink: 0;

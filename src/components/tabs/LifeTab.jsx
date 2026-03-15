@@ -562,7 +562,6 @@ export default function LifeTab() {
                         return (
                           <motion.div
                             key={e.id}
-                            layout
                             initial={{ opacity: 0, y: 5 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.98 }}
@@ -571,7 +570,7 @@ export default function LifeTab() {
                           >
                             <div className={isIncome ? "life-income-date" : "life-exp-date"}>{day}</div>
                             <div className={isIncome ? "life-income-arrow" : "life-exp-dot"} style={{ background: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              {cat.icon && <IconRenderer name={cat.icon} size={12} color="#fff" />}
+                              {cat.icon && <IconRenderer name={cat.icon} size={14} color={cat.iconColor || "#fff"} />}
                             </div>
                             <div className="life-exp-info">
                               <div className="life-item-main-line">
@@ -584,11 +583,11 @@ export default function LifeTab() {
                             </div>
                             <div className="life-exp-amount-wrap">
                               <div className={isIncome ? "life-income-amount" : "life-exp-amount stat-negative"}>
-                                {isIncome ? '+' : '-'} NT$ {isIncome ? formatAmount(e.amount, 'income') : Number(e.amount).toLocaleString()}
+                                {isIncome ? '+' : '-'} NT$ <AnimatedNumber value={Math.round(e.amount)} format={v => formatAmount(v, isIncome ? 'income' : 'expense')} />
                               </div>
                               {rw && (
                                 <div className="life-exp-reward-inline">
-                                  <i className="fa-solid fa-gift"></i> +{rw.amount.toLocaleString()}{rw.rate ? ` (${rw.rate})` : ''}
+                                  <i className="fa-solid fa-gift"></i> +<AnimatedNumber value={rw.amount} />{rw.rate ? ` (${rw.rate})` : ''}
                                 </div>
                               )}
                             </div>
@@ -643,7 +642,7 @@ export default function LifeTab() {
                       <div className="life-cat-row-info"><div className="life-cat-row-name">全部支出</div></div>
                     </div>
                     <div className="life-cat-row-right">
-                      <span className="life-cat-row-amt">NT$ {tExp.toLocaleString()}</span>
+                      <span className="life-cat-row-amt">NT$ <AnimatedNumber value={tExp} /></span>
                     </div>
                   </div>
                   {catSummary.map(cat => {
@@ -654,7 +653,7 @@ export default function LifeTab() {
                         onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setSelectedCatId(cat.id); setPage(1); setLifeView('exp'); }}>
                         <div className="life-cat-row-left">
                           <div className="life-cat-dot" style={{ background: cat.color, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            {cat.icon && <IconRenderer name={cat.icon} size={14} color="#fff" />}
+                            {cat.icon && <IconRenderer name={cat.icon} size={14} color={cat.iconColor || "#fff"} />}
                           </div>
                           <div className="life-cat-row-info">
                             <div className="life-cat-row-name">{cat.name}</div>
@@ -669,8 +668,8 @@ export default function LifeTab() {
                           </div>
                         </div>
                         <div className="life-cat-row-right">
-                          <span className={`life-cat-row-amt${cat.isOver ? ' over text-danger' : ''}`}>NT$ {cat.spent.toLocaleString()}</span>
-                          {cat.budget > 0 && <span className="life-cat-row-budget-hint">/ {cat.budget.toLocaleString()}</span>}
+                          <span className={`life-cat-row-amt${cat.isOver ? ' over text-danger' : ''}`}>NT$ <AnimatedNumber value={cat.spent} /></span>
+                          {cat.budget > 0 && <span className="life-cat-row-budget-hint">/ <AnimatedNumber value={cat.budget} /></span>}
                           {cat.isOver && <i className="fa-solid fa-triangle-exclamation" style={{ color: 'var(--danger-color)', fontSize: '0.75rem' }}></i>}
                         </div>
                       </div>

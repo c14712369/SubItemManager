@@ -88,15 +88,15 @@ function ProjectDetailModal({ project, projectExpenses, projectCategories, onClo
 
         {/* Budget summary */}
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: '0.9rem' }}>
-          <span>已花費：<b id="detailProjectSpent">NT$ <AnimatedNumber value={spent} /></b></span>
-          <span style={{ color: 'var(--text-muted)' }}>總預算：NT$ <AnimatedNumber value={Number(project.budget) || 0} /></span>
+          <span>已花費：<b id="detailProjectSpent" style={{ fontFamily: 'var(--font-serif)' }}>NT$ <AnimatedNumber value={spent} /></b></span>
+          <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-serif)' }}>總預算：NT$ <AnimatedNumber value={Number(project.budget) || 0} /></span>
         </div>
         <div style={{ height: 6, background: 'var(--bg-secondary)', borderRadius: 3, marginBottom: 4 }}>
           <div id="detailProjectProgress" style={{ height: '100%', borderRadius: 3, width: pct + '%', background: pct >= 100 ? 'var(--danger-color)' : 'var(--primary-color)', transition: 'width .3s' }}></div>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: 16 }}>
-          <span id="detailProjectPct" style={{ color: 'var(--text-muted)' }}>支出 <AnimatedNumber value={Math.round((spent / (project.budget || 1)) * 100)} />%</span>
-          <span id="detailProjectRemain" style={{ color: rem < 0 ? 'var(--danger-color)' : 'var(--text-color)' }}>剩餘：NT$ <AnimatedNumber value={rem} /></span>
+          <span id="detailProjectPct" style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-serif)' }}>支出 <AnimatedNumber value={Math.round((spent / (project.budget || 1)) * 100)} />%</span>
+          <span id="detailProjectRemain" style={{ color: rem < 0 ? 'var(--danger-color)' : 'var(--text-color)', fontFamily: 'var(--font-serif)' }}>剩餘：NT$ <AnimatedNumber value={rem} /></span>
         </div>
 
         {/* Add expense form */}
@@ -133,7 +133,7 @@ function ProjectDetailModal({ project, projectExpenses, projectCategories, onClo
                       </div>
                     </div>
                     <div className="item-cost" style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ color: 'var(--danger-color)', fontWeight: 600 }}>NT$ {(Number(e.amount) || 0).toLocaleString()}</span>
+                      <span style={{ color: 'var(--danger-color)', fontWeight: 600, fontFamily: 'var(--font-serif)' }}>NT$ {(Number(e.amount) || 0).toLocaleString()}</span>
                       <button className="icon-btn delete" onClick={() => { if (confirm('確定刪除？')) { if (navigator.vibrate) navigator.vibrate(50); onDeleteExp(e.id); } }} title="刪除">
                         <i className="fa-solid fa-trash-can"></i>
                       </button>
@@ -238,9 +238,9 @@ export default function ProjectsTab() {
                 >
                   <div className="stat-title" style={{ marginBottom: 12, fontSize: '1.1rem', fontWeight: 'bold' }}>{s.name}</div>
                   <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>{s.startDate} ({s.infoText})</div>
-                  <div style={{ fontSize: '0.9rem', marginBottom: 12 }}>資金缺口：<b>NT$ <AnimatedNumber value={s.remain} effect="scroll" /></b></div>
+                  <div style={{ fontSize: '0.9rem', marginBottom: 12 }}>資金缺口：<b style={{ fontFamily: 'var(--font-serif)' }}>NT$ <AnimatedNumber value={s.remain} effect="scroll" /></b></div>
                   <div style={{ paddingTop: 12, borderTop: '1px solid var(--border-color)' }}>
-                    <span style={{ fontSize: '1.6rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>NT$ <AnimatedNumber value={s.monthlySave} effect="scroll" /></span>
+                    <span style={{ fontSize: '1.6rem', color: 'var(--primary-color)', fontWeight: 'bold', fontFamily: 'var(--font-serif)' }}>NT$ <AnimatedNumber value={s.monthlySave} effect="scroll" /></span>
                     <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginLeft: 4 }}>/月</span>
                   </div>
                 </motion.div>
@@ -299,13 +299,13 @@ export default function ProjectsTab() {
                     {p.startDate}{p.endDate ? ` ~ ${p.endDate}` : ''}
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: '0.88rem' }}>
-                    <span>已花費：<b>NT$ <AnimatedNumber value={spent} /></b></span>
-                    <span style={{ color: 'var(--text-muted)' }}>總預算：NT$ <AnimatedNumber value={Number(p.budget) || 0} /></span>
+                    <span>已花費：<b style={{ fontFamily: 'var(--font-serif)' }}>NT$ <AnimatedNumber value={spent} /></b></span>
+                    <span style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-serif)' }}>總預算：NT$ <AnimatedNumber value={Number(p.budget) || 0} /></span>
                   </div>
                   <div style={{ height: 6, background: 'var(--bg-secondary)', borderRadius: 3, marginBottom: 4 }}>
                     <div style={{ height: '100%', borderRadius: 3, width: pct + '%', background: pct >= 100 ? 'var(--danger-color)' : 'var(--primary-color)' }}></div>
                   </div>
-                  <div style={{ textAlign: 'right', fontSize: '0.78rem', color: rem < 0 ? 'var(--danger-color)' : 'var(--text-muted)' }}>
+                  <div style={{ textAlign: 'right', fontSize: '0.78rem', color: rem < 0 ? 'var(--danger-color)' : 'var(--text-muted)', fontFamily: 'var(--font-serif)' }}>
                     剩餘：NT$ <AnimatedNumber value={rem} />
                   </div>
                 </motion.div>

@@ -166,8 +166,8 @@
 }
 
 .life-cat-dot {
-    width: 9px;
-    height: 9px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     flex-shrink: 0;
 }
