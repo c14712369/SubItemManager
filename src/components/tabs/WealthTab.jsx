@@ -401,8 +401,18 @@ export default function WealthTab() {
   };
 
   const handleRefreshAll = useCallback(async (isAuto = false) => {
-    // Determine if this is a manual refresh (from button) or auto-refresh
     const isManual = isAuto === false;
+    const lastUpdate = parseInt(localStorage.getItem('last_wealth_price_update') || '0', 10);
+    const now = Date.now();
+    const COOLDOWN = 3 * 60 * 1000; // 3 minutes
+
+    if (now - lastUpdate < COOLDOWN) {
+      if (isManual) {
+        const remaining = Math.ceil((COOLDOWN - (now - lastUpdate)) / 1000 / 60);
+        showToast(`請稍候再更新 (冷卻中，剩餘約 ${remaining} 分鐘)`, 'error');
+      }
+      return;
+    }
     
     if (!wealthHoldings.length) {
       if (isManual) showToast('尚未新增持股', 'error');
@@ -429,14 +439,9 @@ export default function WealthTab() {
     showToast('股價已全部更新');
   }, [wealthHoldings, setWealthHoldings]);
 
-  // Auto-refresh on mount with 3-minute cooldown
+  // Auto-refresh on mount
   useEffect(() => {
-    const lastUpdate = parseInt(localStorage.getItem('last_wealth_price_update') || '0', 10);
-    const now = Date.now();
-    const COOLDOWN = 3 * 60 * 1000; // 3 minutes
-    if (now - lastUpdate > COOLDOWN) {
-      handleRefreshAll(true);
-    }
+    handleRefreshAll(true);
   }, [handleRefreshAll]);
 
   // ── Bank actions ──
