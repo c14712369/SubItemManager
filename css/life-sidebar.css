@@ -107,6 +107,8 @@
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-color);
     margin: 0;
+    position: relative;
+    z-index: 10;
 }
 
 .life-sidebar-actions {
@@ -124,6 +126,7 @@
 
 .life-cat-list {
     padding: 0;
+    position: relative;
 }
 
 .life-cat-sep {
@@ -310,6 +313,8 @@
     padding: 16px 20px;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-color);
+    position: relative;
+    z-index: 10;
 }
 
 .life-detail-header h3 {
@@ -333,6 +338,7 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
     touch-action: pan-y;
+    position: relative;
 }
 
 /* Mobile: stack vertically */
