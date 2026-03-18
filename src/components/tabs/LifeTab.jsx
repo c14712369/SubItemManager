@@ -162,8 +162,8 @@ function ExpenseModal({ lifeCategories, lifeIncomeCategories, paymentMethods, cu
   };
 
   return (
-    <div className="modal-overlay active" style={{ alignItems: 'flex-start', paddingTop: '10vh' }} onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className="modal" style={{ maxWidth: 400, margin: '0 auto', maxHeight: '85vh', overflowY: 'auto' }} onPointerDown={e => e.stopPropagation()}>
+    <div className="modal-overlay active" style={{ alignItems: 'flex-start', paddingTop: 0 }} onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal" style={{ maxWidth: 400, margin: '0 auto', height: '100vh', maxHeight: '100vh', overflowY: 'auto', borderRadius: 0 }} onPointerDown={e => e.stopPropagation()}>
         <div className="modal-header">
           <h3 id="lifeExpModalTitle">
             {isEdit ? (type === 'income' ? '編輯收入' : '編輯支出') : (type === 'income' ? '新增收入' : '新增支出')}
@@ -516,10 +516,9 @@ export default function LifeTab() {
           {lifeView === 'exp' ? (
             <motion.div
               key="exp-view"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.15 }}
               className="life-view-content active"
             >
               <div className="life-detail-panel" style={{ width: '100%' }}>
@@ -542,7 +541,7 @@ export default function LifeTab() {
                   </div>
                 </div>
 
-                <div id="lifeExpList" style={{ maxHeight: 500, overflowY: 'auto', paddingRight: 4 }}>
+                <div id="lifeExpList" style={{ height: 450, overflowY: 'auto', paddingRight: 4 }}>
                   {pageItems.length === 0 ? (
                     <div className="empty-state">
                       <span className="empty-icon"><i className="fa-regular fa-note-sticky"></i></span>
@@ -621,10 +620,9 @@ export default function LifeTab() {
           ) : (
             <motion.div
               key="cat-view"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.15 }}
               className="life-view-content active"
             >
               <div className="life-sidebar" style={{ width: '100%' }}>
@@ -634,7 +632,7 @@ export default function LifeTab() {
                     <i className="fa-solid fa-gear"></i>
                   </button>
                 </div>
-                <div className="life-cat-list">
+                <div className="life-cat-list" style={{ height: 450, overflowY: 'auto' }}>
                   <div className={`life-cat-row${selectedCatId === null ? ' active' : ''}`}
                     onClick={() => { if (navigator.vibrate) navigator.vibrate(50); setSelectedCatId(null); setPage(1); setLifeView('exp'); }}>
                     <div className="life-cat-row-left">

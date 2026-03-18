@@ -104,7 +104,7 @@ export default function App() {
   return (
     <div className="container" style={{ overflowX: 'hidden', position: 'relative' }}>
       <Header />
-      <main style={{ position: 'relative', minHeight: '80vh', paddingBottom: '80px' }}>
+      <main style={{ position: 'relative', minHeight: '80vh', paddingBottom: '0' }}>
         <AnimatePresence initial={false} custom={direction}>
           <motion.div
             key={activeTab}

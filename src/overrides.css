@@ -11,7 +11,7 @@
 
 /* life-view-content: originally toggled by JS, now controlled by React class */
 .life-view-content {
-  display: none;
+  /* display: none handled by framer-motion presence */
 }
 .life-view-content.active {
   display: block;

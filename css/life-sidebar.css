@@ -8,12 +8,13 @@
     background: var(--card-bg);
     border-radius: 16px;
     box-shadow: 0 4px 15px var(--shadow-color);
-    padding: 20px;
-    margin-bottom: 24px;
+    padding: 16px;
+    margin-bottom: 0;
     border: 1px solid var(--border-color);
     max-width: 800px;
     margin-left: auto;
     margin-right: auto;
+    min-height: 620px;
 }
 
 .life-tabs-header {
@@ -53,12 +54,11 @@
 }
 
 .life-view-content {
-    display: none;
-    animation: fadeIn 0.3s ease;
+    /* controlled by react */
 }
 
 .life-view-content.active {
-    display: block;
+    /* controlled by react */
 }
 
 .pagination-btn {

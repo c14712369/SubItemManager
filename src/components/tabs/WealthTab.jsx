@@ -306,6 +306,7 @@ export default function WealthTab() {
   const [editBankId,       setEditBankId]       = useState(null);
   const [showBankModal,    setShowBankModal]     = useState(false);
   const [fetchingId,       setFetchingId]        = useState(null);
+  const [isRefreshing,     setIsRefreshing]      = useState(false);
 
   // Calculator inputs
   const [invRate,    setInvRate]    = useState(savedParams.invRate    || '7');
@@ -399,19 +400,44 @@ export default function WealthTab() {
     finally { setFetchingId(null); }
   };
 
-  const handleRefreshAll = async () => {
-    if (!wealthHoldings.length) { showToast('尚未新增持股', 'error'); return; }
-    showToast('更新中…');
+  const handleRefreshAll = useCallback(async (isAuto = false) => {
+    // Determine if this is a manual refresh (from button) or auto-refresh
+    const isManual = isAuto === false;
+    
+    if (!wealthHoldings.length) {
+      if (isManual) showToast('尚未新增持股', 'error');
+      return;
+    }
+
+    setIsRefreshing(true);
+    if (isManual) showToast('更新中…');
     const updated = [...wealthHoldings];
     for (const h of updated) {
       try {
         const price = await fetchStockPrice(h.symbol, true);
-        if (price !== null) { h.lastPrice = price; h.lastUpdated = new Date().toISOString(); }
-      } catch {}
+        if (price !== null) {
+          h.lastPrice = price;
+          h.lastUpdated = new Date().toISOString();
+        }
+      } catch (err) {
+        console.error(`Failed to refresh ${h.symbol}:`, err);
+      }
     }
     setWealthHoldings(updated);
+    localStorage.setItem('last_wealth_price_update', Date.now().toString());
+    setIsRefreshing(false);
     showToast('股價已全部更新');
-  };
+  }, [wealthHoldings, setWealthHoldings]);
+
+  // Auto-refresh on mount with 3-minute cooldown
+  useEffect(() => {
+    const lastUpdate = parseInt(localStorage.getItem('last_wealth_price_update') || '0', 10);
+    const now = Date.now();
+    const COOLDOWN = 3 * 60 * 1000; // 3 minutes
+    if (now - lastUpdate > COOLDOWN) {
+      handleRefreshAll(true);
+    }
+  }, [handleRefreshAll]);
 
   // ── Bank actions ──
   const handleSaveBank = (acc) => {
@@ -473,6 +499,12 @@ export default function WealthTab() {
 
   return (
     <div className="tab-content">
+      {/* Loading mask */}
+      <div className={`loading-overlay${isRefreshing ? ' active' : ''}`}>
+        <div className="spinner"></div>
+        <div className="loading-text">正在更新持股價格…</div>
+      </div>
+
       {/* Total assets card */}
       <div className="wealth-total-card chart-section" style={{ display: 'block', padding: '28px 32px', background: 'linear-gradient(135deg, var(--card-bg) 60%, rgba(193,123,46,0.06) 100%)', marginBottom: 12 }}>
         {/* Label + amount */}
@@ -533,7 +565,7 @@ export default function WealthTab() {
             <div className="wealth-panel-total">總市值：<strong id="holdingsTotalValue">NT$ <AnimatedNumber value={Math.round(totalInvest)} format={v => formatAmount(v, 'asset')} effect="scroll" /></strong></div>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn btn-secondary btn-sm" onClick={handleRefreshAll} title="全部更新股價">
+            <button className="btn btn-secondary btn-sm" onClick={() => handleRefreshAll()} title="全部更新股價">
               <i className="fa-solid fa-rotate"></i> 更新價格
             </button>
             <button className="btn btn-primary btn-sm" onClick={() => setShowHoldingModal(true)}>
