@@ -1,6 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
+import { registerSW } from 'virtual:pwa-register';
+
+// 註冊 PWA Service Worker (由 vite-plugin-pwa 自動處理)
+registerSW({ immediate: true });
 
 // 禁止 iOS Safari pinch-to-zoom
 document.addEventListener('touchmove', (e) => {
